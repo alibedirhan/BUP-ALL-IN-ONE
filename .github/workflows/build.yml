@@ -134,13 +134,12 @@ jobs:
         pip install pyinstaller==6.3.0
         pip install pillow>=10.1.0
         
-        # upx-python yerine standart bağımlılıklar
+        # Install app dependencies
         pip install -r requirements.txt
         
-        # requirements-build.txt'den upx-python satırını kaldırın veya
+        # Install build requirements (if file exists)
         if (Test-Path "requirements-build.txt") {
-          # upx-python satırını atla
-          Get-Content "requirements-build.txt" | Where-Object { $_ -notmatch "upx-python" } | pip install -r /dev/stdin
+          pip install -r requirements-build.txt
         }
 
     - name: 🎨 Convert PNG to ICO
