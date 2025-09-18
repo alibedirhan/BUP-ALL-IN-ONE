@@ -134,20 +134,13 @@ jobs:
         pip install pyinstaller==6.3.0
         pip install pillow>=10.1.0
         
-        # UPX'i manuel olarak indir ve kur
-        echo "📦 Downloading UPX..."
-        Invoke-WebRequest -Uri "https://github.com/upx/upx/releases/download/v4.2.4/upx-4.2.4-win64.zip" -OutFile "upx.zip"
-        Expand-Archive -Path "upx.zip" -DestinationPath "upx-temp"
-        Move-Item -Path "upx-temp/upx-4.2.4-win64/upx.exe" -Destination "C:/Windows/System32/upx.exe" -Force
-        Remove-Item -Path "upx.zip", "upx-temp" -Recurse -Force
-        echo "✅ UPX installed successfully"
-        
-        # Install app dependencies
+        # upx-python yerine standart bağımlılıklar
         pip install -r requirements.txt
         
-        # Additional build requirements if exists
+        # requirements-build.txt'den upx-python satırını kaldırın veya
         if (Test-Path "requirements-build.txt") {
-          pip install -r requirements-build.txt
+          # upx-python satırını atla
+          Get-Content "requirements-build.txt" | Where-Object { $_ -notmatch "upx-python" } | pip install -r /dev/stdin
         }
 
     - name: 🎨 Convert PNG to ICO
