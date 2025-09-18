@@ -350,19 +350,31 @@ jobs:
             
             print("[INFO] Spec file created, building onefile executable...")
             
-            # Build onefile
-            result = subprocess.run(
-                ["pyinstaller", "build/onefile.spec", "--clean", "--noconfirm"],
-                capture_output=True,
-                text=True
-            )
+            # Build onefile - direkt pyinstaller komutu kullan
+            result = subprocess.run([
+                "pyinstaller", "BUPILIC_ANA_PROGRAM.py",
+                "--name", os.environ['APP_NAME'],
+                "--onefile", "--windowed",
+                "--icon", "build/app_icon.ico",
+                "--add-data", "ISKONTO_HESABI;ISKONTO_HESABI",
+                "--add-data", "KARLILIK_ANALIZI;KARLILIK_ANALIZI",
+                "--add-data", "Musteri_Sayisi_Kontrolu;Musteri_Sayisi_Kontrolu",
+                "--add-data", "YASLANDIRMA;YASLANDIRMA",
+                "--add-data", "icon;icon",
+                "--hidden-import", "customtkinter",
+                "--hidden-import", "PIL._tkinter_finder",
+                "--hidden-import", "pandas",
+                "--hidden-import", "numpy",
+                "--hidden-import", "matplotlib",
+                "--exclude-module", "pandas.tests",
+                "--clean", "--noconfirm"
+            ])
             
             if result.returncode == 0:
                 print("[SUCCESS] Onefile build completed!")
             else:
-                print(f"[ERROR] Onefile build failed: {result.stderr}")
-                # Fallback to direct command
-                print("Trying direct onefile build...")
+                print(f"[ERROR] Onefile build failed")
+                print("Running fallback build...")
                 subprocess.run([
                     "pyinstaller", "BUPILIC_ANA_PROGRAM.py",
                     "--name", os.environ['APP_NAME'],
