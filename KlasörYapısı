@@ -1,0 +1,78 @@
+BUP0/
+├── bupilic_ana_program.py    # Ana program
+├── requirements.txt          # Gereksinimler
+
+├── icon
+	-bupilic_logo.png
+	
+├── ISKONTO HESABI
+	-export_manager.py
+	-main.py
+	-pdf_processor.py
+	-ui_componnts.pt
+	
+├── KARLILIK ANALIZI
+	-analiz_dashboard.py
+	-dashboard_components.py
+	-data_operations.py
+	-gui.py
+	-karlilik.py
+	-themes.py
+	-ui_components.py
+	-veri_analizi.py
+	-zaman_analizi.py
+	
+├── MUSTERI SAYISI KONTROLU
+	-kurulum.py
+	-main.py
+	-ui.py
+	
+├── 	YASLANDIRMA
+	-excel_processor.py
+	-gui.py
+	-__init__.py
+	-main.py
+	-setup.py
+	-utils.py
+			GUI
+			   -analysis_operations.py
+			   -analysis_tabs.py
+			   -file_operations.py
+			   -file_tab.py
+			   -__init__.py
+			   -main_gui.py
+			   -other_tabs.py
+			   -tab_method.py
+			   -ui_helpers.py
+			   
+			MODULES
+			   -analysis.py
+			   -analysis_gui.py
+			   -assignment.py
+			   -data_manager.py
+			   -__init__.py
+			   -reports.py
+			   -visualization.py
+			   
+
+		   
+BUP-ALL-IN-ONE/
+├── .github/
+│   └── workflows/
+│       └── build-release.yml          # GitHub Actions workflow
+├── build/
+│   ├── build.py                       # Local build script
+│   ├── pyinstaller-config.spec        # PyInstaller config
+│   └── icon_converter.py              # PNG to ICO converter
+├── scripts/
+│   ├── setup_env.bat                  # Windows environment setup
+│   └── test_build.bat                 # Local test script
+├── bupilic_ana_program.py             # Ana program (mevcut)
+├── requirements.txt                   # Dependencies (mevcut)
+├── requirements-build.txt             # Build dependencies
+├── setup.py                          # Package configuration
+├── MANIFEST.in                       # Data files inclusion
+├── VERSION                           # Version file
+├── README.md                         # Documentation
+├── CHANGELOG.md                      # Release notes template
+└── [Mevcut klasörleriniz...]         # ISKONTO_HESABI, KARLILIK_ANALIZI, vs.
