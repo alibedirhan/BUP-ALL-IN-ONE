@@ -200,14 +200,14 @@ jobs:
         
         # Define paths
         app_name = "BupiliC"
-        main_script = "bupilic_ana_program.py"
+        main_script = "BUPILIC_ANA_PROGRAM.py"
         icon_path = "build/app_icon.ico"
         
         # Data files to include
         datas = [
             ('ISKONTO_HESABI', 'ISKONTO_HESABI/'),
             ('KARLILIK_ANALIZI', 'KARLILIK_ANALIZI/'),  
-            ('MUSTERI_SAYISI_KONTROLU', 'MUSTERI_SAYISI_KONTROLU/'),
+            ('Musteri_Sayisi_Kontrolu', 'Musteri_Sayisi_Kontrolu/'),
             ('YASLANDIRMA', 'YASLANDIRMA/'),
             ('icon', 'icon/'),
         ]
@@ -295,7 +295,7 @@ jobs:
         
         with open('build/app.spec', 'w', encoding='utf-8') as f:
             f.write(spec_content)
-        print("✅ PyInstaller spec generated")
+        print("[SUCCESS] PyInstaller spec generated")
 
     - name: 🔨 Build executable
       run: |
