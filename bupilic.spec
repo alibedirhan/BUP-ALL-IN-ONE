@@ -32,16 +32,13 @@ datas = [
     
     # Resources
     ('icon', 'icon'),
-    
-    # Optional: Include requirements if needed
-    # ('requirements.txt', '.'),
 ]
 
 # ===============================================
 # HIDDEN IMPORTS (Explicitly include dependencies)
 # ===============================================
 hiddenimports = [
-    # CustomTkinter and GUI
+    # CustomTkinter and GUI - CRITICAL FIXES
     'customtkinter',
     'tkinter',
     'tkinter.filedialog',
@@ -58,6 +55,7 @@ hiddenimports = [
     
     # Data processing
     'pandas',
+    'pandas._libs',
     'numpy',
     'openpyxl',
     'xlsxwriter',
@@ -79,6 +77,16 @@ hiddenimports = [
     'multiprocessing',
     'multiprocessing.pool',
     
+    # URL and path libraries - CRITICAL FIX
+    'urllib',
+    'urllib.request',
+    'urllib.parse',
+    'urllib.error',
+    'pathlib',
+    'importlib',
+    'importlib.resources',
+    'pkgutil',
+    
     # Standard libraries that might be needed
     'json',
     'logging',
@@ -94,9 +102,18 @@ hiddenimports = [
     'collections',
     'itertools',
     'functools',
-    'threading',
     'time',
     'calendar',
+    'base64',
+    'hashlib',
+    'ssl',
+    'socket',
+    'email',
+    'xml',
+    'html',
+    'zipfile',
+    'tarfile',
+    'gzip',
 ]
 
 # ===============================================
@@ -108,7 +125,6 @@ binaries = []
 # HOOKS CONFIGURATION
 # ===============================================
 hookspath = []
-hooksconfig = {}
 
 # ===============================================
 # RUNTIME HOOKS
@@ -127,13 +143,6 @@ excludes = [
     'pip',
     'wheel',
     'pkg_resources',
-    'email',
-    'http',
-    'urllib',
-    'xml',
-    'html',
-    'asyncio',
-    'sqlite3',
     'tkinter.dnd',
     'tkinter.colorchooser',
     'tkinter.commondialog',
@@ -144,6 +153,8 @@ excludes = [
     'matplotlib.tests',
     'pandas.tests',
     'numpy.tests',
+    'asyncio',
+    'sqlite3',
 ]
 
 # ===============================================
@@ -156,7 +167,7 @@ a = Analysis(
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=hookspath,
-    hooksconfig=hooksconfig,
+    hooksconfig={},
     runtime_hooks=runtime_hooks,
     excludes=excludes,
     win_no_prefer_redirects=False,
@@ -183,20 +194,22 @@ exe = EXE(
     a.binaries,
     a.zipfiles,
     a.datas,
+    [],
     name=app_name,
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,  # Enable UPX compression
+    upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,  # No console window (GUI application)
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
     icon=icon_path if os.path.exists(icon_path) else None,
+    version_file=None,
 )
 
 # ===============================================
