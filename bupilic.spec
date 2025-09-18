@@ -85,11 +85,7 @@ hiddenimports = [
     'multiprocessing',
     'multiprocessing.pool',
     
-<<<<<<< Updated upstream
-    # URL and path libraries - CRITICAL FIX
-=======
     # URL and path libraries
->>>>>>> Stashed changes
     'urllib',
     'urllib.request',
     'urllib.parse',
@@ -97,16 +93,10 @@ hiddenimports = [
     'pathlib',
     'importlib',
     'importlib.resources',
-<<<<<<< Updated upstream
-    'pkgutil',
-    
-    # Standard libraries that might be needed
-=======
     'importlib.metadata',
     'pkgutil',
     
     # Standard libraries
->>>>>>> Stashed changes
     'json',
     'logging',
     'locale',
@@ -129,19 +119,14 @@ hiddenimports = [
     'ssl',
     'socket',
     'email',
-<<<<<<< Updated upstream
-=======
     'email.mime',
     'email.mime.text',
     'email.mime.multipart',
->>>>>>> Stashed changes
     'xml',
     'html',
     'zipfile',
     'tarfile',
     'gzip',
-<<<<<<< Updated upstream
-=======
     'shutil',
     'tempfile',
     'weakref',
@@ -164,7 +149,6 @@ hiddenimports = [
     'textwrap',
     'tokenize',
     'unicodedata',
->>>>>>> Stashed changes
 ]
 
 # ===============================================
@@ -175,11 +159,7 @@ binaries = []
 # ===============================================
 # HOOKS CONFIGURATION
 # ===============================================
-<<<<<<< Updated upstream
-hookspath = []
-=======
 hookspath = ['hooks']
->>>>>>> Stashed changes
 
 # ===============================================
 # RUNTIME HOOKS
@@ -200,24 +180,10 @@ excludes = [
     'pip',
     'wheel',
     'pkg_resources',
-<<<<<<< Updated upstream
-    'tkinter.dnd',
-    'tkinter.colorchooser',
-    'tkinter.commondialog',
-    'tkinter.font',
-    'tkinter.scrolledtext',
-    'tkinter.simpledialog',
-    'tkinter.tix',
-=======
->>>>>>> Stashed changes
     'matplotlib.tests',
     'pandas.tests',
     'numpy.tests',
     'asyncio',
-<<<<<<< Updated upstream
-    'sqlite3',
-=======
->>>>>>> Stashed changes
 ]
 
 # ===============================================
