@@ -172,20 +172,20 @@ jobs:
                     
                     # Save as ICO
                     icons[0].save(ico_path, format='ICO', sizes=[icon.size for icon in icons])
-                    print(f"✅ Icon converted: {ico_path}")
+                    print(f"[SUCCESS] Icon converted: {ico_path}")
                     
                 except Exception as e:
-                    print(f"❌ Icon conversion failed: {e}")
+                    print(f"[ERROR] Icon conversion failed: {e}")
                     # Create a simple placeholder icon
                     img = Image.new('RGBA', (64, 64), (42, 157, 143, 255))
                     img.save(ico_path, format='ICO')
-                    print(f"🔄 Created placeholder icon: {ico_path}")
+                    print(f"[INFO] Created placeholder icon: {ico_path}")
             else:
-                print(f"⚠️ PNG icon not found: {png_path}")
+                print(f"[WARNING] PNG icon not found: {png_path}")
                 # Create a simple default icon
                 img = Image.new('RGBA', (64, 64), (42, 157, 143, 255))
                 img.save(ico_path, format='ICO')
-                print(f"🔄 Created default icon: {ico_path}")
+                print(f"[INFO] Created default icon: {ico_path}")
         
         convert_png_to_ico()
 
