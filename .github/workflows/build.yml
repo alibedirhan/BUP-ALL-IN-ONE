@@ -22,10 +22,6 @@ on:
       - main
       - develop
 
-  # Scheduled builds (optional - weekly on Sunday)
-  schedule:
-    - cron: '0 6 * * 0'
-
 env:
   APP_NAME: BupiliC
   PYTHON_VERSION: '3.10'
@@ -97,16 +93,14 @@ jobs:
     name: 🪟 Build Windows (${{ matrix.arch }})
     runs-on: windows-latest
     needs: pre-checks
-    timeout-minutes: 45
+    timeout-minutes: 60
     
     strategy:
       matrix:
-        arch: [x64, x86]
+        arch: [x64]
         include:
           - arch: x64
             python-arch: x64
-          - arch: x86
-            python-arch: x86
     
     steps:
     - name: 📥 Checkout repository  
@@ -118,19 +112,9 @@ jobs:
         python-version: ${{ env.PYTHON_VERSION }}
         architecture: ${{ matrix.python-arch }}
 
-    - name: 📦 Cache pip packages
-      uses: actions/cache@v4
-      with:
-        path: ~\AppData\Local\pip\Cache
-        key: ${{ runner.os }}-pip-${{ matrix.arch }}-${{ hashFiles('requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-${{ matrix.arch }}-
-          ${{ runner.os }}-pip-
-
     - name: 🔧 Install build dependencies
       run: |
         python -m pip install --upgrade pip setuptools wheel
-        pip install "setuptools<81"
         pip install pyinstaller==6.3.0
         pip install pillow>=10.1.0
 
@@ -138,7 +122,7 @@ jobs:
       run: |
         echo "📦 Installing dependencies for ${{ matrix.arch }}..."
         
-        # Sadece kritik paketleri yükle
+        # Tüm gerekli paketleri explicit olarak yükle
         pip install customtkinter==5.2.2
         pip install pandas==2.1.4
         pip install numpy==1.24.3
@@ -149,6 +133,7 @@ jobs:
         pip install xlsxwriter==3.1.9
         pip install xlrd==2.0.1
         pip install xlwt==1.3.0
+        pip install seaborn==0.13.2
 
     - name: 🎨 Convert PNG to ICO
       shell: python
@@ -160,17 +145,14 @@ jobs:
             png_path = "icon/bupilic_logo.png"
             ico_path = "build/app_icon.ico"
             
-            # Create build directory
             os.makedirs("build", exist_ok=True)
             
             if os.path.exists(png_path):
                 try:
                     img = Image.open(png_path)
-                    # Convert to RGBA if not already
                     if img.mode != 'RGBA':
                         img = img.convert('RGBA')
                     
-                    # Create multiple sizes for ICO (16, 32, 48, 64, 128, 256)
                     sizes = [(16,16), (32,32), (48,48), (64,64), (128,128), (256,256)]
                     icons = []
                     
@@ -178,144 +160,250 @@ jobs:
                         resized = img.resize(size, Image.Resampling.LANCZOS)
                         icons.append(resized)
                     
-                    # Save as ICO
                     icons[0].save(ico_path, format='ICO', sizes=[icon.size for icon in icons])
                     print(f"[SUCCESS] Icon converted: {ico_path}")
                     
                 except Exception as e:
                     print(f"[ERROR] Icon conversion failed: {e}")
-                    # Create a simple placeholder icon
                     img = Image.new('RGBA', (64, 64), (42, 157, 143, 255))
                     img.save(ico_path, format='ICO')
                     print(f"[INFO] Created placeholder icon: {ico_path}")
             else:
                 print(f"[WARNING] PNG icon not found: {png_path}")
-                # Create a simple default icon
                 img = Image.new('RGBA', (64, 64), (42, 157, 143, 255))
                 img.save(ico_path, format='ICO')
                 print(f"[INFO] Created default icon: {ico_path}")
         
         convert_png_to_ico()
 
-    - name: 🔨 Build executable with proper module handling
-      timeout-minutes: 30
+    - name: 📝 Create debug script
       run: |
-        echo "🔨 Building ${{ env.APP_NAME }} for ${{ matrix.arch }}..."
-        
-        # Tüm modülleri explicit olarak ekleyerek build yap
-        pyinstaller BUPILIC_ANA_PROGRAM.py `
-          --name "${{ env.APP_NAME }}" `
-          --onedir `
-          --windowed `
-          --icon "build/app_icon.ico" `
-          --add-data "ISKONTO_HESABI;ISKONTO_HESABI" `
-          --add-data "KARLILIK_ANALIZI;KARLILIK_ANALIZI" `
-          --add-data "Musteri_Sayisi_Kontrolu;Musteri_Sayisi_Kontrolu" `
-          --add-data "YASLANDIRMA;YASLANDIRMA" `
-          --add-data "icon;icon" `
-          --hidden-import "customtkinter" `
-          --hidden-import "PIL._tkinter_finder" `
-          --hidden-import "pandas" `
-          --hidden-import "numpy" `
-          --hidden-import "matplotlib" `
-          --hidden-import "matplotlib.backends.backend_tkagg" `
-          --hidden-import "tkinter" `
-          --hidden-import "tkinter.filedialog" `
-          --hidden-import "tkinter.messagebox" `
-          --hidden-import "os" `
-          --hidden-import "sys" `
-          --hidden-import "subprocess" `
-          --hidden-import "threading" `
-          --hidden-import "json" `
-          --hidden-import "logging" `
-          --hidden-import "locale" `
-          --hidden-import "datetime" `
-          --hidden-import "openpyxl" `
-          --hidden-import "xlsxwriter" `
-          --hidden-import "xlrd" `
-          --hidden-import "xlwt" `
-          --hidden-import "psutil" `
-          --collect-all "customtkinter" `
-          --collect-all "PIL" `
-          --collect-all "pandas" `
-          --collect-all "numpy" `
-          --collect-all "matplotlib" `
-          --exclude-module "pandas.tests" `
-          --exclude-module "numpy.tests" `
-          --exclude-module "matplotlib.tests" `
-          --clean `
-          --noconfirm `
-          --log-level=INFO
-        
-        echo "✅ One-dir build completed successfully!"
+        # Hata ayıklama için basit bir script oluştur
+        $debugScript = @"
+import os
+import sys
+import traceback
 
-    - name: 📦 Create onefile executable
+print("Python path:", sys.path)
+print("Current working directory:", os.getcwd())
+print("Files in current directory:", os.listdir('.'))
+
+# Modülleri test et
+try:
+    import customtkinter
+    print("customtkinter imported successfully")
+except ImportError as e:
+    print(f"customtkinter import failed: {e}")
+
+try:
+    import pandas
+    print("pandas imported successfully")
+except ImportError as e:
+    print(f"pandas import failed: {e}")
+
+try:
+    import matplotlib
+    print("matplotlib imported successfully")
+except ImportError as e:
+    print(f"matplotlib import failed: {e}")
+
+input("Press Enter to exit...")
+"@
+        
+        $debugScript | Out-File -FilePath "debug_test.py" -Encoding UTF8
+
+    - name: 🔨 Build with detailed spec file
       run: |
-        echo "📦 Creating onefile executable..."
-        
-        # Onefile build için
-        pyinstaller BUPILIC_ANA_PROGRAM.py `
-          --name "${{ env.APP_NAME }}" `
-          --onefile `
-          --windowed `
-          --icon "build/app_icon.ico" `
-          --add-data "ISKONTO_HESABI;ISKONTO_HESABI" `
-          --add-data "KARLILIK_ANALIZI;KARLILIK_ANALIZI" `
-          --add-data "Musteri_Sayisi_Kontrolu;Musteri_Sayisi_Kontrolu" `
-          --add-data "YASLANDIRMA;YASLANDIRMA" `
-          --add-data "icon;icon" `
-          --hidden-import "customtkinter" `
-          --hidden-import "PIL._tkinter_finder" `
-          --hidden-import "pandas" `
-          --hidden-import "numpy" `
-          --hidden-import "matplotlib" `
-          --hidden-import "matplotlib.backends.backend_tkagg" `
-          --hidden-import "tkinter" `
-          --hidden-import "tkinter.filedialog" `
-          --hidden-import "tkinter.messagebox" `
-          --hidden-import "os" `
-          --hidden-import "sys" `
-          --hidden-import "subprocess" `
-          --hidden-import "threading" `
-          --hidden-import "json" `
-          --hidden-import "logging" `
-          --hidden-import "locale" `
-          --hidden-import "datetime" `
-          --hidden-import "openpyxl" `
-          --hidden-import "xlsxwriter" `
-          --hidden-import "xlrd" `
-          --hidden-import "xlwt" `
-          --hidden-import "psutil" `
-          --collect-all "customtkinter" `
-          --collect-all "PIL" `
-          --collect-all "pandas" `
-          --collect-all "numpy" `
-          --collect-all "matplotlib" `
-          --clean `
-          --noconfirm
-        
-        echo "✅ Onefile build completed!"
+        # Detaylı spec dosyası oluştur
+        $specContent = @'
+# -*- mode: python ; coding: utf-8 -*-
+import sys
+import os
+from pathlib import Path
 
-    - name: 🏷️ Rename executable
+block_cipher = None
+
+# Uygulama bilgileri
+app_name = "${{ env.APP_NAME }}"
+main_script = "BUPILIC_ANA_PROGRAM.py"
+icon_path = "build/app_icon.ico"
+
+# Data files - tüm modül dosyalarını explicit olarak ekle
+datas = [
+    ('ISKONTO_HESABI/*.py', 'ISKONTO_HESABI'),
+    ('ISKONTO_HESABI/*.txt', 'ISKONTO_HESABI'),
+    ('KARLILIK_ANALIZI/*.py', 'KARLILIK_ANALIZI'),  
+    ('KARLILIK_ANALIZI/*.txt', 'KARLILIK_ANALIZI'),
+    ('Musteri_Sayisi_Kontrolu/*.py', 'Musteri_Sayisi_Kontrolu'),
+    ('Musteri_Sayisi_Kontrolu/*.txt', 'Musteri_Sayisi_Kontrolu'),
+    ('YASLANDIRMA/*.py', 'YASLANDIRMA'),
+    ('YASLANDIRMA/*.txt', 'YASLANDIRMA'),
+    ('icon/*.png', 'icon'),
+    ('icon/*.ico', 'icon'),
+]
+
+# Tüm hidden import'lar
+hiddenimports = [
+    'customtkinter',
+    'tkinter',
+    'tkinter.filedialog',
+    'tkinter.messagebox',
+    'PIL',
+    'PIL.Image',
+    'PIL.ImageTk',
+    'PIL._tkinter_finder',
+    'pandas',
+    'numpy',
+    'matplotlib',
+    'matplotlib.backends',
+    'matplotlib.backends.backend_tkagg',
+    'matplotlib.pyplot',
+    'seaborn',
+    'openpyxl',
+    'xlsxwriter',
+    'xlrd',
+    'xlwt',
+    'psutil',
+    'subprocess',
+    'threading',
+    'json',
+    'logging',
+    'locale',
+    'datetime',
+    'os',
+    'sys',
+    'pathlib',
+    're',
+    'collections',
+    'itertools',
+    'functools',
+    'threading',
+    'time',
+    'calendar',
+    'csv',
+    'io',
+    'base64',
+    'hashlib',
+    'random',
+    'statistics',
+    'math',
+]
+
+# Ek binary'ler
+binaries = []
+
+# Runtime hooks
+runtime_hooks = []
+
+# Exclude edilecek modüller
+excludes = [
+    'test',
+    'tests',
+    'unittest',
+    'distutils',
+    'setuptools',
+    'pandas.tests',
+    'numpy.tests',
+    'matplotlib.tests',
+]
+
+a = Analysis(
+    [main_script],
+    pathex=[],
+    binaries=binaries,
+    datas=datas,
+    hiddenimports=hiddenimports,
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=runtime_hooks,
+    excludes=excludes,
+    win_no_prefer_redirects=False,
+    win_private_assemblies=False,
+    cipher=block_cipher,
+    noarchive=False,
+)
+
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
+exe = EXE(
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    [],
+    name=app_name,
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=False,
+    upx_exclude=[],
+    runtime_tmpdir=None,
+    console=False,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+    icon=icon_path,
+    version_file=None,
+)
+'@
+
+        $specContent = $specContent -replace '\${{ env.APP_NAME }}', $env:APP_NAME
+        $specContent | Out-File -FilePath "build/bupilic.spec" -Encoding UTF8
+        echo "📝 Detailed spec file created"
+
+    - name: 🏗️ Build executable using spec file
+      timeout-minutes: 45
+      run: |
+        echo "🔨 Building using spec file..."
+        
+        # Spec dosyasını kullanarak build yap
+        pyinstaller build/bupilic.spec --clean --noconfirm --log-level=DEBUG
+        
+        echo "✅ Build completed successfully!"
+
+    - name: 🧪 Test the executable
+      run: |
+        echo "🧪 Testing executable..."
+        
+        $exePath = "dist/${{ env.APP_NAME }}/${{ env.APP_NAME }}.exe"
+        if (Test-Path $exePath) {
+            echo "✅ Executable found: $exePath"
+            $size = (Get-Item $exePath).Length / 1MB
+            echo "📊 Size: $([math]::Round($size, 2)) MB"
+            
+            # İçerik kontrolü
+            echo "📁 Contents of dist folder:"
+            Get-ChildItem "dist/${{ env.APP_NAME }}" -Recurse | Select-Object Name, Length | Format-Table -AutoSize
+            
+            # _internal klasörü kontrolü
+            if (Test-Path "dist/${{ env.APP_NAME }}/_internal") {
+                echo "✅ _internal folder exists"
+                echo "📦 Contents of _internal:"
+                Get-ChildItem "dist/${{ env.APP_NAME }}/_internal" | Select-Object Name | Format-Table -AutoSize
+            } else {
+                echo "❌ _internal folder missing - this will cause module errors"
+            }
+        } else {
+            echo "❌ Executable not found at expected path"
+        }
+
+    - name: 📦 Package for distribution
       run: |
         $version = "${{ needs.pre-checks.outputs.version }}"
-        $newName = "${{ env.APP_NAME }}-$version-windows-${{ matrix.arch }}.exe"
+        $distDir = "dist/${{ env.APP_NAME }}"
+        $outputName = "${{ env.APP_NAME }}-$version-windows-${{ matrix.arch }}"
         
-        # Onefile executable'ı bul ve yeniden adlandır
-        $onefileExe = Get-ChildItem "dist/${{ env.APP_NAME }}.exe" -ErrorAction SilentlyContinue
-        if ($onefileExe) {
-          Move-Item $onefileExe.FullName "dist/$newName"
-          echo "🏷️ Renamed onefile to: $newName"
-        } else {
-          # One-dir executable'ı kullan
-          $onedirExe = Get-ChildItem "dist/${{ env.APP_NAME }}/${{ env.APP_NAME }}.exe" -ErrorAction SilentlyContinue
-          if ($onedirExe) {
-            Copy-Item $onedirExe.FullName "dist/$newName"
-            echo "🏷️ Copied onedir executable as: $newName"
-          } else {
-            echo "❌ No executable found in dist folder"
-            exit 1
-          }
+        if (Test-Path $distDir) {
+            # Tüm dosyaları ZIP yap
+            Compress-Archive -Path "$distDir/*" -DestinationPath "dist/$outputName.zip" -Force
+            echo "📦 Created ZIP package: dist/$outputName.zip"
+            
+            # Ana executable'ı da kopyala
+            Copy-Item "$distDir/${{ env.APP_NAME }}.exe" "dist/$outputName.exe"
+            echo "📦 Created standalone executable: dist/$outputName.exe"
         }
 
     - name: 📋 Generate build info
@@ -327,29 +415,13 @@ jobs:
           build_time = Get-Date -Format "yyyy-MM-dd HH:mm:ss UTC"
           commit = "${{ github.sha }}"
           branch = "${{ github.ref_name }}"
-          build_type = "onefile"
+          build_type = "onedir"
           modules_included = "all"
+          size_mb = [math]::Round((Get-ChildItem "dist/${{ env.APP_NAME }}" -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB, 2)
         }
         
-        $buildInfo | ConvertTo-Json | Out-File -FilePath "dist/build-info-${{ matrix.arch }}.json" -Encoding UTF8
+        $buildInfo | ConvertTo-Json | Out-File -FilePath "dist/build-info.json" -Encoding UTF8
         echo "📋 Build info generated"
-
-    - name: 🧪 Test executable size and structure
-      run: |
-        echo "🧪 Testing executable..."
-        $exe = Get-ChildItem "dist/*.exe" | Select-Object -First 1
-        if ($exe) {
-          echo "✅ Executable found: $($exe.Name)"
-          echo "📊 Size: $([math]::Round($exe.Length / 1MB, 2)) MB"
-          
-          # Normal boyut kontrolü (100-200 MB arası bekleniyor)
-          $sizeMB = [math]::Round($exe.Length / 1MB, 2)
-          if ($sizeMB -lt 50) {
-            echo "⚠️ WARNING: Executable size is too small ($sizeMB MB). Modules might be missing."
-          } else {
-            echo "✅ Executable size is normal ($sizeMB MB)"
-          }
-        }
 
     - name: 📤 Upload build artifacts
       uses: actions/upload-artifact@v4
@@ -357,6 +429,7 @@ jobs:
         name: BupiliC-${{ matrix.arch }}-${{ needs.pre-checks.outputs.version }}
         path: |
           dist/*.exe
+          dist/*.zip
           dist/*.json
         retention-days: 30
         compression-level: 9
@@ -373,8 +446,6 @@ jobs:
     steps:
     - name: 📥 Checkout repository
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
 
     - name: 📥 Download all artifacts
       uses: actions/download-artifact@v4
@@ -382,81 +453,40 @@ jobs:
         path: ./artifacts
 
     - name: 📋 Generate release notes
-      id: release_notes
       run: |
-        VERSION="${{ needs.pre-checks.outputs.version }}"
-        RELEASE_NOTES="release-notes-$VERSION.md"
-        
-        cat > $RELEASE_NOTES << 'EOF'
+        cat > release-notes.md << 'EOF'
         ## 🚀 BupiliÇ İşletme Yönetim Sistemi - ${{ needs.pre-checks.outputs.version }}
         
-        ### 📊 Bu Sürümde
-        - ✅ Windows 7/8/10/11 tam uyumluluğu
-        - ✅ Portable tek dosya (kurulum gerektirmez)
-        - ✅ İskonto Hesaplama modülü
-        - ✅ Karlılık Analizi dashboard'u  
-        - ✅ Müşteri Kayıp/Kaçak analizi
-        - ✅ Yaşlandırma raporları
-        - ✅ Modern CustomTkinter arayüzü
-        - ✅ Çoklu tema desteği (Light/Dark)
-        - ✅ Türkçe tam destek
+        ### 📊 Özellikler
+        - ✅ Tüm modüller dahil (İskonto, Karlılık, Müşteri Analizi, Yaşlandırma)
+        - ✅ Windows uyumluluğu
+        - ✅ Tek dosya portable
+        - ✅ Modern arayüz
         
-        ### 🔧 Teknik Detaylar
-        - **Python**: 3.10
-        - **GUI**: CustomTkinter 5.2.2
-        - **Build**: PyInstaller (tüm modüller dahil)
-        - **Boyut**: ~100-200 MB (tüm bağımlılıklar dahil)
-        
-        ### 📥 İndirme
-        - **Windows 64-bit**: `BupiliC-${{ needs.pre-checks.outputs.version }}-windows-x64.exe`
-        - **Windows 32-bit**: `BupiliC-${{ needs.pre-checks.outputs.version }}-windows-x86.exe`
-        
-        ### 🚀 Kullanım
-        1. Exe dosyasını indirin
-        2. Çift tıklayarak çalıştırın
+        ### 🚀 Kurulum
+        1. ZIP dosyasını indirin ve çıkarın
+        2. `BupiliC.exe` dosyasını çalıştırın
         3. Varsayılan şifre: `bupilic2024`
         
-        ### 🛠 Bilinen Sorunlar
-        - İlk çalışma biraz yavaş olabilir (normal)
-        - Antivirus yazılımları uyarı verebilir (güvenlidir)
-        
         ### 📞 Destek
-        - GitHub Issues: [Sorun bildirin](https://github.com/alibedirhan/BUP-ALL-IN-ONE/issues)
-        - Email: alibedirhan@example.com
+        - Hata durumunda log dosyası kontrol edin
+        - GitHub Issues: sorun bildirin
         EOF
-        
-        echo "release_notes_file=$RELEASE_NOTES" >> $GITHUB_OUTPUT
 
     - name: 📦 Prepare release assets
       run: |
         mkdir -p release-assets
-        
-        # Copy executables and rename
-        find ./artifacts -name "*.exe" -exec cp {} release-assets/ \;
-        
-        # Boyut kontrolü
-        echo "📦 Executable sizes:"
-        ls -la release-assets/
-        
-        # Create portable ZIP package
-        cd release-assets
-        zip -9 "BupiliC-${{ needs.pre-checks.outputs.version }}-portable.zip" *.exe
-        
-        # List files
-        echo "📦 Release assets:"
-        ls -la
+        find ./artifacts -name "*.exe" -o -name "*.zip" -exec cp {} release-assets/ \;
+        echo "📦 Release assets prepared"
 
     - name: 🎉 Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ needs.pre-checks.outputs.version }}
         name: "BupiliÇ ${{ needs.pre-checks.outputs.version }}"
-        body_path: release-notes-${{ needs.pre-checks.outputs.version }}.md
-        files: |
-          release-assets/*.exe
-          release-assets/*.zip
+        body_file: release-notes.md
+        files: release-assets/*
         prerelease: ${{ github.event.inputs.prerelease || false }}
-        generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -470,7 +500,5 @@ jobs:
     if: always()
     
     steps:
-    - name: 🧹 Clean up artifacts
-      run: |
-        echo "🧹 Build completed, cleaning up..."
-        echo "✅ All done!"
+    - name: 🧹 Clean up
+      run: echo "✅ Build process completed"
