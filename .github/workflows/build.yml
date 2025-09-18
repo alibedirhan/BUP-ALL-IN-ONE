@@ -197,12 +197,12 @@ jobs:
         
         convert_png_to_ico()
 
-    - name: 🔨 Build executable with proper DLL handling
+    - name: 🔨 Build executable with proper module handling
       timeout-minutes: 30
       run: |
         echo "🔨 Building ${{ env.APP_NAME }} for ${{ matrix.arch }}..."
         
-        # Pandas test modüllerini hariç tutarak build yap
+        # Tüm modülleri explicit olarak ekleyerek build yap
         pyinstaller BUPILIC_ANA_PROGRAM.py `
           --name "${{ env.APP_NAME }}" `
           --onedir `
@@ -222,192 +222,79 @@ jobs:
           --hidden-import "tkinter" `
           --hidden-import "tkinter.filedialog" `
           --hidden-import "tkinter.messagebox" `
+          --hidden-import "os" `
+          --hidden-import "sys" `
+          --hidden-import "subprocess" `
+          --hidden-import "threading" `
+          --hidden-import "json" `
+          --hidden-import "logging" `
+          --hidden-import "locale" `
+          --hidden-import "datetime" `
+          --hidden-import "openpyxl" `
+          --hidden-import "xlsxwriter" `
+          --hidden-import "xlrd" `
+          --hidden-import "xlwt" `
+          --hidden-import "psutil" `
+          --collect-all "customtkinter" `
+          --collect-all "PIL" `
+          --collect-all "pandas" `
+          --collect-all "numpy" `
+          --collect-all "matplotlib" `
           --exclude-module "pandas.tests" `
           --exclude-module "numpy.tests" `
           --exclude-module "matplotlib.tests" `
           --clean `
           --noconfirm `
-          --log-level=WARN
+          --log-level=INFO
         
         echo "✅ One-dir build completed successfully!"
 
-    - name: 📦 Create onefile executable from onedir
-      shell: python
+    - name: 📦 Create onefile executable
       run: |
-        import os
-        import sys
-        import subprocess
+        echo "📦 Creating onefile executable..."
         
-        # UTF-8 encoding için stdout'u ayarla
-        sys.stdout.reconfigure(encoding='utf-8')
+        # Onefile build için
+        pyinstaller BUPILIC_ANA_PROGRAM.py `
+          --name "${{ env.APP_NAME }}" `
+          --onefile `
+          --windowed `
+          --icon "build/app_icon.ico" `
+          --add-data "ISKONTO_HESABI;ISKONTO_HESABI" `
+          --add-data "KARLILIK_ANALIZI;KARLILIK_ANALIZI" `
+          --add-data "Musteri_Sayisi_Kontrolu;Musteri_Sayisi_Kontrolu" `
+          --add-data "YASLANDIRMA;YASLANDIRMA" `
+          --add-data "icon;icon" `
+          --hidden-import "customtkinter" `
+          --hidden-import "PIL._tkinter_finder" `
+          --hidden-import "pandas" `
+          --hidden-import "numpy" `
+          --hidden-import "matplotlib" `
+          --hidden-import "matplotlib.backends.backend_tkagg" `
+          --hidden-import "tkinter" `
+          --hidden-import "tkinter.filedialog" `
+          --hidden-import "tkinter.messagebox" `
+          --hidden-import "os" `
+          --hidden-import "sys" `
+          --hidden-import "subprocess" `
+          --hidden-import "threading" `
+          --hidden-import "json" `
+          --hidden-import "logging" `
+          --hidden-import "locale" `
+          --hidden-import "datetime" `
+          --hidden-import "openpyxl" `
+          --hidden-import "xlsxwriter" `
+          --hidden-import "xlrd" `
+          --hidden-import "xlwt" `
+          --hidden-import "psutil" `
+          --collect-all "customtkinter" `
+          --collect-all "PIL" `
+          --collect-all "pandas" `
+          --collect-all "numpy" `
+          --collect-all "matplotlib" `
+          --clean `
+          --noconfirm
         
-        # Check if one-dir build exists
-        exe_path = f"dist/{os.environ['APP_NAME']}/{os.environ['APP_NAME']}.exe"
-        
-        if os.path.exists(exe_path):
-            print(f"[SUCCESS] One-dir executable found at: {exe_path}")
-            
-            # Create spec file for onefile build
-            spec_content = f"""# -*- mode: python ; coding: utf-8 -*-
-        import sys
-        from pathlib import Path
-        
-        block_cipher = None
-        
-        app_name = "{os.environ['APP_NAME']}"
-        main_script = "BUPILIC_ANA_PROGRAM.py"
-        icon_path = "build/app_icon.ico"
-        
-        datas = [
-            ('ISKONTO_HESABI', 'ISKONTO_HESABI/'),
-            ('KARLILIK_ANALIZI', 'KARLILIK_ANALIZI/'),  
-            ('Musteri_Sayisi_Kontrolu', 'Musteri_Sayisi_Kontrolu/'),
-            ('YASLANDIRMA', 'YASLANDIRMA/'),
-            ('icon', 'icon/'),
-        ]
-        
-        hiddenimports = [
-            'customtkinter',
-            'tkinter',
-            'tkinter.filedialog',
-            'tkinter.messagebox',
-            'PIL._tkinter_finder',
-            'PIL.ImageTk',
-            'PIL.Image',
-            'pandas',
-            'numpy',
-            'matplotlib',
-            'matplotlib.backends.backend_tkagg',
-            'seaborn',
-            'openpyxl',
-            'xlsxwriter',
-            'xlrd',
-            'xlwt',
-            'psutil',
-            'subprocess',
-            'threading',
-            'json',
-            'logging',
-            'locale',
-            'datetime',
-            'os',
-            'sys',
-        ]
-        
-        a = Analysis(
-            [main_script],
-            pathex=[],
-            binaries=[],
-            datas=datas,
-            hiddenimports=hiddenimports,
-            hookspath=[],
-            hooksconfig={{}},
-            runtime_hooks=[],
-            excludes=[
-                'test',
-                'tests',
-                'unittest',
-                'distutils',
-                'setuptools',
-            ],
-            win_no_prefer_redirects=False,
-            win_private_assemblies=False,
-            cipher=block_cipher,
-            noarchive=False,
-        )
-        
-        pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
-        
-        exe = EXE(
-            pyz,
-            a.scripts,
-            a.binaries,
-            a.zipfiles,
-            a.datas,
-            [],
-            name=app_name,
-            debug=False,
-            bootloader_ignore_signals=False,
-            strip=False,
-            upx=False,
-            upx_exclude=[],
-            runtime_tmpdir=None,
-            console=False,
-            disable_windowed_traceback=False,
-            argv_emulation=False,
-            target_arch=None,
-            codesign_identity=None,
-            entitlements_file=None,
-            icon=icon_path,
-            version_file=None,
-        )
-        """
-            
-            # Write spec file
-            os.makedirs("build", exist_ok=True)
-            with open("build/onefile.spec", "w", encoding="utf-8") as f:
-                f.write(spec_content)
-            
-            print("[INFO] Spec file created, building onefile executable...")
-            
-            # Build onefile - direkt pyinstaller komutu kullan
-            result = subprocess.run([
-                "pyinstaller", "BUPILIC_ANA_PROGRAM.py",
-                "--name", os.environ['APP_NAME'],
-                "--onefile", "--windowed",
-                "--icon", "build/app_icon.ico",
-                "--add-data", "ISKONTO_HESABI;ISKONTO_HESABI",
-                "--add-data", "KARLILIK_ANALIZI;KARLILIK_ANALIZI",
-                "--add-data", "Musteri_Sayisi_Kontrolu;Musteri_Sayisi_Kontrolu",
-                "--add-data", "YASLANDIRMA;YASLANDIRMA",
-                "--add-data", "icon;icon",
-                "--hidden-import", "customtkinter",
-                "--hidden-import", "PIL._tkinter_finder",
-                "--hidden-import", "pandas",
-                "--hidden-import", "numpy",
-                "--hidden-import", "matplotlib",
-                "--exclude-module", "pandas.tests",
-                "--clean", "--noconfirm"
-            ])
-            
-            if result.returncode == 0:
-                print("[SUCCESS] Onefile build completed!")
-            else:
-                print(f"[ERROR] Onefile build failed")
-                print("Running fallback build...")
-                subprocess.run([
-                    "pyinstaller", "BUPILIC_ANA_PROGRAM.py",
-                    "--name", os.environ['APP_NAME'],
-                    "--onefile", "--windowed",
-                    "--icon", "build/app_icon.ico",
-                    "--add-data", "ISKONTO_HESABI;ISKONTO_HESABI",
-                    "--add-data", "KARLILIK_ANALIZI;KARLILIK_ANALIZI",
-                    "--add-data", "Musteri_Sayisi_Kontrolu;Musteri_Sayisi_Kontrolu",
-                    "--add-data", "YASLANDIRMA;YASLANDIRMA",
-                    "--add-data", "icon;icon",
-                    "--hidden-import", "customtkinter",
-                    "--hidden-import", "PIL._tkinter_finder",
-                    "--hidden-import", "pandas",
-                    "--hidden-import", "numpy",
-                    "--hidden-import", "matplotlib",
-                    "--clean", "--noconfirm"
-                ])
-        else:
-            print(f"[ERROR] One-dir executable not found at: {exe_path}")
-            print("Running direct onefile build...")
-            subprocess.run([
-                "pyinstaller", "BUPILIC_ANA_PROGRAM.py",
-                "--name", os.environ['APP_NAME'],
-                "--onefile", "--windowed",
-                "--icon", "build/app_icon.ico",
-                "--add-data", "ISKONTO_HESABI;ISKONTO_HESABI",
-                "--add-data", "KARLILIK_ANALIZI;KARLILIK_ANALIZI",
-                "--add-data", "Musteri_Sayisi_Kontrolu;Musteri_Sayisi_Kontrolu",
-                "--add-data", "YASLANDIRMA;YASLANDIRMA",
-                "--add-data", "icon;icon",
-                "--hidden-import", "customtkinter",
-                "--clean", "--noconfirm"
-            ])
+        echo "✅ Onefile build completed!"
 
     - name: 🏷️ Rename executable
       run: |
@@ -441,7 +328,7 @@ jobs:
           commit = "${{ github.sha }}"
           branch = "${{ github.ref_name }}"
           build_type = "onefile"
-          dll_included = "true"
+          modules_included = "all"
         }
         
         $buildInfo | ConvertTo-Json | Out-File -FilePath "dist/build-info-${{ matrix.arch }}.json" -Encoding UTF8
@@ -455,10 +342,10 @@ jobs:
           echo "✅ Executable found: $($exe.Name)"
           echo "📊 Size: $([math]::Round($exe.Length / 1MB, 2)) MB"
           
-          # Normal boyut kontrolü (50-150 MB arası bekleniyor)
+          # Normal boyut kontrolü (100-200 MB arası bekleniyor)
           $sizeMB = [math]::Round($exe.Length / 1MB, 2)
-          if ($sizeMB -lt 20) {
-            echo "⚠️ WARNING: Executable size is too small ($sizeMB MB). DLL files might be missing."
+          if ($sizeMB -lt 50) {
+            echo "⚠️ WARNING: Executable size is too small ($sizeMB MB). Modules might be missing."
           } else {
             echo "✅ Executable size is normal ($sizeMB MB)"
           }
@@ -517,7 +404,7 @@ jobs:
         ### 🔧 Teknik Detaylar
         - **Python**: 3.10
         - **GUI**: CustomTkinter 5.2.2
-        - **Build**: PyInstaller (DLL included)
+        - **Build**: PyInstaller (tüm modüller dahil)
         - **Boyut**: ~100-200 MB (tüm bağımlılıklar dahil)
         
         ### 📥 İndirme
