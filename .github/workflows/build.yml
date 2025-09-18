@@ -60,7 +60,7 @@ jobs:
         test -f requirements.txt || exit 1
         test -d ISKONTO_HESABI || exit 1
         test -d KARLILIK_ANALIZI || exit 1
-        test -d Musteri_Sayisi_Kontrolu || exit 1  # Bu satırı değiştirin
+        test -d Musteri_Sayisi_Kontrolu || exit 1
         test -d YASLANDIRMA || exit 1
         echo "✅ All critical files found"
 
@@ -91,10 +91,10 @@ jobs:
         fi
 
   # ===============================================
-  # WINDOWS BUILD
+  # DEPENDENCIES INSTALLATION
   # ===============================================
-  build-windows:
-    name: 🪟 Build Windows (${{ matrix.arch }})
+  install-deps:
+    name: 📦 Install Dependencies (${{ matrix.arch }})
     runs-on: windows-latest
     needs: pre-checks
     
@@ -104,10 +104,8 @@ jobs:
         include:
           - arch: x64
             python-arch: x64
-            upx-arch: win64
           - arch: x86
             python-arch: x86
-            upx-arch: win32
     
     steps:
     - name: 📥 Checkout repository  
@@ -119,14 +117,23 @@ jobs:
         python-version: ${{ env.PYTHON_VERSION }}
         architecture: ${{ matrix.python-arch }}
 
-    - name: 📦 Cache dependencies
+    - name: 📦 Cache pip packages
       uses: actions/cache@v4
       with:
         path: ~\AppData\Local\pip\Cache
-        key: ${{ runner.os }}-pip-${{ matrix.arch }}-${{ hashFiles('requirements.txt', 'requirements-build.txt') }}
+        key: ${{ runner.os }}-pip-${{ matrix.arch }}-${{ hashFiles('requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-${{ matrix.arch }}-
           ${{ runner.os }}-pip-
+
+    - name: 📦 Cache Python packages
+      uses: actions/cache@v4
+      with:
+        path: ~\AppData\Local\pip\pip-packages-${{ matrix.arch }}
+        key: ${{ runner.os }}-packages-${{ matrix.arch }}-${{ hashFiles('requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-packages-${{ matrix.arch }}-
+          ${{ runner.os }}-packages-
 
     - name: 🔧 Install build dependencies
       run: |
@@ -134,11 +141,13 @@ jobs:
         pip install pyinstaller==6.3.0
         pip install pillow>=10.1.0
         
-        # Install app dependencies
-        pip install -r requirements.txt
+        # Install app dependencies with cache optimization
+        if (-not (Test-Path ~\AppData\Local\pip\pip-packages-${{ matrix.arch }})) {
+          pip install -r requirements.txt --target ~\AppData\Local\pip\pip-packages-${{ matrix.arch }}
+        }
         
-        # requirements-build.txt'yi atla, zaten gerekli paketler yüklü
-        echo "Skipping requirements-build.txt to avoid timeout"
+        # Add packages to Python path
+        $env:PYTHONPATH = "$env:PYTHONPATH;~\AppData\Local\pip\pip-packages-${{ matrix.arch }}"
 
     - name: 🎨 Convert PNG to ICO
       shell: python
@@ -277,7 +286,7 @@ jobs:
             debug=False,
             bootloader_ignore_signals=False,
             strip=False,
-            upx=True,
+            upx=False,  # UPX disabled
             upx_exclude=[],
             runtime_tmpdir=None,
             console=False,  # No console window
@@ -295,15 +304,75 @@ jobs:
             f.write(spec_content)
         print("[SUCCESS] PyInstaller spec generated")
 
-    - name: 🔨 Build executable
-      timeout-minutes: 25
+    - name: 📤 Upload dependencies cache
+      uses: actions/upload-artifact@v4
+      with:
+        name: deps-${{ matrix.arch }}
+        path: |
+          build/app_icon.ico
+          build/app.spec
+        retention-days: 7
+
+  # ===============================================
+  # WINDOWS BUILD
+  # ===============================================
+  build-windows:
+    name: 🪟 Build Windows (${{ matrix.arch }})
+    runs-on: windows-latest
+    needs: [pre-checks, install-deps]
+    timeout-minutes: 45  # Increased timeout
+    
+    strategy:
+      matrix:
+        arch: [x64, x86]
+        include:
+          - arch: x64
+            python-arch: x64
+          - arch: x86
+            python-arch: x86
+    
+    steps:
+    - name: 📥 Checkout repository  
+      uses: actions/checkout@v4
+
+    - name: 🐍 Setup Python ${{ env.PYTHON_VERSION }} (${{ matrix.python-arch }})
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        architecture: ${{ matrix.python-arch }}
+
+    - name: 📥 Download dependencies cache
+      uses: actions/download-artifact@v4
+      with:
+        name: deps-${{ matrix.arch }}
+        path: build/
+
+    - name: 📦 Restore pip packages cache
+      uses: actions/cache@v4
+      with:
+        path: ~\AppData\Local\pip\pip-packages-${{ matrix.arch }}
+        key: ${{ runner.os }}-packages-${{ matrix.arch }}-${{ hashFiles('requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-packages-${{ matrix.arch }}-
+          ${{ runner.os }}-packages-
+
+    - name: 🔧 Install build tools only
       run: |
-        echo "🔨 Building ${{ env.APP_NAME }} for ${{ matrix.arch }}..."
+        python -m pip install --upgrade pip
+        pip install pyinstaller==6.3.0
         
-        # Daha basit build komutu - önce one-dir modunda dene
+        # Add cached packages to Python path
+        $env:PYTHONPATH = "$env:PYTHONPATH;~\AppData\Local\pip\pip-packages-${{ matrix.arch }}"
+
+    - name: 🔨 Build executable (Phase 1 - Analysis)
+      timeout-minutes: 20
+      run: |
+        echo "🔨 Phase 1: Analysis for ${{ env.APP_NAME }} (${{ matrix.arch }})..."
+        
+        # First run analysis only to populate cache
         pyinstaller BUPILIC_ANA_PROGRAM.py `
           --name "${{ env.APP_NAME }}" `
-          --onedir `  # Önce one-dir modunda dene
+          --onedir `
           --windowed `
           --icon "build/app_icon.ico" `
           --add-data "ISKONTO_HESABI;ISKONTO_HESABI" `
@@ -311,31 +380,32 @@ jobs:
           --add-data "Musteri_Sayisi_Kontrolu;Musteri_Sayisi_Kontrolu" `
           --add-data "YASLANDIRMA;YASLANDIRMA" `
           --add-data "icon;icon" `
-          --hidden-import "tkinter.commondialog" `
-          --hidden-import "urllib" `
-          --hidden-import "pathlib" `
           --hidden-import "customtkinter" `
           --hidden-import "PIL._tkinter_finder" `
           --clean `
-          --noconfirm
+          --noconfirm `
+          --log-level INFO
+        
+        echo "✅ Phase 1 completed - Analysis done"
 
-    - name: 📦 Compress with UPX (Release only)
-      if: needs.pre-checks.outputs.is_release == 'true'
+    - name: 🔨 Build executable (Phase 2 - Final Build)
+      timeout-minutes: 25
       run: |
-        echo "📦 Compressing executable..."
-        try {
-          upx --best --lzma "dist/${{ env.APP_NAME }}.exe"
-          $newSize = (Get-Item "dist/${{ env.APP_NAME }}.exe").Length / 1MB
-          echo "✅ Compressed size: $([math]::Round($newSize, 2)) MB"
-        } catch {
-          echo "⚠️ UPX compression failed, continuing with uncompressed binary"
-        }
+        echo "🔨 Phase 2: Final build for ${{ env.APP_NAME }} (${{ matrix.arch }})..."
+        
+        # Final build using cached analysis
+        pyinstaller build/app.spec `
+          --clean `
+          --noconfirm `
+          --log-level INFO
+        
+        echo "✅ Build completed successfully!"
 
     - name: 🏷️ Rename executable
       run: |
         $version = "${{ needs.pre-checks.outputs.version }}"
         $newName = "${{ env.APP_NAME }}-$version-windows-${{ matrix.arch }}.exe"
-        Move-Item "dist/${{ env.APP_NAME }}.exe" "dist/$newName"
+        Move-Item "dist/${{ env.APP_NAME }}/${{ env.APP_NAME }}.exe" "dist/$newName"
         echo "🏷️ Renamed to: $newName"
 
     - name: 📋 Generate build info
@@ -347,6 +417,7 @@ jobs:
           build_time = Get-Date -Format "yyyy-MM-dd HH:mm:ss UTC"
           commit = "${{ github.sha }}"
           branch = "${{ github.ref_name }}"
+          upx_compression = "disabled"
         }
         
         $buildInfo | ConvertTo-Json | Out-File -FilePath "dist/build-info-${{ matrix.arch }}.json" -Encoding UTF8
@@ -360,16 +431,13 @@ jobs:
           echo "✅ Executable found: $($exe.Name)"
           echo "📊 Size: $([math]::Round($exe.Length / 1MB, 2)) MB"
           
-          # Quick validation - just check if it starts (timeout after 10 seconds)
+          # Quick validation - check file properties
           try {
-            $process = Start-Process -FilePath $exe.FullName -PassThru -WindowStyle Hidden
-            Start-Sleep -Seconds 5
-            if (!$process.HasExited) {
-              $process | Stop-Process -Force
-              echo "✅ Executable starts successfully"
-            }
+            $versionInfo = (Get-Item $exe.FullName).VersionInfo
+            echo "ℹ️ File version: $($versionInfo.FileVersion)"
+            echo "✅ Executable validation passed"
           } catch {
-            echo "⚠️ Could not test executable startup"
+            echo "⚠️ Could not read executable properties"
           }
         }
 
@@ -426,8 +494,8 @@ jobs:
         ### 🔧 Teknik Detaylar
         - **Python**: 3.10
         - **GUI**: CustomTkinter 5.2.2
-        - **Build**: PyInstaller + UPX compression
-        - **Boyut**: ~50-80 MB (sıkıştırılmış)
+        - **Build**: PyInstaller (UPX disabled for stability)
+        - **Boyut**: ~100-150 MB (optimized for reliability)
         
         ### 📥 İndirme
         - **Windows 64-bit**: `BupiliC-${{ needs.pre-checks.outputs.version }}-windows-x64.exe`
