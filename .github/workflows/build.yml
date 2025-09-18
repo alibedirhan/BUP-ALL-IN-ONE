@@ -299,22 +299,12 @@ jobs:
 
     - name: 🔨 Build executable
       run: |
+        # hooks dizinini oluştur
+        New-Item -ItemType Directory -Path "hooks" -Force
+        echo "✅ Hooks directory created"
+        
         echo "🔨 Building ${{ env.APP_NAME }} for ${{ matrix.arch }}..."
-        
-        # Manuel spec dosyası kullan
-        pyinstaller bupilic.spec --clean --noconfirm
-        
-        # Check if build succeeded
-        if (Test-Path "dist/${{ env.APP_NAME }}.exe") {
-          echo "✅ Build successful!"
-          
-          # Get file size
-          $fileSize = (Get-Item "dist/${{ env.APP_NAME }}.exe").Length / 1MB
-          echo "📊 Executable size: $([math]::Round($fileSize, 2)) MB"
-        } else {
-          echo "❌ Build failed - executable not found"
-          exit 1
-        }
+        pyinstaller bupilic.spec --clean --noconfirm --additional-hooks-dir=hooks
 
     - name: 📦 Compress with UPX (Release only)
       if: needs.pre-checks.outputs.is_release == 'true'
