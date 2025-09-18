@@ -296,13 +296,28 @@ jobs:
         print("[SUCCESS] PyInstaller spec generated")
 
     - name: 🔨 Build executable
+      timeout-minutes: 25
       run: |
-        # hooks dizinini oluştur
-        New-Item -ItemType Directory -Path "hooks" -Force
-        echo "✅ Hooks directory created"
-        
         echo "🔨 Building ${{ env.APP_NAME }} for ${{ matrix.arch }}..."
-        pyinstaller bupilic.spec --clean --noconfirm
+        
+        # Daha basit build komutu - önce one-dir modunda dene
+        pyinstaller BUPILIC_ANA_PROGRAM.py `
+          --name "${{ env.APP_NAME }}" `
+          --onedir `  # Önce one-dir modunda dene
+          --windowed `
+          --icon "build/app_icon.ico" `
+          --add-data "ISKONTO_HESABI;ISKONTO_HESABI" `
+          --add-data "KARLILIK_ANALIZI;KARLILIK_ANALIZI" `
+          --add-data "Musteri_Sayisi_Kontrolu;Musteri_Sayisi_Kontrolu" `
+          --add-data "YASLANDIRMA;YASLANDIRMA" `
+          --add-data "icon;icon" `
+          --hidden-import "tkinter.commondialog" `
+          --hidden-import "urllib" `
+          --hidden-import "pathlib" `
+          --hidden-import "customtkinter" `
+          --hidden-import "PIL._tkinter_finder" `
+          --clean `
+          --noconfirm
 
     - name: 📦 Compress with UPX (Release only)
       if: needs.pre-checks.outputs.is_release == 'true'
