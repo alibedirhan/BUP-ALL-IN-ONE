@@ -133,7 +133,14 @@ jobs:
         python -m pip install --upgrade pip setuptools wheel
         pip install pyinstaller==6.3.0
         pip install pillow>=10.1.0
-        pip install upx-python
+        
+        # UPX'i manuel olarak indir ve kur
+        echo "📦 Downloading UPX..."
+        Invoke-WebRequest -Uri "https://github.com/upx/upx/releases/download/v4.2.4/upx-4.2.4-win64.zip" -OutFile "upx.zip"
+        Expand-Archive -Path "upx.zip" -DestinationPath "upx-temp"
+        Move-Item -Path "upx-temp/upx-4.2.4-win64/upx.exe" -Destination "C:/Windows/System32/upx.exe" -Force
+        Remove-Item -Path "upx.zip", "upx-temp" -Recurse -Force
+        echo "✅ UPX installed successfully"
         
         # Install app dependencies
         pip install -r requirements.txt
