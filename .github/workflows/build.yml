@@ -91,12 +91,13 @@ jobs:
         fi
 
   # ===============================================
-  # DEPENDENCIES INSTALLATION
+  # WINDOWS BUILD
   # ===============================================
-  install-deps:
-    name: 📦 Install Dependencies (${{ matrix.arch }})
+  build-windows:
+    name: 🪟 Build Windows (${{ matrix.arch }})
     runs-on: windows-latest
     needs: pre-checks
+    timeout-minutes: 45
     
     strategy:
       matrix:
@@ -132,32 +133,21 @@ jobs:
         pip install pyinstaller==6.3.0
         pip install pillow>=10.1.0
 
-    - name: 📦 Install pre-built packages (optimized)
+    - name: 📦 Install application dependencies
       run: |
-        echo "📦 Installing pre-built packages for ${{ matrix.arch }}..."
+        echo "📦 Installing dependencies for ${{ matrix.arch }}..."
         
-        # Öncelikle wheel paketlerini kur
+        # Önce build tools
         pip install wheel
         
-        # Mimariye uygun pre-built paketleri kur
-        if ("${{ matrix.arch }}" -eq "x86") {
-          # 32-bit için uygun paketler
-          pip install pandas==2.1.4 --only-binary=:all: --platform win32 --python-version 3.10 --implementation cp
-          pip install numpy==1.26.4 --only-binary=:all: --platform win32 --python-version 3.10 --implementation cp
-        } else {
-          # 64-bit için uygun paketler
-          pip install pandas==2.1.4 --only-binary=:all: --platform win_amd64 --python-version 3.10 --implementation cp
-          pip install numpy==1.26.4 --only-binary=:all: --platform win_amd64 --python-version 3.10 --implementation cp
-        }
+        # Tüm paketleri normal şekilde kur (PyInstaller DLL'leri otomatik olarak yakalayacak)
+        pip install -r requirements.txt
         
-        # Diğer paketleri kur (build gerektirmeyenler)
-        pip install customtkinter==5.2.2
-        pip install tkinter-page==0.0.5
+        # Ek gerekli paketler
+        pip install pandas==2.1.4
+        pip install numpy==1.26.4
         pip install matplotlib==3.8.0
         pip install seaborn==0.13.2
-        pip install openpyxl==3.1.2
-        pip install xlsxwriter==3.1.9
-        pip install psutil==5.9.6
 
     - name: 🎨 Convert PNG to ICO
       shell: python
@@ -206,171 +196,15 @@ jobs:
         
         convert_png_to_ico()
 
-    - name: 📝 Generate PyInstaller spec
-      shell: python
-      run: |
-        spec_content = '''# -*- mode: python ; coding: utf-8 -*-
-        import sys
-        from pathlib import Path
-        
-        block_cipher = None
-        
-        # Define paths
-        app_name = "BupiliC"
-        main_script = "BUPILIC_ANA_PROGRAM.py"
-        icon_path = "build/app_icon.ico"
-        
-        # Data files to include
-        datas = [
-            ('ISKONTO_HESABI', 'ISKONTO_HESABI/'),
-            ('KARLILIK_ANALIZI', 'KARLILIK_ANALIZI/'),  
-            ('Musteri_Sayisi_Kontrolu', 'Musteri_Sayisi_Kontrolu/'),
-            ('YASLANDIRMA', 'YASLANDIRMA/'),
-            ('icon', 'icon/'),
-        ]
-        
-        # Hidden imports for CustomTkinter and dependencies
-        hiddenimports = [
-            'customtkinter',
-            'tkinter',
-            'tkinter.filedialog',
-            'tkinter.messagebox',
-            'PIL._tkinter_finder',
-            'PIL.ImageTk',
-            'PIL.Image',
-            'pandas',
-            'numpy',
-            'matplotlib',
-            'matplotlib.backends.backend_tkagg',
-            'seaborn',
-            'openpyxl',
-            'xlsxwriter',
-            'xlrd',
-            'xlwt',
-            'psutil',
-            'subprocess',
-            'threading',
-            'json',
-            'logging',
-            'locale',
-            'datetime',
-            'os',
-            'sys',
-        ]
-        
-        # Analysis
-        a = Analysis(
-            [main_script],
-            pathex=[],
-            binaries=[],
-            datas=datas,
-            hiddenimports=hiddenimports,
-            hookspath=[],
-            hooksconfig={},
-            runtime_hooks=[],
-            excludes=[
-                'test',
-                'tests',
-                'unittest',
-                'distutils',
-                'setuptools',
-            ],
-            win_no_prefer_redirects=False,
-            win_private_assemblies=False,
-            cipher=block_cipher,
-            noarchive=False,
-        )
-        
-        # Remove duplicate binaries
-        pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
-        
-        # Create executable
-        exe = EXE(
-            pyz,
-            a.scripts,
-            a.binaries,
-            a.zipfiles,
-            a.datas,
-            [],
-            name=app_name,
-            debug=False,
-            bootloader_ignore_signals=False,
-            strip=False,
-            upx=False,  # UPX disabled
-            upx_exclude=[],
-            runtime_tmpdir=None,
-            console=False,  # No console window
-            disable_windowed_traceback=False,
-            argv_emulation=False,
-            target_arch=None,
-            codesign_identity=None,
-            entitlements_file=None,
-            icon=icon_path,
-            version_file=None,
-        )
-        '''
-        
-        with open('build/app.spec', 'w', encoding='utf-8') as f:
-            f.write(spec_content)
-        print("[SUCCESS] PyInstaller spec generated")
-
-    - name: 📤 Upload dependencies cache
-      uses: actions/upload-artifact@v4
-      with:
-        name: deps-${{ matrix.arch }}
-        path: |
-          build/app_icon.ico
-          build/app.spec
-        retention-days: 7
-
-  # ===============================================
-  # WINDOWS BUILD
-  # ===============================================
-  build-windows:
-    name: 🪟 Build Windows (${{ matrix.arch }})
-    runs-on: windows-latest
-    needs: [pre-checks, install-deps]
-    timeout-minutes: 45
-    
-    strategy:
-      matrix:
-        arch: [x64, x86]
-        include:
-          - arch: x64
-            python-arch: x64
-          - arch: x86
-            python-arch: x86
-    
-    steps:
-    - name: 📥 Checkout repository  
-      uses: actions/checkout@v4
-
-    - name: 🐍 Setup Python ${{ env.PYTHON_VERSION }} (${{ matrix.python-arch }})
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-        architecture: ${{ matrix.python-arch }}
-
-    - name: 📥 Download dependencies cache
-      uses: actions/download-artifact@v4
-      with:
-        name: deps-${{ matrix.arch }}
-        path: build/
-
-    - name: 🔧 Install build tools only
-      run: |
-        python -m pip install --upgrade pip
-        pip install pyinstaller==6.3.0
-
-    - name: 🔨 Build executable (Single Step)
+    - name: 🔨 Build executable with proper DLL handling
       timeout-minutes: 30
       run: |
         echo "🔨 Building ${{ env.APP_NAME }} for ${{ matrix.arch }}..."
         
-        # Tek adımda build - daha güvenilir
+        # DLL sorunlarını çözmek için daha kapsamlı build komutu
         pyinstaller BUPILIC_ANA_PROGRAM.py `
           --name "${{ env.APP_NAME }}" `
-          --onedir `
+          --onedir `  # Önce one-dir modunda build et (DLL'leri görmek için)
           --windowed `
           --icon "build/app_icon.ico" `
           --add-data "ISKONTO_HESABI;ISKONTO_HESABI" `
@@ -383,17 +217,179 @@ jobs:
           --hidden-import "pandas" `
           --hidden-import "numpy" `
           --hidden-import "matplotlib" `
+          --hidden-import "matplotlib.backends.backend_tkagg" `
+          --hidden-import "tkinter" `
+          --hidden-import "tkinter.filedialog" `
+          --hidden-import "tkinter.messagebox" `
+          --hidden-import "os" `
+          --hidden-import "sys" `
+          --hidden-import "json" `
+          --hidden-import "logging" `
+          --collect-all "customtkinter" `
+          --collect-all "PIL" `
+          --collect-all "pandas" `
+          --collect-all "numpy" `
           --clean `
           --noconfirm
         
-        echo "✅ Build completed successfully!"
+        echo "✅ One-dir build completed successfully!"
+
+    - name: 📦 Create onefile executable from onedir
+      run: |
+        echo "📦 Creating onefile executable from onedir..."
+        
+        # Önce one-dir build'in çalıştığını kontrol et
+        $exePath = "dist/${{ env.APP_NAME }}/${{ env.APP_NAME }}.exe"
+        if (Test-Path $exePath) {
+          echo "✅ One-dir executable found, testing..."
+          
+          # Onefile build için spec dosyası oluştur
+          $specContent = @"
+# -*- mode: python ; coding: utf-8 -*-
+import sys
+from pathlib import Path
+
+block_cipher = None
+
+# Define paths
+app_name = "${{ env.APP_NAME }}"
+main_script = "BUPILIC_ANA_PROGRAM.py"
+icon_path = "build/app_icon.ico"
+
+# Data files to include
+datas = [
+    ('ISKONTO_HESABI', 'ISKONTO_HESABI/'),
+    ('KARLILIK_ANALIZI', 'KARLILIK_ANALIZI/'),  
+    ('Musteri_Sayisi_Kontrolu', 'Musteri_Sayisi_Kontrolu/'),
+    ('YASLANDIRMA', 'YASLANDIRMA/'),
+    ('icon', 'icon/'),
+]
+
+# Hidden imports for CustomTkinter and dependencies
+hiddenimports = [
+    'customtkinter',
+    'tkinter',
+    'tkinter.filedialog',
+    'tkinter.messagebox',
+    'PIL._tkinter_finder',
+    'PIL.ImageTk',
+    'PIL.Image',
+    'pandas',
+    'numpy',
+    'matplotlib',
+    'matplotlib.backends.backend_tkagg',
+    'seaborn',
+    'openpyxl',
+    'xlsxwriter',
+    'xlrd',
+    'xlwt',
+    'psutil',
+    'subprocess',
+    'threading',
+    'json',
+    'logging',
+    'locale',
+    'datetime',
+    'os',
+    'sys',
+]
+
+# Analysis
+a = Analysis(
+    [main_script],
+    pathex=[],
+    binaries=[],
+    datas=datas,
+    hiddenimports=hiddenimports,
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=[
+        'test',
+        'tests',
+        'unittest',
+        'distutils',
+        'setuptools',
+    ],
+    win_no_prefer_redirects=False,
+    win_private_assemblies=False,
+    cipher=block_cipher,
+    noarchive=False,
+)
+
+# Remove duplicate binaries
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
+# Create executable - ONEFILE
+exe = EXE(
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    [],
+    name=app_name,
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=False,
+    upx_exclude=[],
+    runtime_tmpdir=None,
+    console=False,
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+    icon=icon_path,
+    version_file=None,
+)
+"@
+          
+          $specContent | Out-File -FilePath "build/onefile.spec" -Encoding UTF8
+          
+          # Onefile build yap
+          pyinstaller build/onefile.spec --clean --noconfirm
+          
+          echo "✅ Onefile build completed!"
+        } else {
+          echo "❌ One-dir executable not found, using onefile directly"
+          # Fallback: direkt onefile build
+          pyinstaller BUPILIC_ANA_PROGRAM.py `
+            --name "${{ env.APP_NAME }}" `
+            --onefile `
+            --windowed `
+            --icon "build/app_icon.ico" `
+            --add-data "ISKONTO_HESABI;ISKONTO_HESABI" `
+            --add-data "KARLILIK_ANALIZI;KARLILIK_ANALIZI" `
+            --add-data "Musteri_Sayisi_Kontrolu;Musteri_Sayisi_Kontrolu" `
+            --add-data "YASLANDIRMA;YASLANDIRMA" `
+            --add-data "icon;icon" `
+            --hidden-import "customtkinter" `
+            --hidden-import "PIL._tkinter_finder" `
+            --hidden-import "pandas" `
+            --hidden-import "numpy" `
+            --hidden-import "matplotlib" `
+            --clean `
+            --noconfirm
+        }
 
     - name: 🏷️ Rename executable
       run: |
         $version = "${{ needs.pre-checks.outputs.version }}"
         $newName = "${{ env.APP_NAME }}-$version-windows-${{ matrix.arch }}.exe"
-        Move-Item "dist/${{ env.APP_NAME }}/${{ env.APP_NAME }}.exe" "dist/$newName"
-        echo "🏷️ Renamed to: $newName"
+        
+        # Onefile executable'ı bul ve yeniden adlandır
+        $onefileExe = Get-ChildItem "dist/${{ env.APP_NAME }}.exe" -ErrorAction SilentlyContinue
+        if ($onefileExe) {
+          Move-Item $onefileExe.FullName "dist/$newName"
+          echo "🏷️ Renamed onefile to: $newName"
+        } else {
+          # One-dir executable'ı kullan
+          $onedirExe = Get-ChildItem "dist/${{ env.APP_NAME }}/${{ env.APP_NAME }}.exe"
+          Copy-Item $onedirExe.FullName "dist/$newName"
+          echo "🏷️ Copied onedir executable as: $newName"
+        }
 
     - name: 📋 Generate build info
       run: |
@@ -404,13 +400,14 @@ jobs:
           build_time = Get-Date -Format "yyyy-MM-dd HH:mm:ss UTC"
           commit = "${{ github.sha }}"
           branch = "${{ github.ref_name }}"
-          upx_compression = "disabled"
+          build_type = "onefile"
+          dll_included = "true"
         }
         
         $buildInfo | ConvertTo-Json | Out-File -FilePath "dist/build-info-${{ matrix.arch }}.json" -Encoding UTF8
         echo "📋 Build info generated"
 
-    - name: 🧪 Test executable
+    - name: 🧪 Test executable size and structure
       run: |
         echo "🧪 Testing executable..."
         $exe = Get-ChildItem "dist/*.exe" | Select-Object -First 1
@@ -418,13 +415,12 @@ jobs:
           echo "✅ Executable found: $($exe.Name)"
           echo "📊 Size: $([math]::Round($exe.Length / 1MB, 2)) MB"
           
-          # Quick validation - check file properties
-          try {
-            $versionInfo = (Get-Item $exe.FullName).VersionInfo
-            echo "ℹ️ File version: $($versionInfo.FileVersion)"
-            echo "✅ Executable validation passed"
-          } catch {
-            echo "⚠️ Could not read executable properties"
+          # Normal boyut kontrolü (50-150 MB arası bekleniyor)
+          $sizeMB = [math]::Round($exe.Length / 1MB, 2)
+          if ($sizeMB -lt 20) {
+            echo "⚠️ WARNING: Executable size is too small ($sizeMB MB). DLL files might be missing."
+          } else {
+            echo "✅ Executable size is normal ($sizeMB MB)"
           }
         }
 
@@ -481,8 +477,8 @@ jobs:
         ### 🔧 Teknik Detaylar
         - **Python**: 3.10
         - **GUI**: CustomTkinter 5.2.2
-        - **Build**: PyInstaller (UPX disabled for stability)
-        - **Boyut**: ~100-150 MB (optimized for reliability)
+        - **Build**: PyInstaller (DLL included)
+        - **Boyut**: ~100-200 MB (tüm bağımlılıklar dahil)
         
         ### 📥 İndirme
         - **Windows 64-bit**: `BupiliC-${{ needs.pre-checks.outputs.version }}-windows-x64.exe`
@@ -510,6 +506,10 @@ jobs:
         
         # Copy executables and rename
         find ./artifacts -name "*.exe" -exec cp {} release-assets/ \;
+        
+        # Boyut kontrolü
+        echo "📦 Executable sizes:"
+        ls -la release-assets/
         
         # Create portable ZIP package
         cd release-assets
