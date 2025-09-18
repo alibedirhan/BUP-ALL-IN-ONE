@@ -1,16 +1,7 @@
-# Build-specific requirements (requirements-build.txt)
+# Build-specific requirements
 pyinstaller==6.3.0
-# upx-python>=0.1.0  # Bu satırı kaldırın veya yorum satırı yapın
-auto-py-to-exe>=2.25.0
+pillow>=10.1.0
 
-# Additional development tools
+# Development tools (optional)
 setuptools>=65.0.0
 wheel>=0.38.0
-twine>=4.0.0
-
-# Icon processing
-Pillow>=10.1.0
-
-# Testing tools (optional)
-pytest>=7.0.0
-pytest-cov>=4.0.0

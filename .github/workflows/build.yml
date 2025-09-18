@@ -137,10 +137,8 @@ jobs:
         # Install app dependencies
         pip install -r requirements.txt
         
-        # Install build requirements (if file exists)
-        if (Test-Path "requirements-build.txt") {
-          pip install -r requirements-build.txt
-        }
+        # requirements-build.txt'yi atla, zaten gerekli paketler yüklü
+        echo "Skipping requirements-build.txt to avoid timeout"
 
     - name: 🎨 Convert PNG to ICO
       shell: python
