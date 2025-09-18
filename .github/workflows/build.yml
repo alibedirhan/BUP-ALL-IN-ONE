@@ -56,38 +56,12 @@ jobs:
     - name: 📋 Check files exist
       run: |
         echo "🔍 Checking critical files..."
-        
-        # Check each file individually with error messages
-        if [ ! -f "BUPILIC_ANA_PROGRAM.py" ]; then
-          echo "❌ BUPILIC_ANA_PROGRAM.py not found"
-          exit 1
-        fi
-        
-        if [ ! -f "requirements.txt" ]; then
-          echo "❌ requirements.txt not found"
-          exit 1
-        fi
-        
-        if [ ! -d "ISKONTO_HESABI" ]; then
-          echo "❌ ISKONTO_HESABI directory not found"
-          exit 1
-        fi
-        
-        if [ ! -d "KARLILIK_ANALIZI" ]; then
-          echo "❌ KARLILIK_ANALIZI directory not found"
-          exit 1
-        fi
-        
-        if [ ! -d "MUSTERI_SAYISI_KONTROLU" ]; then
-          echo "❌ MUSTERI_SAYISI_KONTROLU directory not found"
-          exit 1
-        fi
-        
-        if [ ! -d "YASLANDIRMA" ]; then
-          echo "❌ YASLANDIRMA directory not found"
-          exit 1
-        fi
-        
+        test -f BUPILIC_ANA_PROGRAM.py || exit 1
+        test -f requirements.txt || exit 1
+        test -d ISKONTO_HESABI || exit 1
+        test -d KARLILIK_ANALIZI || exit 1
+        test -d Musteri_Sayisi_Kontrolu || exit 1  # Bu satırı değiştirin
+        test -d YASLANDIRMA || exit 1
         echo "✅ All critical files found"
 
     - name: 🏷️ Determine version
@@ -327,7 +301,9 @@ jobs:
     - name: 🔨 Build executable
       run: |
         echo "🔨 Building ${{ env.APP_NAME }} for ${{ matrix.arch }}..."
-        pyinstaller build/app.spec --clean --noconfirm
+        
+        # Manuel spec dosyası kullan
+        pyinstaller bupilic.spec --clean --noconfirm
         
         # Check if build succeeded
         if (Test-Path "dist/${{ env.APP_NAME }}.exe") {
