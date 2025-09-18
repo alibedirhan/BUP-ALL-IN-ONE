@@ -1,6 +1,6 @@
 # Build-specific requirements (requirements-build.txt)
 pyinstaller==6.3.0
-upx-python>=0.1.0
+# upx-python>=0.1.0  # Bu satırı kaldırın veya yorum satırı yapın
 auto-py-to-exe>=2.25.0
 
 # Additional development tools
