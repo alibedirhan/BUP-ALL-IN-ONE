@@ -235,13 +235,17 @@ jobs:
       shell: python
       run: |
         import os
+        import sys
         import subprocess
+        
+        # UTF-8 encoding için stdout'u ayarla
+        sys.stdout.reconfigure(encoding='utf-8')
         
         # Check if one-dir build exists
         exe_path = f"dist/{os.environ['APP_NAME']}/{os.environ['APP_NAME']}.exe"
         
         if os.path.exists(exe_path):
-            print(f"✅ One-dir executable found at: {exe_path}")
+            print(f"[SUCCESS] One-dir executable found at: {exe_path}")
             
             # Create spec file for onefile build
             spec_content = f"""# -*- mode: python ; coding: utf-8 -*-
@@ -344,7 +348,7 @@ jobs:
             with open("build/onefile.spec", "w", encoding="utf-8") as f:
                 f.write(spec_content)
             
-            print("📝 Spec file created, building onefile executable...")
+            print("[INFO] Spec file created, building onefile executable...")
             
             # Build onefile
             result = subprocess.run(
@@ -354,9 +358,9 @@ jobs:
             )
             
             if result.returncode == 0:
-                print("✅ Onefile build completed!")
+                print("[SUCCESS] Onefile build completed!")
             else:
-                print(f"❌ Onefile build failed: {result.stderr}")
+                print(f"[ERROR] Onefile build failed: {result.stderr}")
                 # Fallback to direct command
                 print("Trying direct onefile build...")
                 subprocess.run([
@@ -377,7 +381,7 @@ jobs:
                     "--clean", "--noconfirm"
                 ])
         else:
-            print(f"❌ One-dir executable not found at: {exe_path}")
+            print(f"[ERROR] One-dir executable not found at: {exe_path}")
             print("Running direct onefile build...")
             subprocess.run([
                 "pyinstaller", "BUPILIC_ANA_PROGRAM.py",
