@@ -81,7 +81,7 @@ jobs:
         if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/tags/* ]]; then
           echo "is_release=true" >> $GITHUB_OUTPUT
           echo "🎉 This is a release build"
-        else:
+        else
           echo "is_release=false" >> $GITHUB_OUTPUT
           echo "🔧 This is a development build"
         fi
@@ -93,16 +93,14 @@ jobs:
     name: 🪟 Build Windows (${{ matrix.arch }})
     runs-on: windows-latest
     needs: pre-checks
-    timeout-minutes: 45
+    timeout-minutes: 60
     
     strategy:
       matrix:
-        arch: [x64, x86]
+        arch: [x64]
         include:
           - arch: x64
             python-arch: x64
-          - arch: x86
-            python-arch: x86
     
     steps:
     - name: 📥 Checkout repository  
@@ -113,15 +111,6 @@ jobs:
       with:
         python-version: ${{ env.PYTHON_VERSION }}
         architecture: ${{ matrix.python-arch }}
-
-    - name: 📦 Cache pip packages
-      uses: actions/cache@v4
-      with:
-        path: ~\AppData\Local\pip\Cache
-        key: ${{ runner.os }}-pip-${{ matrix.arch }}-${{ hashFiles('requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-${{ matrix.arch }}-
-          ${{ runner.os }}-pip-
 
     - name: 🔧 Install build dependencies
       run: |
@@ -186,12 +175,22 @@ jobs:
         
         convert_png_to_ico()
 
-    - name: 🔨 Build executable with proper module handling
-      timeout-minutes: 30
+    - name: 📝 Create debug script
       run: |
-        echo "🔨 Building ${{ env.APP_NAME }} for ${{ matrix.arch }}..."
+        # Basit debug script oluştur
+        echo "import os" > debug_test.py
+        echo "import sys" >> debug_test.py
+        echo "print('Python path:', sys.path)" >> debug_test.py
+        echo "print('Current working directory:', os.getcwd())" >> debug_test.py
+        echo "print('Files in current directory:', os.listdir('.'))" >> debug_test.py
+        echo "input('Press Enter to exit...')" >> debug_test.py
+
+    - name: 🔨 Build with PyInstaller
+      timeout-minutes: 45
+      run: |
+        echo "🔨 Building ${{ env.APP_NAME }}..."
         
-        # Tüm modülleri explicit olarak ekleyerek build yap
+        # Doğrudan PyInstaller komutu ile build yap
         pyinstaller BUPILIC_ANA_PROGRAM.py `
           --name "${{ env.APP_NAME }}" `
           --onedir `
@@ -203,86 +202,94 @@ jobs:
           --add-data "YASLANDIRMA;YASLANDIRMA" `
           --add-data "icon;icon" `
           --hidden-import "customtkinter" `
-          --hidden-import "PIL._tkinter_finder" `
+          --hidden-import "tkinter" `
+          --hidden-import "tkinter.filedialog" `
+          --hidden-import "tkinter.messagebox" `
+          --hidden-import "PIL" `
+          --hidden-import "PIL.Image" `
+          --hidden-import "PIL.ImageTk" `
           --hidden-import "pandas" `
           --hidden-import "numpy" `
           --hidden-import "matplotlib" `
           --hidden-import "matplotlib.backends.backend_tkagg" `
-          --hidden-import "tkinter" `
-          --hidden-import "tkinter.filedialog" `
-          --hidden-import "tkinter.messagebox" `
-          --hidden-import "os" `
-          --hidden-import "sys" `
-          --hidden-import "subprocess" `
-          --hidden-import "threading" `
-          --hidden-import "json" `
-          --hidden-import "logging" `
-          --hidden-import "locale" `
-          --hidden-import "datetime" `
           --hidden-import "openpyxl" `
           --hidden-import "xlsxwriter" `
-          --hidden-import "xlrd" `
-          --hidden-import "xlwt" `
           --hidden-import "psutil" `
-          --collect-all "customtkinter" `
-          --collect-all "PIL" `
-          --collect-all "pandas" `
-          --collect-all "numpy" `
-          --collect-all "matplotlib" `
+          --hidden-import "subprocess" `
+          --hidden-import "threading" `
+          --hidden-import "os" `
+          --hidden-import "sys" `
+          --hidden-import "json" `
           --clean `
           --noconfirm
         
         echo "✅ Build completed successfully!"
 
-    - name: 🏷️ Rename executable
+    - name: 🧪 Test the executable
+      run: |
+        echo "🧪 Testing executable..."
+        
+        $exePath = "dist/${{ env.APP_NAME }}/${{ env.APP_NAME }}.exe"
+        if (Test-Path $exePath) {
+            echo "✅ Executable found: $exePath"
+            $size = (Get-Item $exePath).Length / 1MB
+            echo "📊 Size: $([math]::Round($size, 2)) MB"
+            
+            echo "📋 Contents of dist folder:"
+            Get-ChildItem "dist/${{ env.APP_NAME }}" | Select-Object Name, Length | Format-Table -AutoSize
+            
+        } else {
+            echo "❌ Executable not found at expected path"
+            # Fallback: mevcut dosyaları listele
+            echo "Available files in dist:"
+            Get-ChildItem "dist" -Recurse | Format-Table Name, Length
+        }
+
+    - name: 📦 Package for distribution
       run: |
         $version = "${{ needs.pre-checks.outputs.version }}"
-        $newName = "${{ env.APP_NAME }}-$version-windows-${{ matrix.arch }}.exe"
-        Move-Item "dist/${{ env.APP_NAME }}/${{ env.APP_NAME }}.exe" "dist/$newName"
-        echo "🏷️ Renamed to: $newName"
+        $distDir = "dist/${{ env.APP_NAME }}"
+        $outputName = "${{ env.APP_NAME }}-$version-windows-x64"
+        
+        if (Test-Path $distDir) {
+            # Tüm dosyaları ZIP yap
+            Compress-Archive -Path "$distDir/*" -DestinationPath "dist/$outputName.zip" -Force
+            echo "📦 Created ZIP package: dist/$outputName.zip"
+            
+            # Ana executable'ı da kopyala
+            Copy-Item "$distDir/${{ env.APP_NAME }}.exe" "dist/$outputName.exe"
+            echo "📦 Created standalone executable: dist/$outputName.exe"
+        }
 
     - name: 📋 Generate build info
       run: |
         $buildInfo = @{
           version = "${{ needs.pre-checks.outputs.version }}"
-          architecture = "${{ matrix.arch }}"
+          architecture = "x64"
           python_version = "${{ env.PYTHON_VERSION }}"
           build_time = Get-Date -Format "yyyy-MM-dd HH:mm:ss UTC"
           commit = "${{ github.sha }}"
           branch = "${{ github.ref_name }}"
-          upx_compression = "disabled"
+          build_type = "onedir"
         }
         
-        $buildInfo | ConvertTo-Json | Out-File -FilePath "dist/build-info-${{ matrix.arch }}.json" -Encoding UTF8
-        echo "📋 Build info generated"
-
-    - name: 🧪 Test executable
-      run: |
-        echo "🧪 Testing executable..."
-        $exe = Get-ChildItem "dist/*.exe" | Select-Object -First 1
-        if ($exe) {
-          echo "✅ Executable found: $($exe.Name)"
-          echo "📊 Size: $([math]::Round($exe.Length / 1MB, 2)) MB"
-          
-          # Quick validation - check file properties
-          try {
-            $versionInfo = (Get-Item $exe.FullName).VersionInfo
-            echo "ℹ️ File version: $($versionInfo.FileVersion)"
-            echo "✅ Executable validation passed"
-          } catch {
-            echo "⚠️ Could not read executable properties"
-          }
+        if (Test-Path "dist/${{ env.APP_NAME }}") {
+            $size = (Get-ChildItem "dist/${{ env.APP_NAME }}" -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB
+            $buildInfo.size_mb = [math]::Round($size, 2)
         }
+        
+        $buildInfo | ConvertTo-Json | Out-File -FilePath "dist/build-info.json" -Encoding UTF8
+        echo "📋 Build info generated"
 
     - name: 📤 Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: BupiliC-${{ matrix.arch }}-${{ needs.pre-checks.outputs.version }}
+        name: BupiliC-x64-${{ needs.pre-checks.outputs.version }}
         path: |
           dist/*.exe
+          dist/*.zip
           dist/*.json
         retention-days: 30
-        compression-level: 9
 
   # ===============================================
   # CREATE RELEASE
@@ -296,8 +303,6 @@ jobs:
     steps:
     - name: 📥 Checkout repository
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
 
     - name: 📥 Download all artifacts
       uses: actions/download-artifact@v4
@@ -305,77 +310,35 @@ jobs:
         path: ./artifacts
 
     - name: 📋 Generate release notes
-      id: release_notes
       run: |
-        VERSION="${{ needs.pre-checks.outputs.version }}"
-        RELEASE_NOTES="release-notes-$VERSION.md"
+        cat > release-notes.md << 'EOF'
+        ## BupiliÇ İşletme Yönetim Sistemi - ${{ needs.pre-checks.outputs.version }}
         
-        cat > $RELEASE_NOTES << 'EOF'
-        ## 🚀 BupiliÇ İşletme Yönetim Sistemi - ${{ needs.pre-checks.outputs.version }}
+        ### Özellikler
+        - Tüm modüller dahil
+        - Windows uyumluluğu
+        - Portable tek dosya
         
-        ### 📊 Bu Sürümde
-        - ✅ Windows 7/8/10/11 tam uyumluluğu
-        - ✅ Portable tek dosya (kurulum gerektirmez)
-        - ✅ İskonto Hesaplama modülü
-        - ✅ Karlılık Analizi dashboard'u  
-        - ✅ Müşteri Kayıp/Kaçak analizi
-        - ✅ Yaşlandırma raporları
-        - ✅ Modern CustomTkinter arayüzü
-        - ✅ Çoklu tema desteği (Light/Dark)
-        - ✅ Türkçe tam destek
-        
-        ### 🔧 Teknik Detaylar
-        - **Python**: 3.10
-        - **GUI**: CustomTkinter 5.2.2
-        - **Build**: PyInstaller (UPX disabled for stability)
-        - **Boyut**: ~100-150 MB (optimized for reliability)
-        
-        ### 📥 İndirme
-        - **Windows 64-bit**: `BupiliC-${{ needs.pre-checks.outputs.version }}-windows-x64.exe`
-        - **Windows 32-bit**: `BupiliC-${{ needs.pre-checks.outputs.version }}-windows-x86.exe`
-        
-        ### 🚀 Kullanım
-        1. Exe dosyasını indirin
-        2. Çift tıklayarak çalıştırın
-        3. Varsayılan şifre: `bupilic2024`
-        
-        ### 🐛 Bilinen Sorunlar
-        - İlk çalışma biraz yavaş olabilir (normal)
-        - Antivirus yazılımları uyarı verebilir (güvenlidir)
-        
-        ### 📞 Destek
-        - GitHub Issues: [Sorun bildirin](https://github.com/alibedirhan/BUP-ALL-IN-ONE/issues)
-        - Email: alibedirhan@example.com
+        ### Kurulum
+        1. ZIP dosyasını indirin ve çıkarın
+        2. BupiliC.exe dosyasını çalıştırın
+        3. Şifre: bupilic2024
         EOF
-        
-        echo "release_notes_file=$RELEASE_NOTES" >> $GITHUB_OUTPUT
 
     - name: 📦 Prepare release assets
       run: |
         mkdir -p release-assets
-        
-        # Copy executables and rename
-        find ./artifacts -name "*.exe" -exec cp {} release-assets/ \;
-        
-        # Create portable ZIP package
-        cd release-assets
-        zip -9 "BupiliC-${{ needs.pre-checks.outputs.version }}-portable.zip" *.exe
-        
-        # List files
-        echo "📦 Release assets:"
-        ls -la
+        find ./artifacts -name "*.exe" -o -name "*.zip" -exec cp {} release-assets/ \;
+        echo "Release assets prepared"
 
     - name: 🎉 Create GitHub Release
       uses: softprops/action-gh-release@v1
       with:
         tag_name: ${{ needs.pre-checks.outputs.version }}
         name: "BupiliÇ ${{ needs.pre-checks.outputs.version }}"
-        body_path: release-notes-${{ needs.pre-checks.outputs.version }}.md
-        files: |
-          release-assets/*.exe
-          release-assets/*.zip
+        body_file: release-notes.md
+        files: release-assets/*
         prerelease: ${{ github.event.inputs.prerelease || false }}
-        generate_release_notes: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -389,7 +352,5 @@ jobs:
     if: always()
     
     steps:
-    - name: 🧹 Clean up artifacts
-      run: |
-        echo "🧹 Build completed, cleaning up..."
-        echo "✅ All done!"
+    - name: 🧹 Clean up
+      run: echo "✅ Build process completed"
