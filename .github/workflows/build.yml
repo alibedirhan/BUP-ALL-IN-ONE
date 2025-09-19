@@ -122,7 +122,6 @@ jobs:
       run: |
         echo "📦 Installing dependencies for ${{ matrix.arch }}..."
         
-        # Tüm gerekli paketleri explicit olarak yükle
         pip install customtkinter==5.2.2
         pip install pandas==2.1.4
         pip install numpy==1.24.3
@@ -161,25 +160,24 @@ jobs:
                         icons.append(resized)
                     
                     icons[0].save(ico_path, format='ICO', sizes=[icon.size for icon in icons])
-                    print(f"[SUCCESS] Icon converted: {ico_path}")
+                    print(f"SUCCESS: Icon converted: {ico_path}")
                     
                 except Exception as e:
-                    print(f"[ERROR] Icon conversion failed: {e}")
+                    print(f"ERROR: Icon conversion failed: {e}")
                     img = Image.new('RGBA', (64, 64), (42, 157, 143, 255))
                     img.save(ico_path, format='ICO')
-                    print(f"[INFO] Created placeholder icon: {ico_path}")
+                    print(f"INFO: Created placeholder icon: {ico_path}")
             else:
-                print(f"[WARNING] PNG icon not found: {png_path}")
+                print(f"WARNING: PNG icon not found: {png_path}")
                 img = Image.new('RGBA', (64, 64), (42, 157, 143, 255))
                 img.save(ico_path, format='ICO')
-                print(f"[INFO] Created default icon: {ico_path}")
+                print(f"INFO: Created default icon: {ico_path}")
         
         convert_png_to_ico()
 
     - name: 📝 Create debug script
       run: |
-        # Hata ayıklama için basit bir script oluştur
-        $debugScript = @"
+        $debugScript = @'
 import os
 import sys
 import traceback
@@ -188,7 +186,6 @@ print("Python path:", sys.path)
 print("Current working directory:", os.getcwd())
 print("Files in current directory:", os.listdir('.'))
 
-# Modülleri test et
 try:
     import customtkinter
     print("customtkinter imported successfully")
@@ -201,20 +198,13 @@ try:
 except ImportError as e:
     print(f"pandas import failed: {e}")
 
-try:
-    import matplotlib
-    print("matplotlib imported successfully")
-except ImportError as e:
-    print(f"matplotlib import failed: {e}")
-
 input("Press Enter to exit...")
-"@
+'@
         
         $debugScript | Out-File -FilePath "debug_test.py" -Encoding UTF8
 
     - name: 🔨 Build with detailed spec file
       run: |
-        # Detaylı spec dosyası oluştur
         $specContent = @'
 # -*- mode: python ; coding: utf-8 -*-
 import sys
@@ -223,16 +213,14 @@ from pathlib import Path
 
 block_cipher = None
 
-# Uygulama bilgileri
-app_name = "${{ env.APP_NAME }}"
+app_name = "BupiliC"
 main_script = "BUPILIC_ANA_PROGRAM.py"
 icon_path = "build/app_icon.ico"
 
-# Data files - tüm modül dosyalarını explicit olarak ekle
 datas = [
     ('ISKONTO_HESABI/*.py', 'ISKONTO_HESABI'),
     ('ISKONTO_HESABI/*.txt', 'ISKONTO_HESABI'),
-    ('KARLILIK_ANALIZI/*.py', 'KARLILIK_ANALIZI'),  
+    ('KARLILIK_ANALIZI/*.py', 'KARLILIK_ANALIZI'),
     ('KARLILIK_ANALIZI/*.txt', 'KARLILIK_ANALIZI'),
     ('Musteri_Sayisi_Kontrolu/*.py', 'Musteri_Sayisi_Kontrolu'),
     ('Musteri_Sayisi_Kontrolu/*.txt', 'Musteri_Sayisi_Kontrolu'),
@@ -242,7 +230,6 @@ datas = [
     ('icon/*.ico', 'icon'),
 ]
 
-# Tüm hidden import'lar
 hiddenimports = [
     'customtkinter',
     'tkinter',
@@ -272,30 +259,11 @@ hiddenimports = [
     'datetime',
     'os',
     'sys',
-    'pathlib',
-    're',
-    'collections',
-    'itertools',
-    'functools',
-    'threading',
-    'time',
-    'calendar',
-    'csv',
-    'io',
-    'base64',
-    'hashlib',
-    'random',
-    'statistics',
-    'math',
 ]
 
-# Ek binary'ler
 binaries = []
-
-# Runtime hooks
 runtime_hooks = []
 
-# Exclude edilecek modüller
 excludes = [
     'test',
     'tests',
@@ -350,89 +318,83 @@ exe = EXE(
 )
 '@
 
-        $specContent = $specContent -replace '\${{ env.APP_NAME }}', $env:APP_NAME
         $specContent | Out-File -FilePath "build/bupilic.spec" -Encoding UTF8
-        echo "📝 Detailed spec file created"
+        echo "Spec file created"
 
     - name: 🏗️ Build executable using spec file
       timeout-minutes: 45
       run: |
-        echo "🔨 Building using spec file..."
-        
-        # Spec dosyasını kullanarak build yap
+        echo "Building using spec file..."
         pyinstaller build/bupilic.spec --clean --noconfirm --log-level=DEBUG
-        
-        echo "✅ Build completed successfully!"
+        echo "Build completed successfully!"
 
     - name: 🧪 Test the executable
       run: |
-        echo "🧪 Testing executable..."
+        echo "Testing executable..."
         
-        $exePath = "dist/${{ env.APP_NAME }}/${{ env.APP_NAME }}.exe"
+        $exePath = "dist/BupiliC/BupiliC.exe"
         if (Test-Path $exePath) {
-            echo "✅ Executable found: $exePath"
+            echo "Executable found: $exePath"
             $size = (Get-Item $exePath).Length / 1MB
-            echo "📊 Size: $([math]::Round($size, 2)) MB"
+            echo "Size: $([math]::Round($size, 2)) MB"
             
-            # İçerik kontrolü
-            echo "📁 Contents of dist folder:"
-            Get-ChildItem "dist/${{ env.APP_NAME }}" -Recurse | Select-Object Name, Length | Format-Table -AutoSize
+            echo "Contents of dist folder:"
+            Get-ChildItem "dist/BupiliC" -Recurse | Select-Object Name, Length | Format-Table -AutoSize
             
-            # _internal klasörü kontrolü
-            if (Test-Path "dist/${{ env.APP_NAME }}/_internal") {
-                echo "✅ _internal folder exists"
-                echo "📦 Contents of _internal:"
-                Get-ChildItem "dist/${{ env.APP_NAME }}/_internal" | Select-Object Name | Format-Table -AutoSize
+            if (Test-Path "dist/BupiliC/_internal") {
+                echo "_internal folder exists"
+                Get-ChildItem "dist/BupiliC/_internal" | Select-Object Name | Format-Table -AutoSize
             } else {
-                echo "❌ _internal folder missing - this will cause module errors"
+                echo "_internal folder missing"
             }
         } else {
-            echo "❌ Executable not found at expected path"
+            echo "Executable not found"
         }
 
     - name: 📦 Package for distribution
       run: |
         $version = "${{ needs.pre-checks.outputs.version }}"
-        $distDir = "dist/${{ env.APP_NAME }}"
-        $outputName = "${{ env.APP_NAME }}-$version-windows-${{ matrix.arch }}"
+        $distDir = "dist/BupiliC"
+        $outputName = "BupiliC-$version-windows-x64"
         
         if (Test-Path $distDir) {
-            # Tüm dosyaları ZIP yap
             Compress-Archive -Path "$distDir/*" -DestinationPath "dist/$outputName.zip" -Force
-            echo "📦 Created ZIP package: dist/$outputName.zip"
+            echo "Created ZIP package: dist/$outputName.zip"
             
-            # Ana executable'ı da kopyala
-            Copy-Item "$distDir/${{ env.APP_NAME }}.exe" "dist/$outputName.exe"
-            echo "📦 Created standalone executable: dist/$outputName.exe"
+            Copy-Item "$distDir/BupiliC.exe" "dist/$outputName.exe"
+            echo "Created standalone executable: dist/$outputName.exe"
         }
 
     - name: 📋 Generate build info
       run: |
         $buildInfo = @{
           version = "${{ needs.pre-checks.outputs.version }}"
-          architecture = "${{ matrix.arch }}"
+          architecture = "x64"
           python_version = "${{ env.PYTHON_VERSION }}"
           build_time = Get-Date -Format "yyyy-MM-dd HH:mm:ss UTC"
           commit = "${{ github.sha }}"
           branch = "${{ github.ref_name }}"
           build_type = "onedir"
           modules_included = "all"
-          size_mb = [math]::Round((Get-ChildItem "dist/${{ env.APP_NAME }}" -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB, 2)
+        }
+        
+        if (Test-Path "dist/BupiliC") {
+            $size = (Get-ChildItem "dist/BupiliC" -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB
+            $buildInfo.size_mb = [math]::Round($size, 2)
         }
         
         $buildInfo | ConvertTo-Json | Out-File -FilePath "dist/build-info.json" -Encoding UTF8
-        echo "📋 Build info generated"
+        echo "Build info generated"
 
     - name: 📤 Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: BupiliC-${{ matrix.arch }}-${{ needs.pre-checks.outputs.version }}
+        name: BupiliC-x64-${{ needs.pre-checks.outputs.version }}
         path: |
           dist/*.exe
           dist/*.zip
           dist/*.json
         retention-days: 30
-        compression-level: 9
 
   # ===============================================
   # CREATE RELEASE
@@ -455,29 +417,24 @@ exe = EXE(
     - name: 📋 Generate release notes
       run: |
         cat > release-notes.md << 'EOF'
-        ## 🚀 BupiliÇ İşletme Yönetim Sistemi - ${{ needs.pre-checks.outputs.version }}
+        ## BupiliÇ İşletme Yönetim Sistemi - ${{ needs.pre-checks.outputs.version }}
         
-        ### 📊 Özellikler
-        - ✅ Tüm modüller dahil (İskonto, Karlılık, Müşteri Analizi, Yaşlandırma)
-        - ✅ Windows uyumluluğu
-        - ✅ Tek dosya portable
-        - ✅ Modern arayüz
+        ### Özellikler
+        - Tüm modüller dahil
+        - Windows uyumluluğu
+        - Portable tek dosya
         
-        ### 🚀 Kurulum
+        ### Kurulum
         1. ZIP dosyasını indirin ve çıkarın
-        2. `BupiliC.exe` dosyasını çalıştırın
-        3. Varsayılan şifre: `bupilic2024`
-        
-        ### 📞 Destek
-        - Hata durumunda log dosyası kontrol edin
-        - GitHub Issues: sorun bildirin
+        2. BupiliC.exe dosyasını çalıştırın
+        3. Şifre: bupilic2024
         EOF
 
     - name: 📦 Prepare release assets
       run: |
         mkdir -p release-assets
         find ./artifacts -name "*.exe" -o -name "*.zip" -exec cp {} release-assets/ \;
-        echo "📦 Release assets prepared"
+        echo "Release assets prepared"
 
     - name: 🎉 Create GitHub Release
       uses: softprops/action-gh-release@v1
@@ -501,4 +458,4 @@ exe = EXE(
     
     steps:
     - name: 🧹 Clean up
-      run: echo "✅ Build process completed"
+      run: echo "Build process completed"
