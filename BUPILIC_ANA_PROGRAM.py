@@ -8,6 +8,8 @@ from datetime import datetime
 import json
 import logging
 import locale
+import sys
+from pathlib import Path
 
 class BupilicDashboard:
     def __init__(self):
@@ -23,6 +25,9 @@ class BupilicDashboard:
         self.root = ctk.CTk()
         self.root.title("Bupiliç İşletme Yönetim Sistemi")
         self.root.geometry("1000x600")
+        
+        # PyInstaller için resource path'i ayarla
+        self.setup_resource_path()
         
         # Klasör yapısını oluştur
         self.setup_directories()
@@ -54,6 +59,22 @@ class BupilicDashboard:
         
         # Önce login ekranı göster
         self.show_login_screen()
+    
+    def setup_resource_path(self):
+        """PyInstaller için resource path'i ayarlar"""
+        try:
+            # PyInstaller'ın oluşturduğu geçici klasör
+            self.base_path = sys._MEIPASS
+        except Exception:
+            # Normal çalışma durumu
+            self.base_path = os.path.abspath(".")
+        
+        self.logger = logging.getLogger(__name__)
+        self.logger.info(f"Base path: {self.base_path}")
+    
+    def get_resource_path(self, relative_path):
+        """Göreceli yolu absolute path'e çevirir"""
+        return os.path.join(self.base_path, relative_path)
     
     def setup_directories(self):
         """Klasör yapısını oluşturur"""
@@ -88,8 +109,9 @@ class BupilicDashboard:
     def load_settings(self):
         """Kullanıcı ayarlarını yükler"""
         try:
-            if os.path.exists("config/user_settings.json"):
-                with open("config/user_settings.json", "r", encoding="utf-8") as f:
+            settings_path = self.get_resource_path("config/user_settings.json")
+            if os.path.exists(settings_path):
+                with open(settings_path, "r", encoding="utf-8") as f:
                     saved_data = json.load(f)
                     self.user_data.update(saved_data)
                     self.logger.info("Kullanıcı ayarları yüklendi.")
@@ -99,9 +121,10 @@ class BupilicDashboard:
     def save_settings(self):
         """Kullanıcı ayarlarını kaydeder"""
         try:
-            with open("config/user_settings.json", "w", encoding="utf-8") as f:
+            settings_path = self.get_resource_path("config/user_settings.json")
+            with open(settings_path, "w", encoding="utf-8") as f:
                 json.dump(self.user_data, f, ensure_ascii=False, indent=4)
-            self.logger.info("Kullanıcı ayarları kaydedildı.")
+            self.logger.info("Kullanıcı ayarları kaydedildi.")
         except Exception as e:
             self.logger.error(f"Ayarlar kaydedilirken hata: {str(e)}")
     
@@ -124,7 +147,7 @@ class BupilicDashboard:
                 "secondary": "#14213D",
                 "background": "#121212",
                 "text": "#FFFFFF",
-                "text_secondary": "#ADB5BD",  # DÜZELTİLDİ: ##ADB5BD -> #ADB5BD
+                "text_secondary": "#ADB5BD",
                 "card": "#1E1E1E",
                 "button": "#E63946",
                 "button_hover": "#C1121F",
@@ -139,7 +162,7 @@ class BupilicDashboard:
     def load_logo(self):
         """Logoyu yükler ve CTkImage olarak döndürür"""
         try:
-            logo_path = "icon/bupilic_logo.png"
+            logo_path = self.get_resource_path("icon/bupilic_logo.png")
             if os.path.exists(logo_path):
                 pil_image = Image.open(logo_path)
                 # CTkImage kullanarak yükle (HighDPI desteği için)
@@ -569,7 +592,7 @@ class BupilicDashboard:
         self.clear_main_content()
         self.setup_welcome_section()
         self.setup_quick_access()
-        self.logger.info("Ana sayfa gösterildı.")
+        self.logger.info("Ana sayfa gösterildi.")
     
     def setup_program_directories(self, program_path):
         """Program için gerekli klasörleri oluşturur"""
@@ -590,21 +613,19 @@ class BupilicDashboard:
             iskonto_program_path = "ISKONTO_HESABI"
             main_file = "main.py"
             
-            current_dir = os.getcwd()
-            full_main_path = os.path.join(current_dir, iskonto_program_path, main_file)
+            # PyInstaller için doğru yolu kullan
+            full_main_path = self.get_resource_path(os.path.join(iskonto_program_path, main_file))
             
             if not os.path.exists(full_main_path):
-                full_main_path = os.path.join(".", iskonto_program_path, main_file)
-                if not os.path.exists(full_main_path):
-                    self.show_message("İskonto Hesaplama programı bulunamadı!")
-                    self.logger.error("İskonto Hesaplama programı bulunamadı!")
-                    return
+                self.show_message("İskonto Hesaplama programı bulunamadı!")
+                self.logger.error(f"İskonto Hesaplama programı bulunamadı: {full_main_path}")
+                return
             
             # Program için klasörleri oluştur
             self.setup_program_directories(iskonto_program_path)
             
             # Çalışma dizinini program klasörüne değiştir
-            program_dir = os.path.join(current_dir, iskonto_program_path)
+            program_dir = self.get_resource_path(iskonto_program_path)
             
             if os.name == 'nt':  # Windows
                 subprocess.Popen(["python", main_file], 
@@ -626,21 +647,19 @@ class BupilicDashboard:
             karlilik_program_path = "KARLILIK_ANALIZI"
             gui_file = "gui.py"
             
-            current_dir = os.getcwd()
-            full_gui_path = os.path.join(current_dir, karlilik_program_path, gui_file)
+            # PyInstaller için doğru yolu kullan
+            full_gui_path = self.get_resource_path(os.path.join(karlilik_program_path, gui_file))
             
             if not os.path.exists(full_gui_path):
-                full_gui_path = os.path.join(".", karlilik_program_path, gui_file)
-                if not os.path.exists(full_gui_path):
-                    self.show_message("Karlılık Analizi programı bulunamadı!")
-                    self.logger.error("Karlılık Analizi programı bulunamadı!")
-                    return
+                self.show_message("Karlılık Analizi programı bulunamadı!")
+                self.logger.error(f"Karlılık Analizi programı bulunamadı: {full_gui_path}")
+                return
             
             # Program için klasörleri oluştur
             self.setup_program_directories(karlilik_program_path)
             
             # Çalışma dizinini program klasörüne değiştir
-            program_dir = os.path.join(current_dir, karlilik_program_path)
+            program_dir = self.get_resource_path(karlilik_program_path)
             
             if os.name == 'nt':  # Windows
                 subprocess.Popen(["python", gui_file], 
@@ -659,24 +678,22 @@ class BupilicDashboard:
     
     def musteri_kayip_ac(self):
         try:
-            musteri_program_path = "MUSTERI_SAYISI_KONTROLU"
+            musteri_program_path = "Musteri_Sayisi_Kontrolu"
             program_dosyasi = "main.py"
             
-            current_dir = os.getcwd()
-            musteri_program_yolu = os.path.join(current_dir, musteri_program_path, program_dosyasi)
+            # PyInstaller için doğru yolu kullan
+            musteri_program_yolu = self.get_resource_path(os.path.join(musteri_program_path, program_dosyasi))
             
             if not os.path.exists(musteri_program_yolu):
-                musteri_program_yolu = os.path.join(".", musteri_program_path, program_dosyasi)
-                if not os.path.exists(musteri_program_yolu):
-                    self.show_message("Müşteri Kayıp/Kaçak programı bulunamadı!")
-                    self.logger.error("Müşteri Kayıp/Kaçak programı bulunamadı!")
-                    return
+                self.show_message("Müşteri Kayıp/Kaçak programı bulunamadı!")
+                self.logger.error(f"Müşteri Kayıp/Kaçak programı bulunamadı: {musteri_program_yolu}")
+                return
             
             # Program için klasörleri oluştur
             self.setup_program_directories(musteri_program_path)
             
             # Çalışma dizinini program klasörüne değiştir
-            program_dir = os.path.join(current_dir, musteri_program_path)
+            program_dir = self.get_resource_path(musteri_program_path)
             
             if os.name == 'nt':  # Windows
                 subprocess.Popen(["python", program_dosyasi], 
@@ -698,21 +715,19 @@ class BupilicDashboard:
             yaslandirma_program_path = "YASLANDIRMA"
             program_dosyasi = "main.py"
             
-            current_dir = os.getcwd()
-            yaslandirma_program_yolu = os.path.join(current_dir, yaslandirma_program_path, program_dosyasi)
+            # PyInstaller için doğru yolu kullan
+            yaslandirma_program_yolu = self.get_resource_path(os.path.join(yaslandirma_program_path, program_dosyasi))
             
             if not os.path.exists(yaslandirma_program_yolu):
-                yaslandirma_program_yolu = os.path.join(".", yaslandirma_program_path, program_dosyasi)
-                if not os.path.exists(yaslandirma_program_yolu):
-                    self.show_message("Yaşlandırma programı bulunamadı!")
-                    self.logger.error("Yaşlandırma programı bulunamadı!")
-                    return
+                self.show_message("Yaşlandırma programı bulunamadı!")
+                self.logger.error(f"Yaşlandırma programı bulunamadı: {yaslandirma_program_yolu}")
+                return
             
             # Program için klasörleri oluştur
             self.setup_program_directories(yaslandirma_program_path)
             
             # Çalışma dizinini program klasörüne değiştir
-            program_dir = os.path.join(current_dir, yaslandirma_program_path)
+            program_dir = self.get_resource_path(yaslandirma_program_path)
             
             if os.name == 'nt':  # Windows
                 subprocess.Popen(["python", program_dosyasi], 
