@@ -177,192 +177,88 @@ jobs:
 
     - name: 📝 Create debug script
       run: |
-        $debugScript = @'
-import os
-import sys
-import traceback
+        # Basit debug script oluştur
+        echo "import os" > debug_test.py
+        echo "import sys" >> debug_test.py
+        echo "print('Python path:', sys.path)" >> debug_test.py
+        echo "print('Current working directory:', os.getcwd())" >> debug_test.py
+        echo "print('Files in current directory:', os.listdir('.'))" >> debug_test.py
+        echo "input('Press Enter to exit...')" >> debug_test.py
 
-print("Python path:", sys.path)
-print("Current working directory:", os.getcwd())
-print("Files in current directory:", os.listdir('.'))
-
-try:
-    import customtkinter
-    print("customtkinter imported successfully")
-except ImportError as e:
-    print(f"customtkinter import failed: {e}")
-
-try:
-    import pandas
-    print("pandas imported successfully")
-except ImportError as e:
-    print(f"pandas import failed: {e}")
-
-input("Press Enter to exit...")
-'@
-        
-        $debugScript | Out-File -FilePath "debug_test.py" -Encoding UTF8
-
-    - name: 🔨 Build with detailed spec file
-      run: |
-        $specContent = @'
-# -*- mode: python ; coding: utf-8 -*-
-import sys
-import os
-from pathlib import Path
-
-block_cipher = None
-
-app_name = "BupiliC"
-main_script = "BUPILIC_ANA_PROGRAM.py"
-icon_path = "build/app_icon.ico"
-
-datas = [
-    ('ISKONTO_HESABI/*.py', 'ISKONTO_HESABI'),
-    ('ISKONTO_HESABI/*.txt', 'ISKONTO_HESABI'),
-    ('KARLILIK_ANALIZI/*.py', 'KARLILIK_ANALIZI'),
-    ('KARLILIK_ANALIZI/*.txt', 'KARLILIK_ANALIZI'),
-    ('Musteri_Sayisi_Kontrolu/*.py', 'Musteri_Sayisi_Kontrolu'),
-    ('Musteri_Sayisi_Kontrolu/*.txt', 'Musteri_Sayisi_Kontrolu'),
-    ('YASLANDIRMA/*.py', 'YASLANDIRMA'),
-    ('YASLANDIRMA/*.txt', 'YASLANDIRMA'),
-    ('icon/*.png', 'icon'),
-    ('icon/*.ico', 'icon'),
-]
-
-hiddenimports = [
-    'customtkinter',
-    'tkinter',
-    'tkinter.filedialog',
-    'tkinter.messagebox',
-    'PIL',
-    'PIL.Image',
-    'PIL.ImageTk',
-    'PIL._tkinter_finder',
-    'pandas',
-    'numpy',
-    'matplotlib',
-    'matplotlib.backends',
-    'matplotlib.backends.backend_tkagg',
-    'matplotlib.pyplot',
-    'seaborn',
-    'openpyxl',
-    'xlsxwriter',
-    'xlrd',
-    'xlwt',
-    'psutil',
-    'subprocess',
-    'threading',
-    'json',
-    'logging',
-    'locale',
-    'datetime',
-    'os',
-    'sys',
-]
-
-binaries = []
-runtime_hooks = []
-
-excludes = [
-    'test',
-    'tests',
-    'unittest',
-    'distutils',
-    'setuptools',
-    'pandas.tests',
-    'numpy.tests',
-    'matplotlib.tests',
-]
-
-a = Analysis(
-    [main_script],
-    pathex=[],
-    binaries=binaries,
-    datas=datas,
-    hiddenimports=hiddenimports,
-    hookspath=[],
-    hooksconfig={},
-    runtime_hooks=runtime_hooks,
-    excludes=excludes,
-    win_no_prefer_redirects=False,
-    win_private_assemblies=False,
-    cipher=block_cipher,
-    noarchive=False,
-)
-
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
-
-exe = EXE(
-    pyz,
-    a.scripts,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    [],
-    name=app_name,
-    debug=False,
-    bootloader_ignore_signals=False,
-    strip=False,
-    upx=False,
-    upx_exclude=[],
-    runtime_tmpdir=None,
-    console=False,
-    disable_windowed_traceback=False,
-    argv_emulation=False,
-    target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
-    icon=icon_path,
-    version_file=None,
-)
-'@
-
-        $specContent | Out-File -FilePath "build/bupilic.spec" -Encoding UTF8
-        echo "Spec file created"
-
-    - name: 🏗️ Build executable using spec file
+    - name: 🔨 Build with PyInstaller
       timeout-minutes: 45
       run: |
-        echo "Building using spec file..."
-        pyinstaller build/bupilic.spec --clean --noconfirm --log-level=DEBUG
-        echo "Build completed successfully!"
+        echo "🔨 Building ${{ env.APP_NAME }}..."
+        
+        # Doğrudan PyInstaller komutu ile build yap
+        pyinstaller BUPILIC_ANA_PROGRAM.py `
+          --name "${{ env.APP_NAME }}" `
+          --onedir `
+          --windowed `
+          --icon "build/app_icon.ico" `
+          --add-data "ISKONTO_HESABI;ISKONTO_HESABI" `
+          --add-data "KARLILIK_ANALIZI;KARLILIK_ANALIZI" `
+          --add-data "Musteri_Sayisi_Kontrolu;Musteri_Sayisi_Kontrolu" `
+          --add-data "YASLANDIRMA;YASLANDIRMA" `
+          --add-data "icon;icon" `
+          --hidden-import "customtkinter" `
+          --hidden-import "tkinter" `
+          --hidden-import "tkinter.filedialog" `
+          --hidden-import "tkinter.messagebox" `
+          --hidden-import "PIL" `
+          --hidden-import "PIL.Image" `
+          --hidden-import "PIL.ImageTk" `
+          --hidden-import "pandas" `
+          --hidden-import "numpy" `
+          --hidden-import "matplotlib" `
+          --hidden-import "matplotlib.backends.backend_tkagg" `
+          --hidden-import "openpyxl" `
+          --hidden-import "xlsxwriter" `
+          --hidden-import "psutil" `
+          --hidden-import "subprocess" `
+          --hidden-import "threading" `
+          --hidden-import "os" `
+          --hidden-import "sys" `
+          --hidden-import "json" `
+          --clean `
+          --noconfirm
+        
+        echo "✅ Build completed successfully!"
 
     - name: 🧪 Test the executable
       run: |
-        echo "Testing executable..."
+        echo "🧪 Testing executable..."
         
-        $exePath = "dist/BupiliC/BupiliC.exe"
+        $exePath = "dist/${{ env.APP_NAME }}/${{ env.APP_NAME }}.exe"
         if (Test-Path $exePath) {
-            echo "Executable found: $exePath"
+            echo "✅ Executable found: $exePath"
             $size = (Get-Item $exePath).Length / 1MB
-            echo "Size: $([math]::Round($size, 2)) MB"
+            echo "📊 Size: $([math]::Round($size, 2)) MB"
             
-            echo "Contents of dist folder:"
-            Get-ChildItem "dist/BupiliC" -Recurse | Select-Object Name, Length | Format-Table -AutoSize
+            echo "📁 Contents of dist folder:"
+            Get-ChildItem "dist/${{ env.APP_NAME }}" | Select-Object Name, Length | Format-Table -AutoSize
             
-            if (Test-Path "dist/BupiliC/_internal") {
-                echo "_internal folder exists"
-                Get-ChildItem "dist/BupiliC/_internal" | Select-Object Name | Format-Table -AutoSize
-            } else {
-                echo "_internal folder missing"
-            }
         } else {
-            echo "Executable not found"
+            echo "❌ Executable not found at expected path"
+            # Fallback: mevcut dosyaları listele
+            echo "Available files in dist:"
+            Get-ChildItem "dist" -Recurse | Format-Table Name, Length
         }
 
     - name: 📦 Package for distribution
       run: |
         $version = "${{ needs.pre-checks.outputs.version }}"
-        $distDir = "dist/BupiliC"
-        $outputName = "BupiliC-$version-windows-x64"
+        $distDir = "dist/${{ env.APP_NAME }}"
+        $outputName = "${{ env.APP_NAME }}-$version-windows-x64"
         
         if (Test-Path $distDir) {
+            # Tüm dosyaları ZIP yap
             Compress-Archive -Path "$distDir/*" -DestinationPath "dist/$outputName.zip" -Force
-            echo "Created ZIP package: dist/$outputName.zip"
+            echo "📦 Created ZIP package: dist/$outputName.zip"
             
-            Copy-Item "$distDir/BupiliC.exe" "dist/$outputName.exe"
-            echo "Created standalone executable: dist/$outputName.exe"
+            # Ana executable'ı da kopyala
+            Copy-Item "$distDir/${{ env.APP_NAME }}.exe" "dist/$outputName.exe"
+            echo "📦 Created standalone executable: dist/$outputName.exe"
         }
 
     - name: 📋 Generate build info
@@ -375,16 +271,15 @@ exe = EXE(
           commit = "${{ github.sha }}"
           branch = "${{ github.ref_name }}"
           build_type = "onedir"
-          modules_included = "all"
         }
         
-        if (Test-Path "dist/BupiliC") {
-            $size = (Get-ChildItem "dist/BupiliC" -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB
+        if (Test-Path "dist/${{ env.APP_NAME }}") {
+            $size = (Get-ChildItem "dist/${{ env.APP_NAME }}" -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB
             $buildInfo.size_mb = [math]::Round($size, 2)
         }
         
         $buildInfo | ConvertTo-Json | Out-File -FilePath "dist/build-info.json" -Encoding UTF8
-        echo "Build info generated"
+        echo "📋 Build info generated"
 
     - name: 📤 Upload build artifacts
       uses: actions/upload-artifact@v4
@@ -458,4 +353,4 @@ exe = EXE(
     
     steps:
     - name: 🧹 Clean up
-      run: echo "Build process completed"
+      run: echo "✅ Build process completed"
