@@ -1,13 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
-
 import os
 import sys
-import glob
 from PyInstaller.building.build_main import Analysis, EXE, PYZ
 from PyInstaller.building.datastruct import TOC
-
-# -*- mode: python ; coding: utf-8 -*-
-
 
 block_cipher = None
 
