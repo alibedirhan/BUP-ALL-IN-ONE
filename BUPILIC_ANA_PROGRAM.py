@@ -3,189 +3,158 @@ import os
 import sys
 import subprocess
 import importlib
-import tempfile
-import shutil
 import threading
 import time
 from pathlib import Path
 
 # ===== KESİN ÇÖZÜM: TÜM BAĞIMLILIKLAR =====
-def install_all_dependencies():
-    """TÜM bağımlılıkları KESİN olarak yükler"""
-    print("🔧 Installing ALL dependencies...")
+def install_missing_dependencies():
+    """Sadece eksik bağımlılıkları yükle"""
+    print("🔧 Checking for missing dependencies...")
     
-    # Gerekli tüm paketler
-    packages = [
+    required_packages = [
         'pandas', 'numpy', 'matplotlib', 'pdfplumber', 'customtkinter',
-        'openpyxl', 'psutil', 'Pillow', 'seaborn', 'xlsxwriter',
+        'openpyxl', 'psutil', 'PIL', 'seaborn', 'xlsxwriter',
         'xlrd', 'xlwt', 'python-dateutil', 'tkcalendar'
     ]
     
-    success_count = 0
-    total_count = len(packages)
+    missing_packages = []
     
-    for package in packages:
+    for package in required_packages:
         try:
-            # Önce zaten yüklü mü kontrol et
             importlib.import_module(package)
             print(f"✅ {package} already installed")
-            success_count += 1
         except ImportError:
-            print(f"⬇️ Installing {package}...")
-            try:
-                # Pip ile dene
-                result = subprocess.run([
-                    sys.executable, "-m", "pip", "install", package
-                ], capture_output=True, text=True, timeout=300)
-                
-                if result.returncode == 0:
-                    print(f"✅ {package} installed successfully")
-                    success_count += 1
-                else:
-                    print(f"❌ Failed to install {package}")
-                    
-                    # Son çare: user site-packages'e yükle
-                    try:
-                        result = subprocess.run([
-                            sys.executable, "-m", "pip", "install", "--user", package
-                        ], capture_output=True, text=True, timeout=300)
-                        
-                        if result.returncode == 0:
-                            print(f"✅ {package} installed to user site-packages")
-                            success_count += 1
-                        else:
-                            print(f"❌ Completely failed to install {package}")
-                    except:
-                        print(f"❌ Completely failed to install {package}")
-                        
-            except Exception as e:
-                print(f"❌ Error installing {package}: {e}")
+            missing_packages.append(package)
+            print(f"❌ {package} missing")
     
-    print(f"📊 Installation result: {success_count}/{total_count} packages")
-    return success_count == total_count
-
-def ensure_dependencies():
-    """Bağımlılıkları garantiye al"""
-    print("🔄 Ensuring dependencies...")
+    if not missing_packages:
+        print("🎉 All dependencies are already installed!")
+        return True
     
-    def install_thread():
+    print(f"⬇️ Installing missing packages: {missing_packages}")
+    
+    # Python executable'ı bul
+    python_exe = sys.executable
+    
+    for package in missing_packages:
         try:
-            success = install_all_dependencies()
-            if success:
-                print("🎉 ALL dependencies installed successfully!")
+            print(f"📦 Installing {package}...")
+            result = subprocess.run([
+                python_exe, "-m", "pip", "install", package
+            ], capture_output=True, text=True, timeout=300)
+            
+            if result.returncode == 0:
+                print(f"✅ {package} installed successfully")
             else:
-                print("⚠️ Some dependencies may be missing, but continuing...")
+                print(f"❌ Failed to install {package}: {result.stderr}")
         except Exception as e:
-            print(f"❌ Dependency installation error: {e}")
-    
-    # Arka planda kur
-    thread = threading.Thread(target=install_thread, daemon=True)
-    thread.start()
+            print(f"❌ Error installing {package}: {e}")
     
     return True
 
-# HEMEN bağımlılıkları kontrol et
-ensure_dependencies()
+def ensure_dependencies_async():
+    """Bağımlılıkları arka planda kontrol et"""
+    def install_thread():
+        try:
+            install_missing_dependencies()
+        except Exception as e:
+            print(f"❌ Dependency check error: {e}")
+    
+    thread = threading.Thread(target=install_thread, daemon=True)
+    thread.start()
+    return True
 
-# ===== TÜM ALT PROGRAMLARI TEK EXE'DE ÇALIŞTIRMA =====
+# HEMEN bağımlılıkları kontrol et (arka planda)
+ensure_dependencies_async()
+
+# ===== TÜM ALT PROGRAMLARI ÇALIŞTIRMA =====
 def run_embedded_program(program_name):
-    """Alt programı embedded olarak çalıştır"""
+    """Gömülü programı çalıştır"""
     try:
         print(f"🚀 Starting {program_name}...")
         
-        # Mevcut Python executable
-        python_exe = sys.executable
-        
-        # Alt program modülünü import et
+        # Embedded modüllerden çalıştır
         try:
             if program_name == "ISKONTO_HESABI":
-                # ISKONTO_HESABI kodunu doğrudan çalıştır
-                from ISKONTO_HESABI import main as iskonto_main
-                if hasattr(iskonto_main, 'main'):
-                    iskonto_main.main()
-                elif hasattr(iskonto_main, 'run_program'):
-                    iskonto_main.run_program()
-                else:
-                    # Eski stil
-                    iskonto_main.run_program()
-                return True
-                
+                # ISKONTO_HESABI modüllerini içe aktar
+                try:
+                    from ISKONTO_HESABI import main as iskonto_main
+                    if hasattr(iskonto_main, 'main'):
+                        iskonto_main.main()
+                        return True
+                    elif hasattr(iskonto_main, 'run_program'):
+                        iskonto_main.run_program()
+                        return True
+                except ImportError as e:
+                    print(f"❌ ISKONTO_HESABI import error: {e}")
+                    return False
+                    
             elif program_name == "KARLILIK_ANALIZI":
-                # KARLILIK_ANALIZI kodunu doğrudan çalıştır
-                from KARLILIK_ANALIZI import gui as karlilik_gui
-                if hasattr(karlilik_gui, 'main'):
-                    karlilik_gui.main()
-                elif hasattr(karlilik_gui, 'run_program'):
-                    karlilik_gui.run_program()
-                else:
-                    # Eski stil
-                    karlilik_gui.run_program()
-                return True
-                
+                # KARLILIK_ANALIZI modüllerini içe aktar
+                try:
+                    from KARLILIK_ANALIZI import gui as karlilik_gui
+                    if hasattr(karlilik_gui, 'main'):
+                        karlilik_gui.main()
+                        return True
+                    elif hasattr(karlilik_gui, 'run_program'):
+                        karlilik_gui.run_program()
+                        return True
+                except ImportError as e:
+                    print(f"❌ KARLILIK_ANALIZI import error: {e}")
+                    return False
+                    
             elif program_name == "Musteri_Sayisi_Kontrolu":
-                # Musteri_Sayisi_Kontrolu kodunu doğrudan çalıştır
-                from Musteri_Sayisi_Kontrolu import main as musteri_main
-                if hasattr(musteri_main, 'main'):
-                    musteri_main.main()
-                elif hasattr(musteri_main, 'run_program'):
-                    musteri_main.run_program()
-                else:
-                    # Eski stil
-                    musteri_main.run_program()
-                return True
-                
+                # Musteri_Sayisi_Kontrolu modüllerini içe aktar
+                try:
+                    from Musteri_Sayisi_Kontrolu import main as musteri_main
+                    if hasattr(musteri_main, 'main'):
+                        musteri_main.main()
+                        return True
+                    elif hasattr(musteri_main, 'run_program'):
+                        musteri_main.run_program()
+                        return True
+                except ImportError as e:
+                    print(f"❌ Musteri_Sayisi_Kontrolu import error: {e}")
+                    return False
+                    
             elif program_name == "YASLANDIRMA":
-                # YASLANDIRMA kodunu doğrudan çalıştır
-                from YASLANDIRMA import main as yaslandirma_main
-                if hasattr(yaslandirma_main, 'main'):
-                    yaslandirma_main.main()
-                elif hasattr(yaslandirma_main, 'run_program'):
-                    yaslandirma_main.run_program()
-                else:
-                    # Eski stil
-                    yaslandirma_main.run_program()
-                return True
-                
-        except ImportError as e:
-            print(f"❌ Import error: {e}")
-            # Fallback: Orijinal dosyayı çalıştır
-            return run_original_program(program_name)
+                # YASLANDIRMA modüllerini içe aktar
+                try:
+                    from YASLANDIRMA import main as yaslandirma_main
+                    if hasattr(yaslandirma_main, 'main'):
+                        yaslandirma_main.main()
+                        return True
+                    elif hasattr(yaslandirma_main, 'run_program'):
+                        yaslandirma_main.run_program()
+                        return True
+                except ImportError as e:
+                    print(f"❌ YASLANDIRMA import error: {e}")
+                    return False
+                    
+        except Exception as e:
+            print(f"❌ Error running {program_name}: {e}")
+            return False
             
     except Exception as e:
-        print(f"❌ Error starting {program_name}: {e}")
+        print(f"❌ General error starting {program_name}: {e}")
         return False
 
-def run_original_program(program_name):
-    """Orijinal program dosyasını çalıştır"""
-    try:
-        program_dir = os.path.join(os.path.dirname(__file__), program_name)
-        if not os.path.exists(program_dir):
-            program_dir = os.path.join(os.path.dirname(sys.executable), program_name)
-        
-        if program_name == "KARLILIK_ANALIZI":
-            main_file = "gui.py"
-        else:
-            main_file = "main.py"
-        
-        main_path = os.path.join(program_dir, main_file)
-        
-        if os.path.exists(main_path):
-            # Sistem Python'u kullan
-            python_exe = "python"
-            try:
-                subprocess.run([python_exe, "--version"], capture_output=True, timeout=5)
-            except:
-                python_exe = "py"
-            
-            cmd = f'start "BupiliC - {program_name}" /D "{program_dir}" "{python_exe}" "{main_file}"'
-            os.system(cmd)
-            return True
-        
-        return False
-        
-    except Exception as e:
-        print(f"❌ Error running original program: {e}")
-        return False
+# GERI KALAN IMPORTLAR
+import customtkinter as ctk
+from PIL import Image, ImageTk
+import threading
+import time
+from datetime import datetime
+import json
+import logging
+import locale
+from pathlib import Path
+import tempfile
+import shutil
+
+# ... (BUPILIC_ANA_PROGRAM.py'nin geri kalanı AYNI KALACAK)
+# class BupilicDashboard: ... etc.
 
 # GERI KALAN IMPORTLAR
 import customtkinter as ctk
