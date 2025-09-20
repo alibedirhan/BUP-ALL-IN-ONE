@@ -640,17 +640,29 @@ class BupilicDashboard:
     def run_subprogram(self, program_name, main_file="main.py"):
         """Alt programı çalıştır - KESİN ÇÖZÜM"""
         try:
-            # Önce frozen durumunda alt programları çıkart
+            # Frozen durumunda mıyız kontrol et
             if self.is_frozen:
-                self.extract_subprograms()
-                program_dir = os.path.join(os.path.dirname(self.base_path), program_name)
+                # ÖNCE _internal içinde ara
+                internal_path = os.path.join(self.base_path, '_internal', program_name)
+                if os.path.exists(internal_path):
+                    program_dir = internal_path
+                    self.logger.info(f"Program {program_name} _internal içinde bulundu")
+                else:
+                    # Sonra ana dizinde ara
+                    program_dir = os.path.join(self.base_path, program_name)
+                    if not os.path.exists(program_dir):
+                        error_msg = f"{program_name} programı bulunamadı!"
+                        self.show_message(error_msg)
+                        self.logger.error(error_msg)
+                        return False
             else:
+                # Normal modda çalışıyorsak doğrudan klasör yolunu kullan
                 program_dir = self.get_resource_path(program_name)
             
             main_path = os.path.join(program_dir, main_file)
             
             if not os.path.exists(main_path):
-                error_msg = f"{program_name} programı bulunamadı: {main_path}"
+                error_msg = f"{program_name} ana dosyası bulunamadı: {main_path}"
                 self.show_message(error_msg)
                 self.logger.error(error_msg)
                 return False
@@ -658,18 +670,44 @@ class BupilicDashboard:
             # Python executable yolunu belirle
             python_exe = sys.executable
             
-            # Windows için
+            # Windows için özel çözüm - YENİ PENCERE AÇARAK
             if os.name == 'nt':
-                # YENİ YÖNTEM: start komutu ile doğrudan çalıştır
-                cmd = f'start "BupiliC - {program_name}" /D "{program_dir}" "{python_exe}" "{main_file}"'
-                os.system(cmd)
+                try:
+                    import subprocess
+                    
+                    # YENİ PENCERE AÇARAK ÇALIŞTIR
+                    startupinfo = subprocess.STARTUPINFO()
+                    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                    startupinfo.wShowWindow = 1  # SW_SHOWNORMAL
+                    
+                    process = subprocess.Popen(
+                        [python_exe, main_file],
+                        cwd=program_dir,
+                        startupinfo=startupinfo,
+                        creationflags=subprocess.CREATE_NEW_CONSOLE
+                    )
+                    
+                    self.logger.info(f"{program_name} programı başlatıldı. PID: {process.pid}")
+                    return True
+                    
+                except Exception as e:
+                    # Fallback: start komutu ile dene
+                    try:
+                        cmd = f'start "BupiliC - {program_name}" /D "{program_dir}" "{python_exe}" "{main_file}"'
+                        os.system(cmd)
+                        self.logger.info(f"{program_name} programı start komutu ile başlatıldı")
+                        return True
+                    except Exception as e2:
+                        error_msg = f"{program_name} programı açılamadı: {str(e2)}"
+                        self.show_message(error_msg)
+                        self.logger.error(error_msg)
+                        return False
             else:
-                # Linux/Mac
+                # Linux/Mac için
                 subprocess.Popen([python_exe, main_file], cwd=program_dir)
+                self.logger.info(f"{program_name} programı başlatıldı")
+                return True
                 
-            self.logger.info(f"{program_name} programı başlatıldı: {main_path}")
-            return True
-            
         except Exception as e:
             error_msg = f"{program_name} programı açılamadı: {str(e)}"
             self.show_message(error_msg)
