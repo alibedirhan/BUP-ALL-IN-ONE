@@ -17,7 +17,7 @@ on:
   # Automatic trigger on tags
   push:
     tags:
-      - 'v*.*.*'
+      - 'v*'
     branches:
       - main
       - develop
@@ -52,12 +52,12 @@ jobs:
     - name: 📋 Check files exist
       run: |
         echo "🔍 Checking critical files..."
-        test -f BUPILIC_ANA_PROGRAM.py || exit 1
-        test -f requirements.txt || exit 1
-        test -d ISKONTO_HESABI || exit 1
-        test -d KARLILIK_ANALIZI || exit 1
-        test -d Musteri_Sayisi_Kontrolu || exit 1
-        test -d YASLANDIRMA || exit 1
+        if [ ! -f "BUPILIC_ANA_PROGRAM.py" ]; then echo "❌ BUPILIC_ANA_PROGRAM.py not found"; exit 1; fi
+        if [ ! -f "requirements.txt" ]; then echo "❌ requirements.txt not found"; exit 1; fi
+        if [ ! -d "ISKONTO_HESABI" ]; then echo "❌ ISKONTO_HESABI directory not found"; exit 1; fi
+        if [ ! -d "KARLILIK_ANALIZI" ]; then echo "❌ KARLILIK_ANALIZI directory not found"; exit 1; fi
+        if [ ! -d "Musteri_Sayisi_Kontrolu" ]; then echo "❌ Musteri_Sayisi_Kontrolu directory not found"; exit 1; fi
+        if [ ! -d "YASLANDIRMA" ]; then echo "❌ YASLANDIRMA directory not found"; exit 1; fi
         echo "✅ All critical files found"
 
     - name: 🏷️ Determine version
@@ -65,9 +65,9 @@ jobs:
       run: |
         if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/tags/* ]]; then
           VERSION=${GITHUB_REF#refs/tags/}
-        elif [[ "${{ github.event.inputs.version }}" != "" ]]; then
+        elif [[ -n "${{ github.event.inputs.version }}" ]]; then
           VERSION="${{ github.event.inputs.version }}"
-        elif [[ -f VERSION ]]; then
+        elif [[ -f "VERSION" ]]; then
           VERSION="v$(cat VERSION)"
         else
           VERSION="v1.0.0-$(date +'%Y%m%d')-${GITHUB_SHA:0:7}"
@@ -175,23 +175,13 @@ jobs:
         
         convert_png_to_ico()
 
-    - name: 📝 Create debug script
-      run: |
-        # Basit debug script oluştur
-        echo "import os" > debug_test.py
-        echo "import sys" >> debug_test.py
-        echo "print('Python path:', sys.path)" >> debug_test.py
-        echo "print('Current working directory:', os.getcwd())" >> debug_test.py
-        echo "print('Files in current directory:', os.listdir('.'))" >> debug_test.py
-        echo "input('Press Enter to exit...')" >> debug_test.py
-
     - name: 🔨 Build with PyInstaller
       timeout-minutes: 45
       run: |
         echo "🔨 Building ${{ env.APP_NAME }}..."
         
         # Spec dosyasını kullanarak build yap
-        pyinstaller BupiliC.spec
+        pyinstaller BupiliC.spec --noconfirm
         
         echo "✅ Build completed successfully!"
 
@@ -199,14 +189,14 @@ jobs:
       run: |
         echo "🧪 Testing executable..."
         
-        $exePath = "dist/${{ env.APP_NAME }}/${{ env.APP_NAME }}.exe"
+        $exePath = "dist\${{ env.APP_NAME }}\${{ env.APP_NAME }}.exe"
         if (Test-Path $exePath) {
             echo "✅ Executable found: $exePath"
             $size = (Get-Item $exePath).Length / 1MB
             echo "📊 Size: $([math]::Round($size, 2)) MB"
             
             echo "📋 Contents of dist folder:"
-            Get-ChildItem "dist/${{ env.APP_NAME }}" | Select-Object Name, Length | Format-Table -AutoSize
+            Get-ChildItem "dist\${{ env.APP_NAME }}" | Select-Object Name, Length | Format-Table -AutoSize
             
         } else {
             echo "❌ Executable not found at expected path"
@@ -218,17 +208,17 @@ jobs:
     - name: 📦 Package for distribution
       run: |
         $version = "${{ needs.pre-checks.outputs.version }}"
-        $distDir = "dist/${{ env.APP_NAME }}"
+        $distDir = "dist\${{ env.APP_NAME }}"
         $outputName = "${{ env.APP_NAME }}-$version-windows-x64"
         
         if (Test-Path $distDir) {
             # Tüm dosyaları ZIP yap
-            Compress-Archive -Path "$distDir/*" -DestinationPath "dist/$outputName.zip" -Force
-            echo "📦 Created ZIP package: dist/$outputName.zip"
+            Compress-Archive -Path "$distDir\*" -DestinationPath "dist\$outputName.zip" -Force
+            echo "📦 Created ZIP package: dist\$outputName.zip"
             
             # Ana executable'ı da kopyala
-            Copy-Item "$distDir/${{ env.APP_NAME }}.exe" "dist/$outputName.exe"
-            echo "📦 Created standalone executable: dist/$outputName.exe"
+            Copy-Item "$distDir\${{ env.APP_NAME }}.exe" "dist\$outputName.exe"
+            echo "📦 Created standalone executable: dist\$outputName.exe"
         }
 
     - name: 📋 Generate build info
@@ -243,12 +233,12 @@ jobs:
           build_type = "onedir"
         }
         
-        if (Test-Path "dist/${{ env.APP_NAME }}") {
-            $size = (Get-ChildItem "dist/${{ env.APP_NAME }}" -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB
+        if (Test-Path "dist\${{ env.APP_NAME }}") {
+            $size = (Get-ChildItem "dist\${{ env.APP_NAME }}" -Recurse | Measure-Object -Property Length -Sum).Sum / 1MB
             $buildInfo.size_mb = [math]::Round($size, 2)
         }
         
-        $buildInfo | ConvertTo-Json | Out-File -FilePath "dist/build-info.json" -Encoding UTF8
+        $buildInfo | ConvertTo-Json | Out-File -FilePath "dist\build-info.json" -Encoding UTF8
         echo "📋 Build info generated"
 
     - name: 📤 Upload build artifacts
