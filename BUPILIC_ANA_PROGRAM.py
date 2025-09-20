@@ -70,31 +70,34 @@ ensure_dependencies_async()
 
 # ===== TÜM ALT PROGRAMLARI ÇALIŞTIRMA =====
 def run_embedded_program(program_name):
-    """Gömülü programı çalıştır - KESİN ÇÖZÜM"""
+    """Gömülü programı çalıştır - SON ÇÖZÜM"""
     try:
         print(f"🚀 Starting {program_name}...")
         
         # PyInstaller ile paketlenmişse
         if getattr(sys, 'frozen', False):
             base_path = sys._MEIPASS
-            print(f"Frozen mode detected. Base path: {base_path}")
+            print(f"Frozen mode. Base path: {base_path}")
             
             # Mevcut çalışma dizinini de sys.path'e ekle
             current_dir = os.getcwd()
             if current_dir not in sys.path:
                 sys.path.insert(0, current_dir)
+                print(f"Added current dir to path: {current_dir}")
             
             # Alt programın yolunu sys.path'e ekle
             program_path = os.path.join(base_path, program_name)
-            if program_path not in sys.path:
+            if program_path not in sys.path and os.path.exists(program_path):
                 sys.path.insert(0, program_path)
-                print(f"Added to path: {program_path}")
+                print(f"Added program path: {program_path}")
         
-        # PROGRAM ÖZEL ÇÖZÜMLER - EN GARANTİLİ YÖNTEM
+        # DEBUG: Path'i göster
+        print(f"Current sys.path: {sys.path}")
+        
+        # PROGRAM ÖZEL ÇÖZÜMLER
         try:
             if program_name == "ISKONTO_HESABI":
                 print("Importing ISKONTO_HESABI...")
-                # Doğrudan modülü import et
                 import ISKONTO_HESABI.main as iskonto_main
                 iskonto_main.main()
                 return True
@@ -105,15 +108,10 @@ def run_embedded_program(program_name):
                 karlilik_gui.main()
                 return True
                 
-            elif program_name in ["Musteri_Sayisi_Kontrolu", "Musteri_Sayisi_KONTROLU"]:
-                print("Importing Musteri_Sayisi...")
-                # İki olası isim için deneme
-                try:
-                    import Musteri_Sayisi_Kontrolu.main as musteri_main
-                    musteri_main.main()
-                except ImportError:
-                    import Musteri_Sayisi_KONTROLU.main as musteri_main
-                    musteri_main.main()
+            elif program_name == "Musteri_Sayisi_Kontrolu":
+                print("Importing Musteri_Sayisi_Kontrolu...")
+                import Musteri_Sayisi_Kontrolu.main as musteri_main
+                musteri_main.main()
                 return True
                 
             elif program_name == "YASLANDIRMA":
