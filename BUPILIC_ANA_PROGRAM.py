@@ -668,34 +668,124 @@ class BupilicDashboard:
         self.logger.info("Ana sayfa gösterildi.")
     
     def run_subprogram(self, program_name, main_file="main.py"):
-        """Alt programı çalıştır - BASİT VE ETKİLİ"""
+        """Alt programı çalıştır - KESİN ÇÖZÜM"""
         try:
-            print(f"Starting {program_name}...")
+            print(f"🚀 {program_name} başlatılıyor...")
             
+            # 1. ÖNCE FROZEN MOD KONTROLÜ
             if self.is_frozen:
-                # Frozen modda - EXE ile aynı dizinde
-                program_dir = os.path.join(os.path.dirname(sys.executable), program_name)
+                print("❄️ Frozen modda çalışıyor")
+                
+                # CRITICAL FIX: MEIPASS yolunu kullan
+                program_dir = os.path.join(self.base_path, program_name)
+                print(f"📁 MEIPASS program_dir: {program_dir}")
+                
+                # Alternatif olarak executable dizinini de kontrol et
+                exe_dir = os.path.join(os.path.dirname(sys.executable), program_name)
+                print(f"📁 EXE program_dir: {exe_dir}")
+                
+                # Önce MEIPASS'ta ara, bulunamazsa EXE dizininde ara
+                if os.path.exists(program_dir):
+                    print("✅ MEIPASS'ta bulundu")
+                elif os.path.exists(exe_dir):
+                    print("✅ EXE dizininde bulundu")
+                    program_dir = exe_dir
+                else:
+                    error_msg = f"❌ {program_name} hiçbir yerde bulunamadı!"
+                    print(error_msg)
+                    self.show_message(error_msg)
+                    return False
+                    
             else:
-                # Normal modda
-                program_dir = os.path.join(os.path.dirname(__file__), program_name)
+                print("🐍 Normal modda çalışıyor")
+                # Normal modda - göreceli yolda
+                program_dir = self.get_resource_path(program_name)
+                print(f"📁 Normal program_dir: {program_dir}")
             
-            main_path = os.path.join(program_dir, main_file)
-            
-            if not os.path.exists(main_path):
-                self.show_message(f"{program_name} not found!")
+            # 2. DİZİN KONTROLÜ
+            if not os.path.exists(program_dir):
+                error_msg = f"❌ {program_name} dizini bulunamadı: {program_dir}"
+                print(error_msg)
+                self.show_message(error_msg)
                 return False
             
-            # Windows'ta çalıştır
-            import subprocess
-            subprocess.Popen(
-                [sys.executable, main_path],
-                cwd=program_dir,
-                creationflags=subprocess.CREATE_NEW_CONSOLE
-            )
-            return True
+            # 3. MAIN DOSYASINI KONTROL ET
+            main_path = os.path.join(program_dir, main_file)
+            print(f"📄 Main dosya yolu: {main_path}")
+            
+            if not os.path.exists(main_path):
+                error_msg = f"❌ {main_file} bulunamadı: {main_path}"
+                print(error_msg)
+                
+                # Main.py yerine farklı isimde olabilir mi diye kontrol et
+                py_files = [f for f in os.listdir(program_dir) if f.endswith('.py')]
+                print(f"🔍 Mevcut Python dosyaları: {py_files}")
+                
+                self.show_message(error_msg)
+                return False
+            
+            # 4. DİZİN İÇERİĞİNİ GÖSTER (DEBUG)
+            print(f"📋 Dizin içeriği: {os.listdir(program_dir)}")
+            
+            # 5. WINDOWS İÇİN KESİN ÇÖZÜM
+            if os.name == 'nt':
+                print("🪟 Windows işletim sistemi")
+                
+                # Python executable yolunu al
+                python_exe = sys.executable
+                print(f"🐍 Python executable: {python_exe}")
+                
+                # YENİ VE KESİN YÖNTEM: subprocess ile çalıştır
+                try:
+                    import subprocess
+                    
+                    # Çalışma dizinini ayarla
+                    original_dir = os.getcwd()
+                    os.chdir(program_dir)
+                    print(f"📂 Çalışma dizini değiştirildi: {os.getcwd()}")
+                    
+                    # Process'i başlat
+                    process = subprocess.Popen(
+                        [python_exe, main_file],
+                        creationflags=subprocess.CREATE_NEW_CONSOLE
+                    )
+                    
+                    print(f"✅ Process başlatıldı: PID {process.pid}")
+                    
+                    # Çalışma dizinini geri al
+                    os.chdir(original_dir)
+                    
+                    return True
+                    
+                except Exception as e:
+                    error_msg = f"❌ Subprocess hatası: {str(e)}"
+                    print(error_msg)
+                    
+                    # FALLBACK: os.system ile dene
+                    try:
+                        cmd = f'cd /d "{program_dir}" && "{python_exe}" "{main_file}"'
+                        print(f"⚡ Fallback komut: {cmd}")
+                        result = os.system(cmd)
+                        print(f"✅ Fallback sonuç: {result}")
+                        return result == 0
+                    except Exception as e2:
+                        error_msg = f"❌ Fallback hatası: {str(e2)}"
+                        print(error_msg)
+                        self.show_message(f"{program_name} açılamadı: {str(e2)}")
+                        return False
+            else:
+                # Linux/Mac
+                import subprocess
+                subprocess.Popen([sys.executable, main_path], cwd=program_dir)
+                print(f"✅ {program_name} Linux/Mac'te başlatıldı")
+                return True
                 
         except Exception as e:
-            self.show_message(f"Error: {str(e)}")
+            error_msg = f"❌ GENEL HATA: {str(e)}"
+            print(error_msg)
+            import traceback
+            traceback.print_exc()
+            self.show_message(f"Beklenmeyen hata: {str(e)}")
             return False
 
     def iskonto_ac(self):
