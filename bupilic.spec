@@ -1,11 +1,14 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+# BU SPEC DOSYASI TÜM BAĞIMLILIKLARI GARANTILI ŞEKILDE TEK EXE'YE PAKETLER
+# KULLANICI HIÇBIR ŞEY YÜKLEMEZ, SADECE ÇIFT TIKLAR
+
 import os
 import sys
 
 block_cipher = None
 
-# Tüm alt modüllerin path'lerini ekle
+# Tüm modül path'leri
 pathex = [
     '.',
     'ISKONTO_HESABI',
@@ -16,13 +19,13 @@ pathex = [
     'YASLANDIRMA/modules'
 ]
 
-# Ana script analizi - DOĞRU DOSYA ADI
+# Ana analiz - TÜM BAĞIMLILIKLAR DAHİL
 a = Analysis(
-    ['BUPILIC_ANA_PROGRAM.py'],  # Mevcut ana dosyanız
+    ['BUPILIC_ANA_PROGRAM.py'],
     pathex=pathex,
     binaries=[],
     datas=[
-        # Tüm Python dosyalarını dahil et
+        # Python modülleri
         ('ISKONTO_HESABI/*.py', 'ISKONTO_HESABI'),
         ('KARLILIK_ANALIZI/*.py', 'KARLILIK_ANALIZI'),
         ('Musteri_Sayisi_Kontrolu/*.py', 'Musteri_Sayisi_Kontrolu'),
@@ -30,7 +33,7 @@ a = Analysis(
         ('YASLANDIRMA/gui/*.py', 'YASLANDIRMA/gui'),
         ('YASLANDIRMA/modules/*.py', 'YASLANDIRMA/modules'),
         
-        # Data dosyaları
+        # Data dosyaları (varsa)
         ('*.txt', '.'),
         ('*.csv', '.'),
         ('*.json', '.'),
@@ -39,7 +42,7 @@ a = Analysis(
         ('*.jpg', '.'),
     ],
     hiddenimports=[
-        # Tüm alt modülleri belirt
+        # Ana modüller
         'ISKONTO_HESABI',
         'ISKONTO_HESABI.main',
         'ISKONTO_HESABI.ui_components',
@@ -83,19 +86,23 @@ a = Analysis(
         'YASLANDIRMA.modules.reports',
         'YASLANDIRMA.modules.visualization',
         
-        # Temel kütüphaneler
+        # TÜM BAĞIMLILIKLAR ZORUNLU
         'pandas',
         'numpy',
         'matplotlib',
         'matplotlib.pyplot',
         'matplotlib.figure',
+        'matplotlib.backends',
         'matplotlib.backends.backend_tkagg',
         'tkinter',
         'tkinter.ttk',
         'tkinter.filedialog',
         'tkinter.messagebox',
+        'tkinter.simpledialog',
         'customtkinter',
         'openpyxl',
+        'openpyxl.workbook',
+        'openpyxl.worksheet',
         'pdfplumber',
         'PIL',
         'PIL.Image',
@@ -114,20 +121,61 @@ a = Analysis(
         'csv',
         'sqlite3',
         'tkcalendar',
+        'locale',
+        'threading',
+        'time',
+        'pathlib',
+        'tempfile',
+        'shutil',
+        'importlib',
+        
+        # PDF ve Excel için ekstra
+        'pdfminer',
+        'pdfminer.six',
+        'cryptography',
+        'charset_normalizer',
+        'python_dateutil',
+        'pytz',
+        'tzdata',
+        
+        # CustomTkinter için ekstra
+        'darkdetect',
+        
+        # Matplotlib için ekstra
+        'contourpy',
+        'cycler',
+        'fonttools',
+        'kiwisolver',
+        'pyparsing',
+        
+        # Windows için ekstra
+        'win32api',
+        'win32con',
+        'win32gui',
+        'pywintypes',
     ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=[
+        # Gereksizleri hariç tut
+        'FixTk',
+        'tcl',
+        'tk',
+        '_tkinter',
+        'test',
+        'unittest',
+    ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
     noarchive=False,
 )
 
+# Python bytecode'u paketleme
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
-# TEK DOSYA EXE OLUŞTUR
+# TEK DOSYA EXE - HİÇBİR BAĞIMLILIK KALMASIN
 exe = EXE(
     pyz,
     a.scripts,
@@ -142,7 +190,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,  # GUI için False
+    console=False,  # GUI aplikasyon
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
