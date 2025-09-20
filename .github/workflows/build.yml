@@ -140,18 +140,7 @@ jobs:
     # build.yml dosyasında PyInstaller komutunu güncelle:
     - name: Build with PyInstaller
       run: |
-        # Önce spec dosyasının doğru olduğundan emin ol
-        python -c "
-        import os
-        print('Current directory:', os.getcwd())
-        print('Files:', os.listdir('.'))
-        for dir in ['ISKONTO_HESABI', 'KARLILIK_ANALIZI', 'Musteri_Sayisi_Kontrolu', 'Musteri_Sayisi_KONTROLU', 'YASLANDIRMA']:
-            if os.path.exists(dir):
-                print(f'{dir} exists with files:', os.listdir(dir))
-            else:
-                print(f'{dir} does not exist')
-        "
-        
+        pyinstaller BupiliC.spec --noconfirm --clean
 
     - name: Check build result
       run: |
