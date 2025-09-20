@@ -21,7 +21,7 @@ on:
 
 env:
   APP_NAME: BupiliC
-  PYTHON_VERSION: '3.10'  # 3.13 yerine 3.10 kullan
+  PYTHON_VERSION: '3.10'
   BUILD_TYPE: release
 
 jobs:
@@ -98,20 +98,10 @@ jobs:
         # Önce requirements.txt'den yükle
         pip install -r requirements.txt
         
-        # Versiyonları kontrol et (Unicode karakterleri kaldır)
-        python -c "
-        try:
-            import pandas as pd
-            import numpy as np
-            import pdfplumber
-            import customtkinter as ctk
-            print('Pandas:', pd.__version__)
-            print('NumPy:', np.__version__)
-            print('PDFPlumber:', getattr(pdfplumber, '__version__', 'unknown'))
-            print('CustomTkinter:', getattr(ctk, '__version__', 'unknown'))
-        except Exception as e:
-            print('Error:', e)
-        "
+        # Ek bağımlılıkları yükle
+        pip install pandas numpy matplotlib pdfplumber customtkinter
+        pip install openpyxl psutil Pillow seaborn xlsxwriter
+        pip install xlrd xlwt python-dateutil tkcalendar
 
     - name: Build with PyInstaller
       run: |
@@ -122,6 +112,8 @@ jobs:
         $exePath = "dist\${{ env.APP_NAME }}\${{ env.APP_NAME }}.exe"
         if (Test-Path $exePath) {
             echo "Executable found: $exePath"
+            # Test çalıştırma
+            Start-Process $exePath -Wait -NoNewWindow -ArgumentList "--test"
         }
 
     - name: Package for distribution
