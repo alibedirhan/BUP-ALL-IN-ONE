@@ -137,10 +137,10 @@ jobs:
             exit(1)
         "
 
+    # build.yml dosyasında PyInstaller komutunu güncelle:
     - name: Build with PyInstaller
       run: |
-        echo "Building executable with spec file..."
-        pyinstaller bupilic.spec --noconfirm --clean
+        pyinstaller BupiliC.spec --noconfirm --clean
 
     - name: Check build result
       run: |
