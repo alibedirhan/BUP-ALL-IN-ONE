@@ -640,9 +640,6 @@ class BupilicDashboard:
     def run_subprogram(self, program_name, main_file="main.py"):
         """Alt programı çalıştır - KESİN ÇÖZÜM"""
         try:
-            # Mevcut çalışma dizinini kaydet
-            original_cwd = os.getcwd()
-            
             # Önce frozen durumunda alt programları çıkart
             if self.is_frozen:
                 self.extract_subprograms()
@@ -661,49 +658,18 @@ class BupilicDashboard:
             # Python executable yolunu belirle
             python_exe = sys.executable
             
-            # Windows için KESİN ÇÖZÜM
+            # Windows için
             if os.name == 'nt':
-                try:
-                    # Çalışma dizinini değiştir
-                    os.chdir(program_dir)
-                    
-                    # Batch dosyası oluştur (en garantili yöntem)
-                    batch_content = f"""@echo off
-chcp 65001 > nul
-title BupiliC - {program_name}
-echo ============================================
-echo    BUPILIC - {program_name}
-echo ============================================
-echo.
-echo Program başlatılıyor...
-echo Çalışma dizini: %CD%
-echo.
-"{python_exe}" "{main_file}"
-echo.
-echo Program sonlandı.
-echo Bu pencereyi kapatabilirsiniz.
-pause
-"""
-                    batch_path = os.path.join(program_dir, f"run_{program_name}.bat")
-                    with open(batch_path, 'w', encoding='utf-8') as f:
-                        f.write(batch_content)
-                    
-                    # Batch dosyasını çalıştır (start komutu ile)
-                    subprocess.Popen(f'start "BupiliC - {program_name}" cmd /k "{batch_path}"', 
-                                   shell=True)
-                    
-                    self.logger.info(f"{program_name} programı başlatıldı: {main_path}")
-                    return True
-                    
-                finally:
-                    # Çalışma dizinini her durumda geri al
-                    os.chdir(original_cwd)
-                    
+                # YENİ YÖNTEM: start komutu ile doğrudan çalıştır
+                cmd = f'start "BupiliC - {program_name}" /D "{program_dir}" "{python_exe}" "{main_file}"'
+                os.system(cmd)
             else:
                 # Linux/Mac
                 subprocess.Popen([python_exe, main_file], cwd=program_dir)
-                return True
                 
+            self.logger.info(f"{program_name} programı başlatıldı: {main_path}")
+            return True
+            
         except Exception as e:
             error_msg = f"{program_name} programı açılamadı: {str(e)}"
             self.show_message(error_msg)
@@ -735,22 +701,22 @@ pause
         print(f"INFO: {message}")
     
     def show_debug_info(self):
-        """Debug bilgilerini göster - GELİŞTİRİLMİŞ"""
+        """Debug bilgilerini göster"""
         debug_window = ctk.CTkToplevel(self.root)
-        debug_window.title("🐛 Debug Information - DETAYLI")
-        debug_window.geometry("800x600")
+        debug_window.title("🐛 Debug Information")
+        debug_window.geometry("700x500")
         debug_window.transient(self.root)
         debug_window.grab_set()
         
-        info_text = f"""=== BUPİLİÇ DETAYLI DEBUG BİLGİLERİ ===
+        info_text = f"""=== BUPİLİÇ DEBUG BİLGİLERİ ===
 
-Ana Program Bilgileri:
-- Base Path: {self.base_path}
-- Frozen Mode: {self.is_frozen}
-- Current Directory: {os.getcwd()}
-- Python Executable: {sys.executable}
+Base Path: {self.base_path}
+Frozen: {self.is_frozen}
+Current Directory: {os.getcwd()}
+Python Executable: {sys.executable}
+Python Version: {sys.version}
 
-ALT PROGRAM DURUMU:
+Available Subprograms:
 """
         
         subprograms = ["ISKONTO_HESABI", "KARLILIK_ANALIZI", "Musteri_Sayisi_Kontrolu", "YASLANDIRMA"]
@@ -758,65 +724,41 @@ ALT PROGRAM DURUMU:
         for program in subprograms:
             program_path = self.get_resource_path(program)
             exists = os.path.exists(program_path)
+            main_file = "main.py"
+            main_path = os.path.join(program_path, main_file) if exists else "N/A"
+            main_exists = os.path.exists(main_path) if exists else False
             
             info_text += f"\n{program}:"
             info_text += f"\n  - Path: {program_path}"
             info_text += f"\n  - Exists: {'✅' if exists else '❌'}"
-            
             if exists:
-                main_file = "main.py"
-                main_path = os.path.join(program_path, main_file)
-                main_exists = os.path.exists(main_path)
-                
                 info_text += f"\n  - Main file: {main_path}"
                 info_text += f"\n  - Main exists: {'✅' if main_exists else '❌'}"
-                
-                # Dosya içeriğini kontrol et (ilk 3 satır)
-                if main_exists:
-                    try:
-                        with open(main_path, 'r', encoding='utf-8') as f:
-                            first_lines = [f.readline().strip() for _ in range(3)]
-                        info_text += f"\n  - Content start: {first_lines}"
-                    except Exception as e:
-                        info_text += f"\n  - Content error: {e}"
             
             info_text += "\n"
         
-        # Çalışma dizinindeki dosyaları listele
-        info_text += f"\nÇALIŞMA DİZİNİ DOSYALARI:\n"
+        # Mevcut dosyaları listele
+        info_text += f"\nCurrent Directory Files:\n"
         try:
-            current_dir = os.getcwd()
-            info_text += f"Current dir: {current_dir}\n"
-            
-            for item in os.listdir(current_dir):
-                full_path = os.path.join(current_dir, item)
-                if os.path.isdir(full_path):
+            for item in os.listdir('.'):
+                if os.path.isdir(item):
                     info_text += f"📁 {item}/\n"
                 else:
-                    size = os.path.getsize(full_path)
-                    info_text += f"📄 {item} ({size} bytes)\n"
+                    info_text += f"📄 {item}\n"
         except Exception as e:
             info_text += f"Error listing directory: {e}\n"
         
-        # Textbox oluştur
-        textbox = ctk.CTkTextbox(debug_window, width=780, height=550)
+        textbox = ctk.CTkTextbox(debug_window, width=680, height=450)
         textbox.pack(padx=10, pady=10, fill="both", expand=True)
         textbox.insert("1.0", info_text)
         textbox.configure(state="disabled")
         
-        # Test butonları
-        button_frame = ctk.CTkFrame(debug_window)
-        button_frame.pack(pady=10)
-        
-        test_btn = ctk.CTkButton(button_frame, text="Test ISKONTO", 
-                               command=lambda: self.run_subprogram("ISKONTO_HESABI", "main.py"),
-                               fg_color="#2A9D8F")
-        test_btn.pack(side="left", padx=5)
-        
-        close_btn = ctk.CTkButton(button_frame, text="Kapat", 
+        # Kapatma butonu
+        close_btn = ctk.CTkButton(debug_window, text="Kapat", 
                                 command=debug_window.destroy,
+                                height=40,
                                 fg_color="#E63946")
-        close_btn.pack(side="left", padx=5)
+        close_btn.pack(pady=10)
     
     def run(self):
         self.root.mainloop()

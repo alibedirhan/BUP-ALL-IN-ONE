@@ -1,6 +1,22 @@
 # main.py - DÜZELTILMIŞ VE TEMİZLENMİŞ
 import tkinter as tk
 from tkinter import ttk
+import os
+import sys
+
+# Frozen durumu için özel ayarlar
+if getattr(sys, 'frozen', False):
+    # PyInstaller ile paketlenmişse
+    application_path = os.path.dirname(sys.executable)
+    # Çalışma dizinini ayarla
+    os.chdir(os.path.join(application_path, os.path.dirname(__file__)))
+else:
+    # Normal Python ortamında çalışıyorsa
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+# Geri kalan kodlar...
+
+
 import sys
 import os
 import logging

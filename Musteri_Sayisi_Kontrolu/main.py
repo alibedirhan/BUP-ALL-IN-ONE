@@ -1,3 +1,19 @@
+import os
+import sys
+
+# Frozen durumu için özel ayarlar
+if getattr(sys, 'frozen', False):
+    # PyInstaller ile paketlenmişse
+    application_path = os.path.dirname(sys.executable)
+    # Çalışma dizinini ayarla
+    os.chdir(os.path.join(application_path, os.path.dirname(__file__)))
+else:
+    # Normal Python ortamında çalışıyorsa
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+# Geri kalan kodlar...
+
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
