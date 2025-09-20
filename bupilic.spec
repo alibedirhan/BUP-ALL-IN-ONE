@@ -6,18 +6,66 @@ import glob
 from PyInstaller.building.build_main import Analysis, EXE, PYZ
 from PyInstaller.building.datastruct import TOC
 
+# -*- mode: python ; coding: utf-8 -*-
+
 block_cipher = None
 
-# Tüm alt modüllerin path'lerini ekle
-pathex = [
-    '.',
-    './ISKONTO_HESABI',
-    './KARLILIK_ANALIZI', 
-    './Musteri_Sayisi_KONTROLU',  # Dikkat: Kontrolu değil KONTROLU
-    './YASLANDIRMA',
-    './YASLANDIRMA/gui',
-    './YASLANDIRMA/modules'
-]
+a = Analysis(
+    ['BUPILIC_ANA_PROGRAM.py'],
+    pathex=[],
+    binaries=[],
+    datas=[
+        # TÜM DOSYALARI TEK TEK EKLEYİN
+        ('ISKONTO_HESABI', 'ISKONTO_HESABI'),
+        ('KARLILIK_ANALIZI', 'KARLILIK_ANALIZI'),
+        ('Musteri_Sayisi_Kontrolu', 'Musteri_Sayisi_Kontrolu'),
+        ('Musteri_Sayisi_KONTROLU', 'Musteri_Sayisi_KONTROLU'),  # İki isim de olabilir
+        ('YASLANDIRMA', 'YASLANDIRMA'),
+        ('icon', 'icon'),
+    ],
+    hiddenimports=[
+        # TÜM GEREKLİ MODÜLLER
+        'ISKONTO_HESABI.main',
+        'KARLILIK_ANALIZI.gui', 
+        'Musteri_Sayisi_Kontrolu.main',
+        'Musteri_Sayisi_KONTROLU.main',
+        'YASLANDIRMA.main',
+        'pandas', 'numpy', 'matplotlib', 'customtkinter',
+        'pdfplumber', 'PIL', 'openpyxl', 'seaborn'
+    ],
+    hookspath=[],
+    hooksconfig={},
+    runtime_hooks=[],
+    excludes=[],
+    win_no_prefer_redirects=False,
+    win_private_assemblies=False,
+    cipher=block_cipher,
+    noarchive=False,
+)
+
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
+exe = EXE(
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    name='BupiliC',
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=True,
+    upx_exclude=[],
+    runtime_tmpdir=None,
+    console=True,  # DEBUG için True, sonra False yapın
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+    icon='icon/bupilic_logo.ico' if os.path.exists('icon/bupilic_logo.ico') else None,
+)
 
 # Tüm Python dosyalarını topla - YENİ YÖNTEM
 def collect_all_py_files(directory):
