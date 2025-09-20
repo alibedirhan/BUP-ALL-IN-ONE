@@ -3,9 +3,7 @@
 import os
 import sys
 
-# Ana dizin
 block_cipher = None
-MAIN_DIR = os.path.dirname(os.path.abspath(os.getcwd()))
 
 # Tüm alt modüllerin path'lerini ekle
 pathex = [
@@ -18,9 +16,9 @@ pathex = [
     'YASLANDIRMA/modules'
 ]
 
-# Ana script analizi
+# Ana script analizi - DOĞRU DOSYA ADI
 a = Analysis(
-    ['main.py'],  # Ana script dosyanız
+    ['BUPILIC_ANA_PROGRAM.py'],  # Mevcut ana dosyanız
     pathex=pathex,
     binaries=[],
     datas=[
@@ -32,7 +30,7 @@ a = Analysis(
         ('YASLANDIRMA/gui/*.py', 'YASLANDIRMA/gui'),
         ('YASLANDIRMA/modules/*.py', 'YASLANDIRMA/modules'),
         
-        # Eğer varsa data dosyaları
+        # Data dosyaları
         ('*.txt', '.'),
         ('*.csv', '.'),
         ('*.json', '.'),
@@ -115,6 +113,7 @@ a = Analysis(
         'json',
         'csv',
         'sqlite3',
+        'tkcalendar',
     ],
     hookspath=[],
     hooksconfig={},
@@ -126,13 +125,9 @@ a = Analysis(
     noarchive=False,
 )
 
-# Gereksiz dosyaları temizle
-a.binaries = [x for x in a.binaries if not x[0].startswith('tcl')]
-a.binaries = [x for x in a.binaries if not x[0].startswith('tk')]
-
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
-# TEK DOSYA EXE - Bu kısım çok önemli!
+# TEK DOSYA EXE OLUŞTUR
 exe = EXE(
     pyz,
     a.scripts,
@@ -140,18 +135,17 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='Bupilic_Yonetim_Sistemi',
+    name='BupiliC',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,  # Debug için True yapın, sonra False
+    console=False,  # GUI için False
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon='icon.ico' if os.path.exists('icon.ico') else None,
 )
