@@ -471,7 +471,7 @@ class BupilicDashboard:
             ("👥 Müşteri Kayıp/Kaçak", self.musteri_kayip_ac),
             ("📊 Yaşlandırma", self.yaslandirma_ac),
             ("⚙️ Ayarlar", self.show_settings),
-            ("🐛 Debug", self.)
+            ("Debug", self.show_debug_info)
         ]
         
         for text, command in nav_buttons:
