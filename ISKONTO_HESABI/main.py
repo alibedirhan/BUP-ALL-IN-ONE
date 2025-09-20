@@ -106,6 +106,11 @@ def main():
         logging.error(f"Uygulama başlatma hatası: {e}", exc_info=True)
         print(f"HATA: Uygulama başlatılamadı - {e}")
         sys.exit(1)
+        
+    def run_program():
+        """Ana programdan çağrılmak için"""
+        main()  # Mevcut main fonksiyonunuzu çağırın
+    
 
 if __name__ == "__main__":
     main()
