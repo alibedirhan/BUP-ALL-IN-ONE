@@ -471,7 +471,7 @@ class BupilicDashboard:
             ("👥 Müşteri Kayıp/Kaçak", self.musteri_kayip_ac),
             ("📊 Yaşlandırma", self.yaslandirma_ac),
             ("⚙️ Ayarlar", self.show_settings),
-            ("🐛 Debug", self.show_debug_info)
+            ("🐛 Debug", self.)
         ]
         
         for text, command in nav_buttons:
@@ -750,70 +750,33 @@ class BupilicDashboard:
     
     def show_debug_info(self):
         """Debug bilgilerini göster"""
-        debug_window = ctk.CTkToplevel(self.root)
-        debug_window.title("🐛 Debug Information")
-        debug_window.geometry("800x600")
-        debug_window.transient(self.root)
-        debug_window.grab_set()
+        debug_info = f"""
+        DEBUG INFORMATION:
+        Current dir: {os.getcwd()}
+        Python path: {sys.path}
+        Frozen: {getattr(sys, 'frozen', False)}
+        """
         
-        # Debug bilgilerini topla
-        info_text = f"""DEBUG INFORMATION:
-
-Frozen Mode: {getattr(sys, 'frozen', False)}
-Base Path: {getattr(sys, '_MEIPASS', 'Not frozen')}
-Current Directory: {os.getcwd()}
-Python Executable: {sys.executable}
-Operating System: {os.name}
-
-SUBPROGRAMS STATUS:
-"""
-        
-        subprograms = ["ISKONTO_HESABI", "KARLILIK_ANALIZI", "Musteri_Sayisi_Kontrolu", "YASLANDIRMA"]
-        
-        for program in subprograms:
-            program_path = os.path.join(self.base_path, program)
-            exists = os.path.exists(program_path)
-            
-            info_text += f"\n{program}:"
-            info_text += f"\n  Path: {program_path}"
-            info_text += f"\n  Exists: {'YES' if exists else 'NO'}"
-            
-            if exists:
-                # Python dosyalarını listele
-                py_files = [f for f in os.listdir(program_path) if f.endswith('.py') and f != '__init__.py']
-                info_text += f"\n  Python Files: {py_files}"
-                
-                # Ana dosya kontrolü
-                main_files = ["main.py", "gui.py", "app.py"]
-                main_found = None
-                for main_file in main_files:
-                    if os.path.exists(os.path.join(program_path, main_file)):
-                        main_found = main_file
-                        break
-                
-                info_text += f"\n  Main File: {main_found if main_found else 'NOT FOUND'}"
-        
-        info_text += f"\n\nDEPENDENCIES STATUS:"
-        dependencies = ['pandas', 'numpy', 'matplotlib', 'pdfplumber', 'customtkinter', 
-                       'PIL', 'python-dateutil', 'tkcalendar']
-        
-        for dep in dependencies:
+        if getattr(sys, 'frozen', False):
+            debug_info += f"MEIPASS: {sys._MEIPASS}\n"
             try:
-                importlib.import_module(dep)
-                info_text += f"\n  {dep}: ✅ AVAILABLE"
-            except ImportError:
-                info_text += f"\n  {dep}: ❌ MISSING"
+                debug_info += f"Files in MEIPASS: {os.listdir(sys._MEIPASS)}\n"
+            except:
+                debug_info += "Cannot list MEIPASS files\n"
         
-        textbox = ctk.CTkTextbox(debug_window, width=780, height=550)
-        textbox.pack(padx=10, pady=10, fill="both", expand=True)
-        textbox.insert("1.0", info_text)
-        textbox.configure(state="disabled")
+        # Her alt programın varlığını kontrol et
+        for program in ["ISKONTO_HESABI", "KARLILIK_ANALIZI", "Musteri_Sayisi_Kontrolu", "YASLANDIRMA"]:
+            debug_info += f"\n{program}:\n"
+            if getattr(sys, 'frozen', False):
+                program_path = os.path.join(sys._MEIPASS, program)
+                debug_info += f"  In MEIPASS: {os.path.exists(program_path)}\n"
+            
+            # Current dir'de kontrol et
+            current_program_path = os.path.join(os.getcwd(), program)
+            debug_info += f"  In current dir: {os.path.exists(current_program_path)}\n"
         
-        close_btn = ctk.CTkButton(debug_window, text="Kapat", 
-                                command=debug_window.destroy,
-                                height=40,
-                                fg_color="#E63946")
-        close_btn.pack(pady=10)
+        print(debug_info)
+        self.show_message(debug_info)
     
     def run(self):
         self.root.mainloop()
