@@ -826,70 +826,121 @@ class BupilicDashboard:
         try:
             print(f"🚀 {program_name} başlatılıyor...")
             
-            # Yol bulma
-            if self.is_frozen:
-                program_dir = os.path.join(self.base_path, program_name)
+            # Yol bulma - ÖNCE mevcut dizini kontrol et
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            program_dir = os.path.join(current_dir, program_name)
+            
+            # Eğer yoksa frozen modda ara
+            if not os.path.exists(program_dir) and getattr(sys, 'frozen', False):
+                program_dir = os.path.join(os.path.dirname(sys.executable), program_name)
                 if not os.path.exists(program_dir):
-                    program_dir = os.path.join(os.path.dirname(sys.executable), program_name)
-            else:
-                program_dir = os.path.join(os.path.dirname(__file__), program_name)
+                    program_dir = os.path.join(self.base_path, program_name)
+            
+            print(f"🔍 Program dizini: {program_dir}")
             
             if not os.path.exists(program_dir):
                 self.show_message(f"{program_name} bulunamadı!")
                 return False
             
-            main_path = os.path.join(program_dir, main_file)
-            if not os.path.exists(main_path):
-                self.show_message(f"{main_file} bulunamadı!")
-                return False
+            # Tüm Python dosyalarını listele
+            py_files = [f for f in os.listdir(program_dir) if f.endswith('.py') and f != '__init__.py']
+            print(f"📁 {program_name} içindeki Python dosyaları: {py_files}")
+            
+            # ÖZEL DURUM: KARLILIK_ANALIZI için gui.py kullan
+            if program_name == "KARLILIK_ANALIZI":
+                main_file = "gui.py"
+                main_path = os.path.join(program_dir, main_file)
+                print(f"✅ KARLILIK_ANALIZI için özel dosya: {main_file}")
+            else:
+                # Ana dosyayı bul
+                main_path = None
+                possible_main_files = [main_file, f"{program_name}.py", "app.py", "gui.py", "program.py"]
+                
+                for possible_file in possible_main_files:
+                    test_path = os.path.join(program_dir, possible_file)
+                    if os.path.exists(test_path):
+                        main_path = test_path
+                        main_file = possible_file
+                        break
+                
+                if not main_path:
+                    # Hiçbiri yoksa ilk Python dosyasını kullan
+                    if py_files:
+                        main_path = os.path.join(program_dir, py_files[0])
+                        main_file = py_files[0]
+                    else:
+                        self.show_message(f"{program_name} içinde Python dosyası bulunamadı!")
+                        return False
+            
+            print(f"✅ Ana dosya bulundu: {main_file}")
             
             # Windows için kesin çözüm
             if os.name == 'nt':
                 try:
-                    # ÖNCE: Mevcut Python'u kullanmayı dene
+                    # Python executable'ı bul
                     python_exe = sys.executable
                     
-                    # EĞER ana program EXE'si ise, sistem Python'unu kullan
-                    if python_exe.endswith('.exe'):
+                    # Eğer frozen modda ise sistem Python'unu kullan
+                    if getattr(sys, 'frozen', False):
                         # Sistemde Python kurulu mu kontrol et
                         try:
-                            # python komutunu dene
-                            result = os.system('python --version')
-                            if result == 0:
+                            result = subprocess.run(['python', '--version'], 
+                                                  capture_output=True, text=True, timeout=5)
+                            if result.returncode == 0:
                                 python_exe = 'python'
+                                print("✅ Sistem Python'u kullanılacak")
                             else:
-                                # python bulunamazsa py komutunu dene
-                                result = os.system('py --version')
-                                if result == 0:
+                                result = subprocess.run(['py', '--version'], 
+                                                      capture_output=True, text=True, timeout=5)
+                                if result.returncode == 0:
                                     python_exe = 'py'
+                                    print("✅ Py launcher kullanılacak")
                                 else:
-                                    self.show_message("Sistemde Python kurulu değil! Lütfen Python yükleyin.")
-                                    return False
+                                    # Son çare: embedded Python'u kullan
+                                    python_exe = sys.executable
+                                    print("⚠️ Embedded Python kullanılacak")
                         except:
-                            self.show_message("Python bulunamadı!")
-                            return False
+                            python_exe = sys.executable
+                            print("⚠️ Embedded Python kullanılacak (hata)")
+                    
+                    print(f"🐍 Python executable: {python_exe}")
                     
                     # start komutu ile yeni pencere aç
                     cmd = f'start "BupiliC - {program_name}" /D "{program_dir}" "{python_exe}" "{main_file}"'
                     print(f"⚡ Komut: {cmd}")
                     
-                    result = os.system(cmd)
-                    print(f"✅ Sonuç: {result}")
+                    # Komutu çalıştır
+                    import subprocess
+                    process = subprocess.Popen(cmd, shell=True)
+                    time.sleep(3)  # Programın açılması için bekle
                     
-                    # Komut başarılı olduysa bekle ve kontrol et
-                    if result == 0:
-                        time.sleep(2)  # Programın açılması için bekle
+                    # Process durumunu kontrol et
+                    if process.poll() is None:
+                        print(f"✅ {program_name} başarıyla başlatıldı")
                         return True
                     else:
-                        self.show_message("Program başlatılamadı!")
-                        return False
-                        
+                        # Alternatif yöntem - doğrudan çalıştır
+                        try:
+                            subprocess.Popen([python_exe, main_file], cwd=program_dir)
+                            print(f"✅ {program_name} alternatif yöntemle başlatıldı")
+                            return True
+                        except Exception as alt_error:
+                            print(f"❌ Alternatif yöntem de başarısız: {alt_error}")
+                            self.show_message(f"{program_name} başlatılamadı!")
+                            return False
+                            
                 except Exception as e:
                     print(f"❌ Hata: {e}")
-                    self.show_message(f"Hata: {e}")
-                    return False
+                    # Son çare olarak subprocess dene
+                    try:
+                        subprocess.Popen([sys.executable, main_path], cwd=program_dir)
+                        print(f"✅ {program_name} son çare yöntemiyle başlatıldı")
+                        return True
+                    except:
+                        self.show_message(f"Hata: {e}")
+                        return False
             else:
-                import subprocess
+                # Linux/Mac için
                 subprocess.Popen([sys.executable, main_path], cwd=program_dir)
                 return True
                 
