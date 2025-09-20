@@ -44,34 +44,34 @@ jobs:
     - name: Check files exist
       run: |
         if [ ! -f "BUPILIC_ANA_PROGRAM.py" ]; then 
-          echo "❌ BUPILIC_ANA_PROGRAM.py not found!"
+          echo "ERROR: BUPILIC_ANA_PROGRAM.py not found!"
           exit 1
         fi
         if [ ! -f "requirements.txt" ]; then 
-          echo "❌ requirements.txt not found!"
+          echo "ERROR: requirements.txt not found!"
           exit 1
         fi
         if [ ! -f "bupilic.spec" ]; then 
-          echo "❌ bupilic.spec not found!"
+          echo "ERROR: bupilic.spec not found!"
           exit 1
         fi
         if [ ! -d "ISKONTO_HESABI" ]; then 
-          echo "❌ ISKONTO_HESABI directory not found!"
+          echo "ERROR: ISKONTO_HESABI directory not found!"
           exit 1
         fi
         if [ ! -d "KARLILIK_ANALIZI" ]; then 
-          echo "❌ KARLILIK_ANALIZI directory not found!"
+          echo "ERROR: KARLILIK_ANALIZI directory not found!"
           exit 1
         fi
         if [ ! -d "Musteri_Sayisi_Kontrolu" ]; then 
-          echo "❌ Musteri_Sayisi_Kontrolu directory not found!"
+          echo "ERROR: Musteri_Sayisi_Kontrolu directory not found!"
           exit 1
         fi
         if [ ! -d "YASLANDIRMA" ]; then 
-          echo "❌ YASLANDIRMA directory not found!"
+          echo "ERROR: YASLANDIRMA directory not found!"
           exit 1
         fi
-        echo "✅ All required files and directories found!"
+        echo "SUCCESS: All required files and directories found!"
 
     - name: Determine version
       id: version
@@ -118,20 +118,22 @@ jobs:
       run: |
         echo "Installing dependencies from requirements.txt..."
         pip install -r requirements.txt
-        
-        echo "Verifying key dependencies..."
+
+    - name: Verify key dependencies (no Unicode)
+      run: |
         python -c "
         try:
             import pandas as pd
             import numpy as np
             import pdfplumber
             import customtkinter as ctk
-            print('✅ Pandas:', pd.__version__)
-            print('✅ NumPy:', np.__version__)
-            print('✅ PDFPlumber: OK')
-            print('✅ CustomTkinter: OK')
+            print('SUCCESS: Pandas version:', pd.__version__)
+            print('SUCCESS: NumPy version:', np.__version__)
+            print('SUCCESS: PDFPlumber imported successfully')
+            print('SUCCESS: CustomTkinter imported successfully')
+            print('SUCCESS: All key dependencies verified!')
         except Exception as e:
-            print('❌ Dependency error:', e)
+            print('ERROR: Dependency verification failed:', e)
             exit(1)
         "
 
@@ -139,25 +141,20 @@ jobs:
       run: |
         echo "Building executable with spec file..."
         pyinstaller bupilic.spec --noconfirm --clean
-        
-        echo "Checking build result..."
-        if (Test-Path "dist\${{ env.APP_NAME }}.exe") {
-            echo "✅ Build successful!"
-            Get-Item "dist\${{ env.APP_NAME }}.exe" | Select-Object Name, Length
-        } else {
-            echo "❌ Build failed - executable not found!"
-            exit 1
-        }
 
-    - name: Test the executable
+    - name: Check build result
       run: |
         $exePath = "dist\${{ env.APP_NAME }}.exe"
         if (Test-Path $exePath) {
-            echo "✅ Executable found at: $exePath"
+            echo "SUCCESS: Build completed successfully!"
             $fileInfo = Get-Item $exePath
-            echo "📊 File size: $($fileInfo.Length) bytes"
+            echo "SUCCESS: Executable created at: $exePath"
+            echo "SUCCESS: File size: $($fileInfo.Length) bytes"
+            echo "SUCCESS: Build timestamp: $($fileInfo.LastWriteTime)"
         } else {
-            echo "❌ Executable not found!"
+            echo "ERROR: Build failed - executable not found!"
+            echo "ERROR: Expected path: $exePath"
+            Get-ChildItem dist -ErrorAction SilentlyContinue
             exit 1
         }
 
@@ -168,15 +165,17 @@ jobs:
         $outputName = "${{ env.APP_NAME }}-$version-windows-x64"
         
         if (Test-Path $exePath) {
-            # EXE dosyasını kopyala
+            # EXE dosyasini kopyala
             Copy-Item $exePath "dist\$outputName.exe"
             
-            # ZIP oluştur
+            # ZIP olustur
             Compress-Archive -Path $exePath -DestinationPath "dist\$outputName.zip" -Force
             
-            echo "✅ Package created: $outputName"
+            echo "SUCCESS: Package created successfully"
+            echo "SUCCESS: EXE: $outputName.exe"
+            echo "SUCCESS: ZIP: $outputName.zip"
         } else {
-            echo "❌ Cannot package - executable not found!"
+            echo "ERROR: Cannot package - executable not found!"
             exit 1
         }
 
@@ -206,7 +205,7 @@ jobs:
 
     - name: List artifacts
       run: |
-        echo "📦 Available artifacts:"
+        echo "Available artifacts:"
         find ./artifacts -type f -name "*.exe" -o -name "*.zip" | head -20
 
     - name: Create GitHub Release
@@ -215,26 +214,27 @@ jobs:
         tag_name: ${{ needs.pre-checks.outputs.version }}
         name: "BupiliC ${{ needs.pre-checks.outputs.version }}"
         body: |
-          ## 🐔 BupiliC İşletme Yönetim Sistemi ${{ needs.pre-checks.outputs.version }}
+          ## BupiliC Isletme Yonetim Sistemi ${{ needs.pre-checks.outputs.version }}
           
-          ### ✨ Özellikler:
-          - ✅ İskonto Hesaplama
-          - ✅ Karlılık Analizi  
-          - ✅ Müşteri Kayıp/Kaçak Takibi
-          - ✅ Yaşlandırma Raporları
+          ### Ozellikler:
+          - Iskonto Hesaplama
+          - Karlilik Analizi  
+          - Musteri Kayip/Kacak Takibi
+          - Yaslandirma Raporlari
           
-          ### 📥 Kurulum:
-          1. `BupiliC-*-windows-x64.exe` dosyasını indirin
-          2. Çift tıklayarak çalıştırın
-          3. Varsayılan şifre: `bupilic2024`
+          ### Kurulum:
+          1. BupiliC-*-windows-x64.exe dosyasini indirin
+          2. Cift tiklayarak calistirin
+          3. Varsayilan sifre: bupilic2024
           
-          ### 💻 Sistem Gereksinimleri:
+          ### Sistem Gereksinimleri:
           - Windows 10/11 (64-bit)
           - Python gerekmez (tek dosya)
+          - Internet baglantisi gerekmez
           
-          ### 🔧 Sorun Giderme:
-          - Windows Defender uyarısı çıkarsa "Daha fazla bilgi" → "Yine de çalıştır"
-          - Antivirus yazılımı tarafından engellenirse istisna listesine ekleyin
+          ### Sorun Giderme:
+          - Windows Defender uyarisi cikarsa "Daha fazla bilgi" -> "Yine de calistir"
+          - Antivirus yazilimi tarafindan engellenirse istisna listesine ekleyin
         files: ./artifacts/**/*
         prerelease: ${{ github.event.inputs.prerelease || false }}
         draft: false
