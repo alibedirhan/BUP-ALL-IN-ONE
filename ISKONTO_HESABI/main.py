@@ -108,12 +108,9 @@ def main():
         sys.exit(1)
         
 def main():
-    # Programı başlat
-    from ISKONTO_HESABI.ui_components import create_main_window
-    create_main_window()
-
-def run_program():
-    main()
+    print("İskonto programı başlatılıyor...")
+    # Burada ISKONTO_HESABI programınızı başlatacak kodlar
 
 if __name__ == "__main__":
     main()
+
