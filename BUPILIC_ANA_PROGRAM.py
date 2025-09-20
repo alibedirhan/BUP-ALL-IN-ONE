@@ -591,24 +591,57 @@ class BupilicDashboard:
             
             # Windows için kesin çözüm
             if os.name == 'nt':
-                # Sistem Python'unu kullan
-                python_exe = "python"
-                
-                # start komutu ile yeni pencere aç
-                cmd = f'start "BupiliC - {program_name}" /D "{program_dir}" "{python_exe}" "{main_file}"'
-                print(f"⚡ Komut: {cmd}")
-                
-                result = os.system(cmd)
-                print(f"✅ Sonuç: {result}")
-                return True
+                try:
+                    # ÖNCE: Mevcut Python'u kullanmayı dene
+                    python_exe = sys.executable
+                    
+                    # EĞER ana program EXE'si ise, sistem Python'unu kullan
+                    if python_exe.endswith('.exe'):
+                        # Sistemde Python kurulu mu kontrol et
+                        try:
+                            # python komutunu dene
+                            result = os.system('python --version')
+                            if result == 0:
+                                python_exe = 'python'
+                            else:
+                                # python bulunamazsa py komutunu dene
+                                result = os.system('py --version')
+                                if result == 0:
+                                    python_exe = 'py'
+                                else:
+                                    self.show_message("Sistemde Python kurulu değil! Lütfen Python yükleyin.")
+                                    return False
+                        except:
+                            self.show_message("Python bulunamadı!")
+                            return False
+                    
+                    # start komutu ile yeni pencere aç
+                    cmd = f'start "BupiliC - {program_name}" /D "{program_dir}" "{python_exe}" "{main_file}"'
+                    print(f"⚡ Komut: {cmd}")
+                    
+                    result = os.system(cmd)
+                    print(f"✅ Sonuç: {result}")
+                    
+                    # Komut başarılı olduysa bekle ve kontrol et
+                    if result == 0:
+                        time.sleep(2)  # Programın açılması için bekle
+                        return True
+                    else:
+                        self.show_message("Program başlatılamadı!")
+                        return False
+                        
+                except Exception as e:
+                    print(f"❌ Hata: {e}")
+                    self.show_message(f"Hata: {e}")
+                    return False
             else:
                 import subprocess
                 subprocess.Popen([sys.executable, main_path], cwd=program_dir)
                 return True
                 
         except Exception as e:
-            print(f"❌ Hata: {e}")
-            self.show_message(f"Hata: {e}")
+            print(f"❌ Genel hata: {e}")
+            self.show_message(f"Beklenmeyen hata: {e}")
             return False
 
     def iskonto_ac(self):
