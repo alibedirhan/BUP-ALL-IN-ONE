@@ -2,38 +2,11 @@ import os
 import sys
 import traceback
 
-def setup_environment():
-    """Alt program için gerekli ortamı kurar"""
-    try:
-        # Frozen durumu için
-        if getattr(sys, 'frozen', False):
-            application_path = os.path.dirname(sys.executable)
-            # Frozen modda sys.path'i güncelle
-            sys.path.insert(0, application_path)
-        else:
-            application_path = os.path.dirname(os.path.abspath(__file__))
-        
-        # Ana dizini Python path'ine ekle
-        parent_dir = os.path.dirname(application_path)
-        if parent_dir not in sys.path:
-            sys.path.insert(0, parent_dir)
-        
-        return True
-        
-    except Exception as e:
-        print(f"❌ Ortam kurulum hatası: {e}")
-        return False
-
-# Ortamı kur
-if not setup_environment():
-    print("❌ Ortam kurulamadı!")
-    input("Çıkmak için Enter'a basın...")
-    sys.exit(1)
-
 try:
     # Gerekli modülleri import et
     import pandas as pd
     import numpy as np
+    import pdfplumber
     from datetime import datetime, timedelta
     import tkinter as tk
     from tkinter import ttk, messagebox, filedialog
@@ -42,50 +15,36 @@ try:
     import matplotlib.pyplot as plt
     from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
     import seaborn as sns
-    import pdfplumber  # Kritik modül
     
 except ImportError as e:
-    print(f"❌ Import hatası: {e}")
-    print("📦 Eksik bağımlılık tespit edildi!")
+    print("Import error:", e)
+    print("Please wait, trying to install missing dependencies...")
     
-    # Ana programdan yardım iste
     try:
-        # Ana programın olduğu dizini bul
-        if getattr(sys, 'frozen', False):
-            main_dir = os.path.dirname(sys.executable)
-        else:
-            main_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        import subprocess
+        # Eksik paketleri yükle
+        missing_package = str(e).split("'")[1]
+        subprocess.check_call([sys.executable, "-m", "pip", "install", missing_package])
         
-        # Ana programın dependency yükleyicisini çalıştır
-        dependency_script = os.path.join(main_dir, "install_dependencies.py")
-        
-        if os.path.exists(dependency_script):
-            import subprocess
-            result = subprocess.run([sys.executable, dependency_script], 
-                                  capture_output=True, text=True)
-            if result.returncode == 0:
-                print("✅ Bağımlılıklar yüklendi, yeniden başlatılıyor...")
-                # Modülleri tekrar yükle
-                import importlib
-                importlib.invalidate_caches()
-                
-                # Tekrar import etmeyi dene
-                import pandas as pd
-                import numpy as np
-                import pdfplumber
-                
-            else:
-                print(f"❌ Bağımlılık yükleme başarısız: {result.stderr}")
-                raise ImportError("Bağımlılık yüklenemedi")
-        else:
-            raise ImportError("Dependency script bulunamadı")
+        # Tekrar import etmeyi dene
+        if missing_package == "pdfplumber":
+            import pdfplumber
+        elif missing_package == "pandas":
+            import pandas as pd
+        elif missing_package == "numpy":
+            import numpy as np
+        elif missing_package == "matplotlib":
+            import matplotlib.pyplot as plt
             
+        print("Dependency installed successfully! Restarting...")
+        
     except Exception as install_error:
-        print(f"❌ Bağımlılık yükleme hatası: {install_error}")
-        print("⚠️  Lütfen şu komutları çalıştırın:")
-        print("pip install pandas numpy matplotlib pdfplumber")
-        input("Devam etmek için Enter'a basın...")
+        print("Failed to install dependency:", install_error)
+        print("Please run: pip install", missing_package)
+        input("Press Enter to exit...")
         sys.exit(1)
+
+# Geri kalan kodlar...
 
 # Geri kalan kodlar...
 
