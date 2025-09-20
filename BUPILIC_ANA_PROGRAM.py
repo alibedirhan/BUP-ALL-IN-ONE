@@ -720,6 +720,14 @@ class BupilicDashboard:
         self.setup_quick_access()
     
     def iskonto_ac(self):
+        print("=== DEBUG ISKONTO ===")
+        print(f"Current directory: {os.getcwd()}")
+        print(f"Python path: {sys.path}")
+        print(f"Frozen: {getattr(sys, 'frozen', False)}")
+        if getattr(sys, 'frozen', False):
+            print(f"MEIPASS: {sys._MEIPASS}")
+            print(f"Files in MEIPASS: {os.listdir(sys._MEIPASS)}")
+        
         success = run_embedded_program("ISKONTO_HESABI")
         if not success:
             self.show_message("İskonto programı başlatılamadı!")
