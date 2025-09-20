@@ -994,8 +994,8 @@ class BupilicKarlilikGUI:
 
 
 def main():
-    print("Karlılık analizi başlatılıyor...")
-    # Burada KARLILIK_ANALIZI programınızı başlatacak kodlar
+    app = KarlilikAnaliziApp()
+    app.run()
 
 if __name__ == "__main__":
     main()
