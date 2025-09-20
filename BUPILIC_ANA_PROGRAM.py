@@ -10,6 +10,8 @@ import logging
 import locale
 import sys
 from pathlib import Path
+import tempfile
+import shutil
 
 class BupilicDashboard:
     def __init__(self):
@@ -25,6 +27,7 @@ class BupilicDashboard:
         self.root = ctk.CTk()
         self.root.title("Bupiliç İşletme Yönetim Sistemi")
         self.root.geometry("1000x600")
+        self.root.resizable(True, True)
         
         # PyInstaller için resource path'i ayarla
         self.setup_resource_path()
@@ -65,16 +68,26 @@ class BupilicDashboard:
         try:
             # PyInstaller'ın oluşturduğu geçici klasör
             self.base_path = sys._MEIPASS
+            self.is_frozen = True
+            self.logger = logging.getLogger(__name__)
+            self.logger.info(f"Frozen mode detected. Base path: {self.base_path}")
         except Exception:
             # Normal çalışma durumu
             self.base_path = os.path.abspath(".")
-        
-        self.logger = logging.getLogger(__name__)
-        self.logger.info(f"Base path: {self.base_path}")
+            self.is_frozen = False
+            self.logger = logging.getLogger(__name__)
+            self.logger.info(f"Normal mode. Base path: {self.base_path}")
     
     def get_resource_path(self, relative_path):
         """Göreceli yolu absolute path'e çevirir"""
-        return os.path.join(self.base_path, relative_path)
+        # Frozen durumunda önce MEIPASS'ta ara, sonra çalışma dizininde
+        if self.is_frozen:
+            meipass_path = os.path.join(self.base_path, relative_path)
+            if os.path.exists(meipass_path):
+                return meipass_path
+        
+        # Normal çalışma durumu veya MEIPASS'ta bulunamazsa
+        return os.path.join(os.path.abspath("."), relative_path)
     
     def setup_directories(self):
         """Klasör yapısını oluşturur"""
@@ -85,16 +98,20 @@ class BupilicDashboard:
             'logs',
             'temp',
             'backups',
-            'icon'  # icon klasörünü de oluştur
+            'icon'
         ]
         
         for directory in directories:
-            os.makedirs(directory, exist_ok=True)
-            print(f"Klasör oluşturuldu: {directory}")
+            full_path = self.get_resource_path(directory)
+            os.makedirs(full_path, exist_ok=True)
+            self.logger.info(f"Klasör oluşturuldu/doğrulandı: {full_path}")
     
     def setup_logging(self):
         """Loglama sistemini kurar"""
-        log_file = f"logs/app_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+        log_dir = self.get_resource_path("logs")
+        os.makedirs(log_dir, exist_ok=True)
+        
+        log_file = os.path.join(log_dir, f"app_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log")
         
         logging.basicConfig(
             level=logging.INFO,
@@ -122,6 +139,7 @@ class BupilicDashboard:
         """Kullanıcı ayarlarını kaydeder"""
         try:
             settings_path = self.get_resource_path("config/user_settings.json")
+            os.makedirs(os.path.dirname(settings_path), exist_ok=True)
             with open(settings_path, "w", encoding="utf-8") as f:
                 json.dump(self.user_data, f, ensure_ascii=False, indent=4)
             self.logger.info("Kullanıcı ayarları kaydedildi.")
@@ -169,11 +187,11 @@ class BupilicDashboard:
                 ctk_image = ctk.CTkImage(
                     light_image=pil_image,
                     dark_image=pil_image,
-                    size=(48, 48)  # 48x48 boyutunda
+                    size=(48, 48)
                 )
                 return ctk_image
         except Exception as e:
-            print(f"Logo yüklenirken hata: {e}")
+            self.logger.error(f"Logo yüklenirken hata: {e}")
         return None
     
     def show_login_screen(self):
@@ -263,16 +281,14 @@ class BupilicDashboard:
         left_frame = ctk.CTkFrame(self.header, fg_color="transparent")
         left_frame.pack(side="left", padx=20, pady=15)
         
-        # Logo ve başlık - CTkImage kullanarak
+        # Logo ve başlık
         if self.logo_image:
             logo_label = ctk.CTkLabel(left_frame, image=self.logo_image, text="")
             logo_label.pack(side="left", padx=(0, 15))
         else:
-            # Logo bulunamazsa tavuk simgesi kullan (daha büyük)
             ctk.CTkLabel(left_frame, text="🐔", 
                        font=ctk.CTkFont(size=28)).pack(side="left", padx=(0, 15))
         
-        # SADECE BUPİLİÇ yazısı - DASHBOARD kaldırıldı
         self.title_label = ctk.CTkLabel(left_frame, text="BUPİLİÇ", 
                            font=ctk.CTkFont(size=26, weight="bold"),
                            text_color="white")
@@ -326,8 +342,8 @@ class BupilicDashboard:
             ("📈 Karlılık Analizi", self.karlilik_ac),
             ("👥 Müşteri Kayıp/Kaçak", self.musteri_kayip_ac),
             ("📊 Yaşlandırma", self.yaslandirma_ac),
-            ("📊 Raporlar", lambda: self.show_message("Raporlar")),
-            ("⚙️ Ayarlar", self.show_settings)
+            ("⚙️ Ayarlar", self.show_settings),
+            ("🐛 Debug", self.show_debug_info)
         ]
         
         for text, command in nav_buttons:
@@ -594,158 +610,151 @@ class BupilicDashboard:
         self.setup_quick_access()
         self.logger.info("Ana sayfa gösterildi.")
     
-    def setup_program_directories(self, program_path):
-        """Program için gerekli klasörleri oluşturur"""
-        directories = [
-            f"{program_path}/data",
-            f"{program_path}/config",
-            f"{program_path}/logs",
-            f"{program_path}/exports",
-            f"{program_path}/backups"
+    def extract_subprograms(self):
+        """Frozen durumunda alt programları çıkart"""
+        if not self.is_frozen:
+            return
+            
+        subprograms = [
+            "ISKONTO_HESABI",
+            "KARLILIK_ANALIZI", 
+            "Musteri_Sayisi_Kontrolu",
+            "YASLANDIRMA"
         ]
         
-        for directory in directories:
-            os.makedirs(directory, exist_ok=True)
-            print(f"Program klasörü oluşturuldu: {directory}")
+        for program in subprograms:
+            source_dir = self.get_resource_path(program)
+            target_dir = os.path.join(os.path.dirname(self.base_path), program)
+            
+            if os.path.exists(source_dir) and not os.path.exists(target_dir):
+                try:
+                    shutil.copytree(source_dir, target_dir)
+                    self.logger.info(f"{program} çıkartıldı: {target_dir}")
+                except Exception as e:
+                    self.logger.error(f"{program} çıkartılırken hata: {str(e)}")
+    
+    def run_subprogram(self, program_name, main_file="main.py"):
+        """Alt programı çalıştır"""
+        try:
+            # Önce frozen durumunda alt programları çıkart
+            if self.is_frozen:
+                self.extract_subprograms()
+                program_dir = os.path.join(os.path.dirname(self.base_path), program_name)
+            else:
+                program_dir = self.get_resource_path(program_name)
+            
+            main_path = os.path.join(program_dir, main_file)
+            
+            if not os.path.exists(main_path):
+                error_msg = f"{program_name} programı bulunamadı: {main_path}"
+                self.show_message(error_msg)
+                self.logger.error(error_msg)
+                return
+            
+            # Python executable yolunu belirle
+            python_exe = sys.executable
+            
+            # Windows için özel ayarlar
+            if os.name == 'nt':
+                # Batch dosyası oluştur (cmd penceresinin kapanmaması için)
+                batch_content = f"""@echo off
+chcp 65001 > nul
+cd /d "{program_dir}"
+"{python_exe}" "{main_file}"
+pause
+"""
+                batch_path = os.path.join(program_dir, f"run_{program_name}.bat")
+                with open(batch_path, 'w', encoding='utf-8') as f:
+                    f.write(batch_content)
+                
+                # Yeni konsol penceresinde aç
+                subprocess.Popen(["cmd", "/c", batch_path], creationflags=subprocess.CREATE_NEW_CONSOLE)
+            else:
+                # Linux/Mac
+                subprocess.Popen([python_exe, main_file], cwd=program_dir)
+            
+            self.logger.info(f"{program_name} programı başlatıldı: {main_path}")
+            
+        except Exception as e:
+            error_msg = f"{program_name} programı açılamadı: {str(e)}"
+            self.show_message(error_msg)
+            self.logger.error(error_msg)
     
     def iskonto_ac(self):
-        try:
-            iskonto_program_path = "ISKONTO_HESABI"
-            main_file = "main.py"
-            
-            # PyInstaller için doğru yolu kullan
-            full_main_path = self.get_resource_path(os.path.join(iskonto_program_path, main_file))
-            
-            if not os.path.exists(full_main_path):
-                self.show_message("İskonto Hesaplama programı bulunamadı!")
-                self.logger.error(f"İskonto Hesaplama programı bulunamadı: {full_main_path}")
-                return
-            
-            # Program için klasörleri oluştur
-            self.setup_program_directories(iskonto_program_path)
-            
-            # Çalışma dizinini program klasörüne değiştir
-            program_dir = self.get_resource_path(iskonto_program_path)
-            
-            if os.name == 'nt':  # Windows
-                subprocess.Popen(["python", main_file], 
-                               cwd=program_dir,
-                               creationflags=subprocess.CREATE_NEW_CONSOLE)
-            else:  # Linux/Mac
-                subprocess.Popen(["python3", main_file], 
-                               cwd=program_dir)
-                
-            self.logger.info("İskonto Hesaplama programı başlatıldı.")
-                
-        except Exception as e:
-            error_msg = f"İskonto Hesaplama programı açılamadı: {str(e)}"
-            self.show_message(error_msg)
-            self.logger.error(error_msg)
+        self.run_subprogram("ISKONTO_HESABI", "main.py")
     
     def karlilik_ac(self):
-        try:
-            karlilik_program_path = "KARLILIK_ANALIZI"
-            gui_file = "gui.py"
-            
-            # PyInstaller için doğru yolu kullan
-            full_gui_path = self.get_resource_path(os.path.join(karlilik_program_path, gui_file))
-            
-            if not os.path.exists(full_gui_path):
-                self.show_message("Karlılık Analizi programı bulunamadı!")
-                self.logger.error(f"Karlılık Analizi programı bulunamadı: {full_gui_path}")
-                return
-            
-            # Program için klasörleri oluştur
-            self.setup_program_directories(karlilik_program_path)
-            
-            # Çalışma dizinini program klasörüne değiştir
-            program_dir = self.get_resource_path(karlilik_program_path)
-            
-            if os.name == 'nt':  # Windows
-                subprocess.Popen(["python", gui_file], 
-                               cwd=program_dir,
-                               creationflags=subprocess.CREATE_NEW_CONSOLE)
-            else:  # Linux/Mac
-                subprocess.Popen(["python3", gui_file], 
-                               cwd=program_dir)
-                
-            self.logger.info("Karlılık Analizi programı başlatıldı.")
-                
-        except Exception as e:
-            error_msg = f"Karlılık Analizi programı açılamadı: {str(e)}"
-            self.show_message(error_msg)
-            self.logger.error(error_msg)
+        self.run_subprogram("KARLILIK_ANALIZI", "main.py")
     
     def musteri_kayip_ac(self):
-        try:
-            musteri_program_path = "Musteri_Sayisi_Kontrolu"
-            program_dosyasi = "main.py"
-            
-            # PyInstaller için doğru yolu kullan
-            musteri_program_yolu = self.get_resource_path(os.path.join(musteri_program_path, program_dosyasi))
-            
-            if not os.path.exists(musteri_program_yolu):
-                self.show_message("Müşteri Kayıp/Kaçak programı bulunamadı!")
-                self.logger.error(f"Müşteri Kayıp/Kaçak programı bulunamadı: {musteri_program_yolu}")
-                return
-            
-            # Program için klasörleri oluştur
-            self.setup_program_directories(musteri_program_path)
-            
-            # Çalışma dizinini program klasörüne değiştir
-            program_dir = self.get_resource_path(musteri_program_path)
-            
-            if os.name == 'nt':  # Windows
-                subprocess.Popen(["python", program_dosyasi], 
-                               cwd=program_dir,
-                               creationflags=subprocess.CREATE_NEW_CONSOLE)
-            else:  # Linux/Mac
-                subprocess.Popen(["python3", program_dosyasi], 
-                               cwd=program_dir)
-                
-            self.logger.info("Müşteri Kayıp/Kaçak programı başlatıldı.")
-                
-        except Exception as e:
-            error_msg = f"Müşteri Kayıp/Kaçak programı açılamadı: {str(e)}"
-            self.show_message(error_msg)
-            self.logger.error(error_msg)
+        self.run_subprogram("Musteri_Sayisi_Kontrolu", "main.py")
     
     def yaslandirma_ac(self):
-        try:
-            yaslandirma_program_path = "YASLANDIRMA"
-            program_dosyasi = "main.py"
-            
-            # PyInstaller için doğru yolu kullan
-            yaslandirma_program_yolu = self.get_resource_path(os.path.join(yaslandirma_program_path, program_dosyasi))
-            
-            if not os.path.exists(yaslandirma_program_yolu):
-                self.show_message("Yaşlandırma programı bulunamadı!")
-                self.logger.error(f"Yaşlandırma programı bulunamadı: {yaslandirma_program_yolu}")
-                return
-            
-            # Program için klasörleri oluştur
-            self.setup_program_directories(yaslandirma_program_path)
-            
-            # Çalışma dizinini program klasörüne değiştir
-            program_dir = self.get_resource_path(yaslandirma_program_path)
-            
-            if os.name == 'nt':  # Windows
-                subprocess.Popen(["python", program_dosyasi], 
-                               cwd=program_dir,
-                               creationflags=subprocess.CREATE_NEW_CONSOLE)
-            else:  # Linux/Mac
-                subprocess.Popen(["python3", program_dosyasi], 
-                               cwd=program_dir)
-                
-            self.logger.info("Yaşlandırma programı başlatıldı.")
-                
-        except Exception as e:
-            error_msg = f"Yaşlandırma programı açılamadı: {str(e)}"
-            self.show_message(error_msg)
-            self.logger.error(error_msg)
+        self.run_subprogram("YASLANDIRMA", "main.py")
     
     def show_message(self, message):
-        print(f"{message}")
+        """Basit mesaj gösterimi"""
+        print(f"INFO: {message}")
+    
+    def show_debug_info(self):
+        """Debug bilgilerini göster"""
+        debug_window = ctk.CTkToplevel(self.root)
+        debug_window.title("🐛 Debug Information")
+        debug_window.geometry("700x500")
+        debug_window.transient(self.root)
+        debug_window.grab_set()
+        
+        info_text = f"""=== BUPİLİÇ DEBUG BİLGİLERİ ===
+
+Base Path: {self.base_path}
+Frozen: {self.is_frozen}
+Current Directory: {os.getcwd()}
+Python Executable: {sys.executable}
+Python Version: {sys.version}
+
+Available Subprograms:
+"""
+        
+        subprograms = ["ISKONTO_HESABI", "KARLILIK_ANALIZI", "Musteri_Sayisi_Kontrolu", "YASLANDIRMA"]
+        
+        for program in subprograms:
+            program_path = self.get_resource_path(program)
+            exists = os.path.exists(program_path)
+            main_file = "main.py"
+            main_path = os.path.join(program_path, main_file) if exists else "N/A"
+            main_exists = os.path.exists(main_path) if exists else False
+            
+            info_text += f"\n{program}:"
+            info_text += f"\n  - Path: {program_path}"
+            info_text += f"\n  - Exists: {'✅' if exists else '❌'}"
+            if exists:
+                info_text += f"\n  - Main file: {main_path}"
+                info_text += f"\n  - Main exists: {'✅' if main_exists else '❌'}"
+            
+            info_text += "\n"
+        
+        # Mevcut dosyaları listele
+        info_text += f"\nCurrent Directory Files:\n"
+        try:
+            for item in os.listdir('.'):
+                if os.path.isdir(item):
+                    info_text += f"📁 {item}/\n"
+                else:
+                    info_text += f"📄 {item}\n"
+        except Exception as e:
+            info_text += f"Error listing directory: {e}\n"
+        
+        textbox = ctk.CTkTextbox(debug_window, width=680, height=450)
+        textbox.pack(padx=10, pady=10, fill="both", expand=True)
+        textbox.insert("1.0", info_text)
+        textbox.configure(state="disabled")
+        
+        # Kapatma butonu
+        close_btn = ctk.CTkButton(debug_window, text="Kapat", 
+                                command=debug_window.destroy,
+                                height=40,
+                                fg_color="#E63946")
+        close_btn.pack(pady=10)
     
     def run(self):
         self.root.mainloop()

@@ -1,15 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-BupiliÇ PyInstaller Specification File
-Optimized for Windows build with CustomTkinter
+BupiliÇ PyInstaller Specification File - OPTIMIZED VERSION
 """
 
 import sys
 import os
 from pathlib import Path
-
-# Add current directory to Python path
-sys.path.append(os.getcwd())
 
 block_cipher = None
 
@@ -21,169 +17,78 @@ main_script = "BUPILIC_ANA_PROGRAM.py"
 icon_path = "build/app_icon.ico"
 
 # ===============================================
-# DATA FILES AND DIRECTORIES
+# DATA FILES AND DIRECTORIES - CRITICAL FIX
 # ===============================================
-datas = [
-    # Application modules
-    ('ISKONTO_HESABI', 'ISKONTO_HESABI'),
-    ('KARLILIK_ANALIZI', 'KARLILIK_ANALIZI'),
-    ('Musteri_Sayisi_Kontrolu', 'Musteri_Sayisi_Kontrolu'),
-    ('YASLANDIRMA', 'YASLANDIRMA'),
+def get_data_files():
+    """Tüm alt programları ve dosyalarını recursive olarak topla"""
+    datas = []
     
-    # Resources
-    ('icon', 'icon'),
-]
+    # Ana dizinler
+    directories = [
+        'ISKONTO_HESABI',
+        'KARLILIK_ANALIZI', 
+        'Musteri_Sayisi_Kontrolu',
+        'YASLANDIRMA',
+        'icon',
+        'config',
+        'data'
+    ]
+    
+    for directory in directories:
+        if os.path.exists(directory):
+            for root, dirs, files in os.walk(directory):
+                for file in files:
+                    # .pyc ve __pycache__ dosyalarını hariç tut
+                    if not file.endswith('.pyc') and '__pycache__' not in root:
+                        full_path = os.path.join(root, file)
+                        # PyInstaller formatı: (kaynak, hedef_klasör)
+                        target_path = os.path.dirname(full_path)
+                        datas.append((full_path, target_path))
+    
+    return datas
+
+datas = get_data_files()
 
 # ===============================================
-# HIDDEN IMPORTS (Explicitly include dependencies)
+# HIDDEN IMPORTS - OPTIMIZED
 # ===============================================
 hiddenimports = [
-    # CustomTkinter and GUI - CRITICAL FIXES
-    'customtkinter',
-    'tkinter',
-    'tkinter.filedialog',
-    'tkinter.messagebox',
-    'tkinter.ttk',
-    'tkinter.commondialog',  # Critical fix for ImportError
+    # Core dependencies
+    'customtkinter', 'tkinter', 'PIL', 'pandas', 'numpy', 'matplotlib',
     
-    # PIL/Pillow for images
-    'PIL',
-    'PIL._tkinter_finder',
-    'PIL.Image',
-    'PIL.ImageTk',
-    'PIL.ImageOps',
-    'PIL.ImageFilter',
-    'PIL.ImageDraw',
-    'PIL.ImageFont',
+    # Tkinter submodules - CRITICAL
+    'tkinter.filedialog', 'tkinter.messagebox', 'tkinter.ttk', 
+    'tkinter.commondialog', 'tkinter.constants',
     
-    # Data processing
-    'pandas',
-    'pandas._libs',
-    'numpy',
-    'openpyxl',
-    'xlsxwriter',
-    'xlrd',
-    'xlwt',
-    'openpyxl.workbook',
-    'openpyxl.worksheet',
+    # PIL submodules
+    'PIL.Image', 'PIL.ImageTk', 'PIL.ImageOps', 'PIL.ImageFilter',
     
-    # Plotting and visualization
-    'matplotlib',
-    'matplotlib.backends',
-    'matplotlib.backends.backend_tkagg',
-    'matplotlib.pyplot',
-    'matplotlib.figure',
-    'matplotlib.axes',
-    'seaborn',
-    'seaborn.utils',
-    'seaborn.palettes',
+    # Pandas submodules  
+    'pandas._libs', 'pandas.core', 'pandas.io',
     
-    # System utilities
-    'psutil',
-    'subprocess',
-    'threading',
-    'multiprocessing',
-    'multiprocessing.pool',
+    # Matplotlib submodules
+    'matplotlib.backends.backend_tkagg', 'matplotlib.pyplot',
     
-    # URL and path libraries
-    'urllib',
-    'urllib.request',
-    'urllib.parse',
-    'urllib.error',
-    'pathlib',
-    'importlib',
-    'importlib.resources',
-    'importlib.metadata',
-    'pkgutil',
+    # Other required
+    'openpyxl', 'xlsxwriter', 'xlrd', 'xlwt', 'psutil', 'seaborn',
     
-    # Standard libraries
-    'json',
-    'logging',
-    'locale',
-    'datetime',
-    'os',
-    'sys',
-    'io',
-    're',
-    'csv',
-    'math',
-    'statistics',
-    'collections',
-    'collections.abc',
-    'itertools',
-    'functools',
-    'time',
-    'calendar',
-    'base64',
-    'hashlib',
-    'ssl',
-    'socket',
-    'email',
-    'email.mime',
-    'email.mime.text',
-    'email.mime.multipart',
-    'xml',
-    'html',
-    'zipfile',
-    'tarfile',
-    'gzip',
-    'shutil',
-    'tempfile',
-    'weakref',
-    'types',
-    'copy',
-    'pickle',
-    'shelve',
-    'sqlite3',
-    'glob',
-    'fnmatch',
-    'linecache',
-    'traceback',
-    'warnings',
-    'abc',
-    'atexit',
-    'codecs',
-    'contextlib',
-    'operator',
-    'pprint',
-    'textwrap',
-    'tokenize',
-    'unicodedata',
+    # Standard libs that might be missing
+    'logging', 'json', 'locale', 'datetime', 'os', 'sys', 'subprocess',
+    'threading', 'pathlib', 'shutil', 'tempfile'
 ]
 
 # ===============================================
-# BINARIES (Additional binary files)
+# BINARIES
 # ===============================================
 binaries = []
 
 # ===============================================
-# HOOKS CONFIGURATION
-# ===============================================
-hookspath = ['hooks']
-
-# ===============================================
-# RUNTIME HOOKS
-# ===============================================
-runtime_hooks = [
-    'hooks/tkinter_hook.py'
-]
-
-# ===============================================
-# EXCLUDES (Optimize package size)
+# EXCLUDES (Size optimization)
 # ===============================================
 excludes = [
-    'test',
-    'tests',
-    'unittest',
-    'distutils',
-    'setuptools',
-    'pip',
-    'wheel',
-    'pkg_resources',
-    'matplotlib.tests',
-    'pandas.tests',
-    'numpy.tests',
-    'asyncio',
+    'test', 'tests', 'unittest', 'distutils', 'setuptools', 'pip', 'wheel',
+    'pkg_resources', 'matplotlib.tests', 'pandas.tests', 'numpy.tests',
+    'asyncio', 'email', 'xml', 'html', 'http', 'urllib3',
 ]
 
 # ===============================================
@@ -195,9 +100,9 @@ a = Analysis(
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
-    hookspath=hookspath,
+    hookspath=[],
     hooksconfig={},
-    runtime_hooks=runtime_hooks,
+    runtime_hooks=[],
     excludes=excludes,
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
@@ -206,7 +111,7 @@ a = Analysis(
 )
 
 # ===============================================
-# PYZ (Python ZIP archive)
+# PYZ
 # ===============================================
 pyz = PYZ(
     a.pure, 
@@ -215,7 +120,7 @@ pyz = PYZ(
 )
 
 # ===============================================
-# EXECUTABLE CONFIGURATION
+# EXECUTABLE CONFIGURATION - WINDOWED MODE
 # ===============================================
 exe = EXE(
     pyz,
@@ -238,11 +143,10 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=icon_path if os.path.exists(icon_path) else None,
-    version_file=None,
 )
 
 # ===============================================
-# COLLECT (For one-file mode)
+# COLLECT (For one-dir mode - RECOMMENDED)
 # ===============================================
 coll = COLLECT(
     exe,
