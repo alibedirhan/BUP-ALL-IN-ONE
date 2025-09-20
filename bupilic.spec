@@ -1,5 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import os
+import sys
+
 block_cipher = None
 
 # Ana dizinler
@@ -21,8 +24,15 @@ def get_data_files():
                 for file in files:
                     if not file.endswith('.pyc') and '__pycache__' not in root:
                         full_path = os.path.join(root, file)
-                        target_dir = os.path.basename(root)
+                        target_dir = os.path.join('.', os.path.relpath(root, os.getcwd()))
                         datas.append((full_path, target_dir))
+    
+    # Ek olarak requirements.txt ve diğer gerekli dosyaları ekle
+    additional_files = ['requirements.txt', 'README.md']
+    for file in additional_files:
+        if os.path.exists(file):
+            datas.append((file, '.'))
+    
     return datas
 
 a = Analysis(
@@ -42,7 +52,11 @@ a = Analysis(
         'os', 'sys', 'subprocess', 'threading', 'json',
         'logging', 'datetime', 'shutil', 'tempfile', 'urllib',
         'zipfile', 'importlib', 'packaging', 'pathlib',
-        'urllib.request', 'urllib.parse', 'urllib.error'
+        'urllib.request', 'urllib.parse', 'urllib.error',
+        'requests', 'socket', 'ssl', 'http', 'email',
+        'ctypes', 'struct', 'hashlib', 'base64', 'binascii',
+        'collections', 'itertools', 'functools', 'operator',
+        're', 'math', 'statistics', 'random', 'time'
     ],
     hookspath=[],
     hooksconfig={},
@@ -70,7 +84,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,
+    console=True,  # Hata görüntülemek için True yap, sonra False yapabilirsin
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
