@@ -36,7 +36,9 @@ a = Analysis(
         'PIL', 'PIL.Image', 'PIL.ImageTk',
         'tkinter', 'tkinter.filedialog', 'tkinter.messagebox',
         'os', 'sys', 'subprocess', 'threading', 'json',
-        'logging', 'datetime', 'shutil', 'tempfile'
+        'logging', 'datetime', 'shutil', 'tempfile',
+        'pdfplumber', 'seaborn', 'psutil', 'python-dateutil',
+        'tkcalendar'
     ],
     hookspath=[],
     hooksconfig={},
