@@ -8,30 +8,39 @@ from PyInstaller.building.datastruct import TOC
 
 # -*- mode: python ; coding: utf-8 -*-
 
+
 block_cipher = None
+
+# PATHEX TANIMLA - ÇOK ÖNEMLİ!
+pathex = [
+    '.',
+    './ISKONTO_HESABI',
+    './KARLILIK_ANALIZI', 
+    './Musteri_Sayisi_Kontrolu',
+    './YASLANDIRMA'
+]
 
 a = Analysis(
     ['BUPILIC_ANA_PROGRAM.py'],
-    pathex=[],
+    pathex=pathex,  # pathex'i burada kullan
     binaries=[],
     datas=[
-        # TÜM DOSYALARI TEK TEK EKLEYİN
+        # SADECE KLASÖRLERİ EKLE
         ('ISKONTO_HESABI', 'ISKONTO_HESABI'),
         ('KARLILIK_ANALIZI', 'KARLILIK_ANALIZI'),
         ('Musteri_Sayisi_Kontrolu', 'Musteri_Sayisi_Kontrolu'),
-        ('Musteri_Sayisi_KONTROLU', 'Musteri_Sayisi_KONTROLU'),  # İki isim de olabilir
         ('YASLANDIRMA', 'YASLANDIRMA'),
         ('icon', 'icon'),
     ],
     hiddenimports=[
-        # TÜM GEREKLİ MODÜLLER
+        # SADECE GERÇEKTEN GEREKLİ OLANLARI EKLE
         'ISKONTO_HESABI.main',
         'KARLILIK_ANALIZI.gui', 
         'Musteri_Sayisi_Kontrolu.main',
-        'Musteri_Sayisi_KONTROLU.main',
         'YASLANDIRMA.main',
         'pandas', 'numpy', 'matplotlib', 'customtkinter',
-        'pdfplumber', 'PIL', 'openpyxl', 'seaborn'
+        'pdfplumber', 'PIL', 'openpyxl', 'seaborn',
+        'tkcalendar', 'python-dateutil'
     ],
     hookspath=[],
     hooksconfig={},
@@ -58,7 +67,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,  # DEBUG için True, sonra False yapın
+    console=True,  # DEBUG için True
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
