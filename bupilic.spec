@@ -2,70 +2,49 @@
 
 import os
 import sys
-from pathlib import Path
+from PyInstaller.building.build_main import Analysis, EXE, PYZ
+from PyInstaller.building.datastruct import TOC
 
+# Ana dizin
 block_cipher = None
 
-# Mevcut dosyaları kontrol eden güvenli fonksiyon
-def safe_glob(pattern):
-    """Sadece mevcut dosyaları döndürür"""
-    import glob
-    files = glob.glob(pattern)
-    result = []
-    for file in files:
-        if os.path.exists(file):
-            result.append((file, '.'))
-    return result
-
-# Ana modül path'leri
+# Tüm alt modüllerin path'lerini ekle
 pathex = [
     '.',
-    'ISKONTO_HESABI',
-    'KARLILIK_ANALIZI', 
-    'Musteri_Sayisi_Kontrolu',
-    'YASLANDIRMA',
-    'YASLANDIRMA/gui',
-    'YASLANDIRMA/modules'
+    './ISKONTO_HESABI',
+    './KARLILIK_ANALIZI', 
+    './Musteri_Sayisi_Kontrolu',
+    './YASLANDIRMA',
+    './YASLANDIRMA/gui',
+    './YASLANDIRMA/modules'
 ]
 
-# Data dosyaları - sadece mevcut olanlar
-data_files = []
-
-# Python modülleri - zorunlu
-required_modules = [
-    ('ISKONTO_HESABI', 'ISKONTO_HESABI'),
-    ('KARLILIK_ANALIZI', 'KARLILIK_ANALIZI'),
-    ('Musteri_Sayisi_Kontrolu', 'Musteri_Sayisi_Kontrolu'),
-    ('YASLANDIRMA', 'YASLANDIRMA'),
-]
-
-for src_dir, dst_dir in required_modules:
-    if os.path.exists(src_dir):
-        # Python dosyalarını ekle
-        for py_file in Path(src_dir).rglob('*.py'):
-            rel_path = str(py_file.relative_to(src_dir))
-            data_files.append((str(py_file), f'{dst_dir}/{os.path.dirname(rel_path)}' if os.path.dirname(rel_path) else dst_dir))
-
-# Opsiyonel dosyalar - varsa ekle
-optional_patterns = ['*.txt', '*.csv', '*.json', '*.ico', '*.png', '*.jpg']
-for pattern in optional_patterns:
-    data_files.extend(safe_glob(pattern))
-
-# Ana PyInstaller analizi
+# Ana script analizi - BUPILIC_ANA_PROGRAM.py kullan
 a = Analysis(
-    ['BUPILIC_ANA_PROGRAM.py'],
+    ['BUPILIC_ANA_PROGRAM.py'],  # Ana script dosyanız
     pathex=pathex,
     binaries=[],
-    datas=data_files,
+    datas=[
+        # Tüm Python dosyalarını ve klasör yapısını dahil et
+        ('ISKONTO_HESABI/**/*.py', 'ISKONTO_HESABI'),
+        ('KARLILIK_ANALIZI/**/*.py', 'KARLILIK_ANALIZI'),
+        ('Musteri_Sayisi_Kontrolu/**/*.py', 'Musteri_Sayisi_Kontrolu'),
+        ('YASLANDIRMA/**/*.py', 'YASLANDIRMA'),
+        
+        # Gerekli data dosyaları
+        ('*.txt', '.'),
+        ('*.csv', '.'),
+        ('*.json', '.'),
+        ('icon/*.ico', 'icon'),
+        ('icon/*.png', 'icon'),
+    ],
     hiddenimports=[
-        # Ana modüller
-        'ISKONTO_HESABI',
+        # Tüm alt modülleri belirt
         'ISKONTO_HESABI.main',
         'ISKONTO_HESABI.ui_components',
         'ISKONTO_HESABI.pdf_processor',
         'ISKONTO_HESABI.export_manager',
         
-        'KARLILIK_ANALIZI',
         'KARLILIK_ANALIZI.gui',
         'KARLILIK_ANALIZI.karlilik',
         'KARLILIK_ANALIZI.analiz_dashboard',
@@ -76,12 +55,10 @@ a = Analysis(
         'KARLILIK_ANALIZI.veri_analizi',
         'KARLILIK_ANALIZI.zaman_analizi',
         
-        'Musteri_Sayisi_Kontrolu',
         'Musteri_Sayisi_Kontrolu.main',
         'Musteri_Sayisi_Kontrolu.ui',
         'Musteri_Sayisi_Kontrolu.kurulum',
         
-        'YASLANDIRMA',
         'YASLANDIRMA.main',
         'YASLANDIRMA.gui',
         'YASLANDIRMA.excel_processor',
@@ -102,75 +79,22 @@ a = Analysis(
         'YASLANDIRMA.modules.reports',
         'YASLANDIRMA.modules.visualization',
         
-        # Temel kütüphaneler
+        # Gerekli kütüphaneler
         'pandas',
         'numpy',
         'matplotlib',
-        'matplotlib.pyplot',
-        'matplotlib.figure',
         'matplotlib.backends.backend_tkagg',
-        'tkinter',
-        'tkinter.ttk',
-        'tkinter.filedialog',
-        'tkinter.messagebox',
-        'tkinter.simpledialog',
         'customtkinter',
-        'openpyxl',
         'pdfplumber',
         'PIL',
-        'PIL.Image',
-        'PIL.ImageTk',
+        'openpyxl',
         'seaborn',
         'xlsxwriter',
         'xlrd',
         'xlwt',
         'psutil',
         'tkcalendar',
-        
-        # Sistem modülleri
-        'datetime',
-        'os',
-        'sys',
-        'subprocess',
-        'logging',
-        'json',
-        'csv',
-        'sqlite3',
-        'locale',
-        'threading',
-        'time',
-        'pathlib',
-        'tempfile',
-        'shutil',
-        'importlib',
-        'platform',
-        'collections',
-        'itertools',
-        'functools',
-        'traceback',
-        'warnings',
-        
-        # Veri işleme
-        'python_dateutil',
-        'pytz',
-        'tzdata',
-        
-        # PDF işleme
-        'pdfminer.six',
-        'cryptography',
-        'charset_normalizer',
-        
-        # GUI gelişmiş
-        'darkdetect',
-        'babel',
-        
-        # Matplotlib gelişmiş
-        'contourpy',
-        'cycler',
-        'fonttools',
-        'kiwisolver',
-        'pyparsing',
-        'packaging',
+        'python-dateutil',
     ],
     hookspath=[],
     hooksconfig={},
@@ -191,7 +115,6 @@ exe = EXE(
     a.binaries,
     a.zipfiles,
     a.datas,
-    [],
     name='BupiliC',
     debug=False,
     bootloader_ignore_signals=False,
@@ -199,10 +122,11 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,
+    console=False,  # Final versiyonda False yapın
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=os.path.join('icon', 'bupilic_logo.ico') if os.path.exists(os.path.join('icon', 'bupilic_logo.ico')) else None,
 )
