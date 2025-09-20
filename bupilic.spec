@@ -1,20 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
-"""
-BUPİLİÇ - TÜM ALT PROGRAMLAR DAHİL SPEC DOSYASI
-"""
-
-import os
-import sys
-from pathlib import Path
 
 block_cipher = None
 
-# ==================== CRITICAL FIX ====================
-# TÜM ALT PROGRAM DOSYALARINI AL - BU ŞEKİLDE OLMALI
+# ==================== DATA FILES ====================
 def get_data_files():
     datas = []
     
-    # Ana dizinler - DOĞRU FORMAT
     directories = [
         'ISKONTO_HESABI',
         'KARLILIK_ANALIZI', 
@@ -27,16 +18,13 @@ def get_data_files():
     
     for directory in directories:
         if os.path.exists(directory):
-            print(f"📁 Adding directory: {directory}")
             for root, dirs, files in os.walk(directory):
                 for file in files:
-                    # Sadece gerekli dosyaları ekle (.pyc ve cache hariç)
                     if (not file.endswith('.pyc') and 
                         '__pycache__' not in root and
                         not file.endswith('.log')):
                         
                         full_path = os.path.join(root, file)
-                        # HEDEF: alt programlar ana dizinde olacak
                         target_dir = os.path.basename(root)
                         datas.append((full_path, target_dir))
     
@@ -44,14 +32,10 @@ def get_data_files():
 
 # ==================== ANALYSIS ====================
 a = Analysis(
-    ['BUPILIC_ANA_PROGRAM.py'],  # Sadece ana program
-    
-    pathex=[os.getcwd()],  # Current directory'i ekle
-    
+    ['BUPILIC_ANA_PROGRAM.py'],
+    pathex=[os.getcwd()],
     binaries=[],
-    
-    datas=get_data_files(),  # TÜM dosyaları ekle
-    
+    datas=get_data_files(),
     hiddenimports=[
         'customtkinter', 'pandas', 'numpy', 'matplotlib', 
         'openpyxl', 'xlsxwriter', 'xlrd', 'xlwt',
@@ -60,15 +44,10 @@ a = Analysis(
         'os', 'sys', 'subprocess', 'threading', 'json',
         'logging', 'datetime', 'shutil', 'tempfile'
     ],
-    
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    
-    excludes=[
-        'test', 'tests', 'unittest', 'distutils', 'setuptools'
-    ],
-    
+    excludes=['test', 'tests', 'unittest'],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
@@ -93,7 +72,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,  # 🚨 DEBUG İÇİN ÖNCE TRUE - HATALARI GÖRELİM
+    console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
