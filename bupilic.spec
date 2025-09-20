@@ -1,127 +1,84 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-BupiliÇ PyInstaller Specification File - OPTIMIZED VERSION
+BUPİLİÇ - TÜM ALT PROGRAMLAR DAHİL SPEC DOSYASI
 """
 
-import sys
 import os
+import sys
 from pathlib import Path
 
 block_cipher = None
 
-# ===============================================
-# APPLICATION CONFIGURATION
-# ===============================================
-app_name = "BupiliC"
-main_script = "BUPILIC_ANA_PROGRAM.py"
-icon_path = "build/app_icon.ico"
-
-# ===============================================
-# DATA FILES AND DIRECTORIES - CRITICAL FIX
-# ===============================================
+# ==================== CRITICAL FIX ====================
+# TÜM ALT PROGRAM DOSYALARINI AL - BU ŞEKİLDE OLMALI
 def get_data_files():
-    """Tüm alt programları ve dosyalarını recursive olarak topla"""
     datas = []
     
-    # Ana dizinler - BU ŞEKİLDE OLMALI
+    # Ana dizinler - DOĞRU FORMAT
     directories = [
-        ('ISKONTO_HESABI', '.'),
-        ('KARLILIK_ANALIZI', '.'), 
-        ('Musteri_Sayisi_Kontrolu', '.'),
-        ('YASLANDIRMA', '.'),
-        ('icon', '.'),
-        ('config', '.'),
-        ('data', '.')
+        'ISKONTO_HESABI',
+        'KARLILIK_ANALIZI', 
+        'Musteri_Sayisi_Kontrolu',
+        'YASLANDIRMA',
+        'icon',
+        'config',
+        'data'
     ]
     
-    for source_dir, target_dir in directories:
-        if os.path.exists(source_dir):
-            for root, dirs, files in os.walk(source_dir):
+    for directory in directories:
+        if os.path.exists(directory):
+            print(f"📁 Adding directory: {directory}")
+            for root, dirs, files in os.walk(directory):
                 for file in files:
-                    # .pyc ve __pycache__ dosyalarını hariç tut
-                    if not file.endswith('.pyc') and '__pycache__' not in root:
+                    # Sadece gerekli dosyaları ekle (.pyc ve cache hariç)
+                    if (not file.endswith('.pyc') and 
+                        '__pycache__' not in root and
+                        not file.endswith('.log')):
+                        
                         full_path = os.path.join(root, file)
-                        # PyInstaller formatı: (kaynak, hedef_klasör)
-                        target_path = target_dir
-                        datas.append((full_path, target_path))
+                        # HEDEF: alt programlar ana dizinde olacak
+                        target_dir = os.path.basename(root)
+                        datas.append((full_path, target_dir))
     
     return datas
 
-datas = get_data_files()
-
-# ===============================================
-# HIDDEN IMPORTS - OPTIMIZED
-# ===============================================
-hiddenimports = [
-    # Core dependencies
-    'customtkinter', 'tkinter', 'PIL', 'pandas', 'numpy', 'matplotlib',
-    
-    # Tkinter submodules - CRITICAL
-    'tkinter.filedialog', 'tkinter.messagebox', 'tkinter.ttk', 
-    'tkinter.commondialog', 'tkinter.constants',
-    
-    # PIL submodules
-    'PIL.Image', 'PIL.ImageTk', 'PIL.ImageOps', 'PIL.ImageFilter',
-    
-    # Pandas submodules  
-    'pandas._libs', 'pandas.core', 'pandas.io',
-    
-    # Matplotlib submodules
-    'matplotlib.backends.backend_tkagg', 'matplotlib.pyplot',
-    
-    # Other required
-    'openpyxl', 'xlsxwriter', 'xlrd', 'xlwt', 'psutil', 'seaborn',
-    
-    # Standard libs that might be missing
-    'logging', 'json', 'locale', 'datetime', 'os', 'sys', 'subprocess',
-    'threading', 'pathlib', 'shutil', 'tempfile'
-]
-
-# ===============================================
-# BINARIES
-# ===============================================
-binaries = []
-
-# ===============================================
-# EXCLUDES (Size optimization)
-# ===============================================
-excludes = [
-    'test', 'tests', 'unittest', 'distutils', 'setuptools', 'pip', 'wheel',
-    'pkg_resources', 'matplotlib.tests', 'pandas.tests', 'numpy.tests',
-    'asyncio', 'email', 'xml', 'html', 'http', 'urllib3',
-]
-
-# ===============================================
-# ANALYSIS
-# ===============================================
+# ==================== ANALYSIS ====================
 a = Analysis(
-    [main_script],
-    pathex=[os.getcwd()],
-    binaries=binaries,
-    datas=datas,
-    hiddenimports=hiddenimports,
+    ['BUPILIC_ANA_PROGRAM.py'],  # Sadece ana program
+    
+    pathex=[os.getcwd()],  # Current directory'i ekle
+    
+    binaries=[],
+    
+    datas=get_data_files(),  # TÜM dosyaları ekle
+    
+    hiddenimports=[
+        'customtkinter', 'pandas', 'numpy', 'matplotlib', 
+        'openpyxl', 'xlsxwriter', 'xlrd', 'xlwt',
+        'PIL', 'PIL.Image', 'PIL.ImageTk',
+        'tkinter', 'tkinter.filedialog', 'tkinter.messagebox',
+        'os', 'sys', 'subprocess', 'threading', 'json',
+        'logging', 'datetime', 'shutil', 'tempfile'
+    ],
+    
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=excludes,
+    
+    excludes=[
+        'test', 'tests', 'unittest', 'distutils', 'setuptools'
+    ],
+    
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
     noarchive=False,
 )
 
-# ===============================================
-# PYZ
-# ===============================================
-pyz = PYZ(
-    a.pure, 
-    a.zipped_data,
-    cipher=block_cipher,
-)
+# ==================== PYZ ====================
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
-# ===============================================
-# EXECUTABLE CONFIGURATION - WINDOWED MODE
-# ===============================================
+# ==================== EXE ====================
 exe = EXE(
     pyz,
     a.scripts,
@@ -129,25 +86,23 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name=app_name,
+    name='BupiliC',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,
+    console=True,  # 🚨 DEBUG İÇİN ÖNCE TRUE - HATALARI GÖRELİM
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=icon_path if os.path.exists(icon_path) else None,
+    icon=os.path.join('icon', 'bupilic_logo.ico') if os.path.exists(os.path.join('icon', 'bupilic_logo.ico')) else None,
 )
 
-# ===============================================
-# COLLECT (For one-dir mode - RECOMMENDED)
-# ===============================================
+# ==================== COLLECT ====================
 coll = COLLECT(
     exe,
     a.binaries,
@@ -156,5 +111,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name=app_name,
+    name='BupiliC',
 )
