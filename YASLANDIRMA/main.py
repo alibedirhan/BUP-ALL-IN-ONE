@@ -84,6 +84,9 @@ class Program:
     def run(self):
         self.root.mainloop()
 
+def main():
+    print("Yaşlandırma programı başlatılıyor...")
+    # Burada YASLANDIRMA programınızı başlatacak kodlar
+
 if __name__ == "__main__":
-    app = Program("Yaşlandırma Raporları")
-    app.run()
+    main()
