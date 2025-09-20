@@ -993,15 +993,12 @@ class BupilicKarlilikGUI:
             self.on_closing()
 
 
-def main():
-    """Ana fonksiyon - Uygulama giriş noktası"""
-    try:
-        app = BupilicKarlilikGUI()
-        app.run()
-    except Exception as e:
-        logging.error(f"Application startup error: {e}")
-        print(f"Uygulama başlatma hatası: {e}")
-
+def run_program():
+    """Ana programdan çağrılmak için"""
+    # Burada GUI'yi başlatın
+    root = ctk.CTk()
+    app = KarlilikAnaliziApp(root)
+    root.mainloop()
 
 if __name__ == "__main__":
-    main()
+    run_program()
