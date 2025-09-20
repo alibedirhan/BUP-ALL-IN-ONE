@@ -1,52 +1,42 @@
 import os
 import sys
-import time
+import traceback
 
-print("=" * 50)
-print(f"🚀 Starting {os.path.basename(os.path.dirname(__file__))}")
-print("=" * 50)
-
-# FROZEN DURUMU İÇİN KRİTİK AYAR
-if getattr(sys, 'frozen', False):
-    print("❄️ Frozen mode detected")
+try:
+    # Frozen durumu için
+    if getattr(sys, 'frozen', False):
+        application_path = os.path.dirname(sys.executable)
+    else:
+        application_path = os.path.dirname(os.path.abspath(__file__))
     
-    # 1. MEIPASS yolunu al
-    base_path = sys._MEIPASS
-    print(f"📦 MEIPASS: {base_path}")
-    
-    # 2. Programın kendi yolunu bul
-    current_dir_name = os.path.basename(os.path.dirname(__file__))
-    source_program_path = os.path.join(base_path, current_dir_name)
-    
-    # 3. Hedef yol (ana EXE ile aynı dizin)
-    target_base_path = os.path.dirname(sys.executable)
-    target_program_path = os.path.join(target_base_path, current_dir_name)
-    
-    print(f"🎯 Source: {source_program_path}")
-    print(f"🎯 Target: {target_program_path}")
-    
-    # 4. Eğer hedefte yoksa KOPYALA
-    if not os.path.exists(target_program_path):
-        print("📋 Copying program files...")
-        import shutil
+    # Gerekli modülleri yükleme hatasını yakala
+    try:
+        import pdfplumber
+    except ImportError:
+        print("ERROR: pdfplumber modülü bulunamadı!")
+        print("Lütfen şu komutu çalıştırın: pip install pdfplumber")
+        input("Devam etmek için Enter'a basın...")
+        sys.exit(1)
         
-        try:
-            shutil.copytree(source_program_path, target_program_path)
-            print("✅ Copy successful")
-        except Exception as e:
-            print(f"❌ Copy failed: {e}")
+    # Diğer importlar
+    import pandas as pd
+    import numpy as np
+    from datetime import datetime, timedelta
+    import tkinter as tk
+    from tkinter import ttk, messagebox, filedialog
+    import json
+    import logging
+    import matplotlib.pyplot as plt
+    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+    import seaborn as sns
     
-    # 5. Çalışma dizinini AYNI SEVİYEDE olacak şekilde ayarla
-    os.chdir(target_program_path)
-    
-else:
-    # Normal mod
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+except Exception as e:
+    print(f"CRITICAL ERROR: {e}")
+    print(traceback.format_exc())
+    input("Program kapatılacak. Enter'a basın...")
+    sys.exit(1)
 
-print(f"📂 Working directory: {os.getcwd()}")
-print(f"📄 Files here: {os.listdir('.')}")
-print("=" * 50)
-time.sleep(1)  # Debug için bekle
+# Geri kalan kodlar...
 
 # GERİ KALAN KODLARINIZ BURADAN SONRA GELMELİ
 
