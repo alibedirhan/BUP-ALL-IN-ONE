@@ -9,318 +9,185 @@ import threading
 import time
 from pathlib import Path
 
-def install_dependencies_completely():
-    """Tüm bağımlılıkları otomatik olarak indirip kurar"""
-    print("🤖 Automatic Dependency Installer")
-    print("=" * 50)
+# ===== KESİN ÇÖZÜM: TÜM BAĞIMLILIKLAR =====
+def install_all_dependencies():
+    """TÜM bağımlılıkları KESİN olarak yükler"""
+    print("🔧 Installing ALL dependencies...")
     
-    required_packages = [
+    # Gerekli tüm paketler
+    packages = [
         'pandas', 'numpy', 'matplotlib', 'pdfplumber', 'customtkinter',
         'openpyxl', 'psutil', 'Pillow', 'seaborn', 'xlsxwriter',
         'xlrd', 'xlwt', 'python-dateutil', 'tkcalendar'
     ]
     
-    # Önce hangi modda olduğumuzu kontrol et
-    is_frozen = getattr(sys, 'frozen', False)
+    success_count = 0
+    total_count = len(packages)
     
-    if is_frozen:
-        print("❄️ Frozen mode detected - using standalone installer")
-        return install_in_frozen_mode(required_packages)
-    else:
-        print("🐍 Normal mode - using pip")
-        return install_with_pip(required_packages)
-
-def install_with_pip(packages):
-    """Normal modda pip ile kurulum"""
-    try:
-        for package in packages:
+    for package in packages:
+        try:
+            # Önce zaten yüklü mü kontrol et
+            importlib.import_module(package)
+            print(f"✅ {package} already installed")
+            success_count += 1
+        except ImportError:
+            print(f"⬇️ Installing {package}...")
             try:
-                importlib.import_module(package)
-                print(f"✅ {package} already installed")
-            except ImportError:
-                print(f"⬇️ Downloading {package}...")
+                # Pip ile dene
                 result = subprocess.run([
                     sys.executable, "-m", "pip", "install", package
                 ], capture_output=True, text=True, timeout=300)
                 
                 if result.returncode == 0:
                     print(f"✅ {package} installed successfully")
+                    success_count += 1
                 else:
-                    print(f"❌ Failed to install {package}: {result.stderr}")
-        
-        print("🎉 All dependencies installed!")
-        return True
-        
-    except Exception as e:
-        print(f"❌ Pip installation failed: {e}")
-        return False
-
-    def install_in_frozen_mode(packages):
-        """Frozen modda özel kurulum yöntemi"""
-        print("🚀 Starting automatic installation...")
-        
-        # Frozen modda genellikle birçok paket zaten embedded halde gelir
-        # Sadece gerçekten eksik olanları yüklemeye çalış
-        
-        # ÖNEMLİ: Frozen modda pip kurulumu zor olabilir, bu yüzden
-        # sadece kritik olanları yüklemeye çalışıyoruz
-        
-        critical_packages = ['Pillow', 'python-dateutil', 'tkcalendar']
-        
-        print(f"⭐ Critical packages to check: {critical_packages}")
-        
-        # Geçici dizin oluştur
-        temp_dir = tempfile.mkdtemp(prefix="bupilic_deps_")
-        print(f"📁 Temporary directory: {temp_dir}")
-        
-        try:
-            # Önce hangilerinin zaten mevcut olduğunu kontrol et
-            available_packages = []
-            missing_packages = []
-            
-            for package in critical_packages:
-                try:
-                    importlib.import_module(package)
-                    available_packages.append(package)
-                    print(f"✅ {package} already available")
-                except ImportError:
-                    missing_packages.append(package)
-                    print(f"❌ {package} missing")
-            
-            if not missing_packages:
-                print("🎉 All critical packages are already available!")
-                return True
-                
-            print(f"⬇️ Missing critical packages: {missing_packages}")
-            
-            # Frozen modda özel çözüm - embedded pip kullan
-            try:
-                # Embedded pip yolunu bul
-                python_dir = os.path.dirname(sys.executable)
-                pip_path = os.path.join(python_dir, "Scripts", "pip.exe")
-                
-                if os.path.exists(pip_path):
-                    print(f"🔧 Found embedded pip: {pip_path}")
+                    print(f"❌ Failed to install {package}")
                     
-                    for package in missing_packages:
-                        try:
-                            print(f"📦 Installing {package} using embedded pip...")
-                            result = subprocess.run([
-                                sys.executable, pip_path, "install", package
-                            ], capture_output=True, text=True, timeout=120)
-                            
-                            if result.returncode == 0:
-                                print(f"✅ {package} installed successfully")
-                            else:
-                                print(f"❌ Failed to install {package}: {result.stderr}")
-                        except Exception as e:
-                            print(f"⚠️ Error installing {package}: {e}")
-                
-                else:
-                    print("⚠️ Embedded pip not found, trying direct download...")
-                    
-                    # Direct download dene
-                    for package in missing_packages:
-                        try:
-                            # Basitçe Python'u kullanarak kur
-                            result = subprocess.run([
-                                sys.executable, "-m", "pip", "install", package
-                            ], capture_output=True, text=True, timeout=120)
-                            
-                            if result.returncode == 0:
-                                print(f"✅ {package} installed via direct pip")
-                            else:
-                                print(f"❌ Failed to install {package}: {result.stderr}")
-                        except Exception as e:
-                            print(f"⚠️ Error installing {package}: {e}")
-            
+                    # Son çare: user site-packages'e yükle
+                    try:
+                        result = subprocess.run([
+                            sys.executable, "-m", "pip", "install", "--user", package
+                        ], capture_output=True, text=True, timeout=300)
+                        
+                        if result.returncode == 0:
+                            print(f"✅ {package} installed to user site-packages")
+                            success_count += 1
+                        else:
+                            print(f"❌ Completely failed to install {package}")
+                    except:
+                        print(f"❌ Completely failed to install {package}")
+                        
             except Exception as e:
-                print(f"❌ Package installation failed: {e}")
-            
-            # Son kontrol
-            finally_missing = []
-            for package in missing_packages:
-                try:
-                    importlib.import_module(package)
-                    print(f"✅ {package} successfully installed")
-                except ImportError:
-                    finally_missing.append(package)
-                    print(f"❌ {package} still missing")
-            
-            if finally_missing:
-                print(f"⚠️ Some packages could not be installed: {finally_missing}")
-                print("ℹ️ Application will continue, but some features may not work properly")
-            else:
-                print("🎉 All missing packages installed successfully!")
-            
-            return True  # Uygulama devam etsin, bağımlılıklar kritik değil
-            
-        except Exception as e:
-            print(f"❌ Installation failed: {e}")
-            return True  # Hata olsa bile uygulama devam etsin
-        finally:
-            # Temizlik
-            try:
-                shutil.rmtree(temp_dir, ignore_errors=True)
-            except:
-                pass
-
-def install_single_package(package_name, target_dir):
-    """Tek bir paketi kur"""
-    try:
-        # Önce zaten yüklü mü kontrol et
-        try:
-            importlib.import_module(package_name)
-            print(f"✅ {package_name} already available")
-            return True
-        except ImportError:
-            pass
-        
-        print(f"📦 Installing {package_name}...")
-        
-        # 1. Yöntem: embedded pip ile dene
-        if try_embedded_pip(package_name):
-            return True
-        
-        # 2. Yöntem: direct download ile dene
-        if try_direct_download(package_name, target_dir):
-            return True
-        
-        # 3. Yöntem: manual wheel download
-        if try_wheel_download(package_name, target_dir):
-            return True
-            
-        print(f"❌ All methods failed for {package_name}")
-        return False
-        
-    except Exception as e:
-        print(f"❌ Error installing {package_name}: {e}")
-        return False
-
-def try_embedded_pip(package_name):
-    """Embedded pip ile kurmayı dene"""
-    try:
-        # Python executable path
-        python_exe = sys.executable
-        python_dir = os.path.dirname(python_exe)
-        
-        # Pip yollarını ara
-        possible_pip_paths = [
-            os.path.join(python_dir, "pip"),
-            os.path.join(python_dir, "pip.exe"),
-            os.path.join(python_dir, "Scripts", "pip.exe"),
-            os.path.join(python_dir, "Scripts", "pip"),
-        ]
-        
-        for pip_path in possible_pip_paths:
-            if os.path.exists(pip_path):
-                print(f"🔧 Using pip: {pip_path}")
-                result = subprocess.run([
-                    python_exe, pip_path, "install", package_name
-                ], capture_output=True, text=True, timeout=120)
-                
-                if result.returncode == 0:
-                    print(f"✅ {package_name} installed via pip")
-                    return True
-        return False
-        
-    except:
-        return False
-
-def try_direct_download(package_name, target_dir):
-    """Direct download ile kurmayı dene"""
-    try:
-        # Basitçe Python'u kullanarak kur
-        import urllib.request
-        import zipfile
-        
-        # Paket için wheel URL'si (basit versiyon)
-        wheel_urls = {
-            'pandas': f'https://files.pythonhosted.org/packages/pandas/pandas-2.1.4-cp310-cp310-win_amd64.whl',
-            'numpy': f'https://files.pythonhosted.org/packages/numpy/numpy-1.24.3-cp310-cp310-win_amd64.whl',
-            'matplotlib': f'https://files.pythonhosted.org/packages/matplotlib/matplotlib-3.7.2-cp310-cp310-win_amd64.whl',
-        }
-        
-        if package_name in wheel_urls:
-            print(f"🌐 Downloading {package_name} wheel...")
-            wheel_path = os.path.join(target_dir, f"{package_name}.whl")
-            
-            # İndir
-            urllib.request.urlretrieve(wheel_urls[package_name], wheel_path)
-            
-            # Kur
-            result = subprocess.run([
-                sys.executable, "-m", "pip", "install", wheel_path
-            ], capture_output=True, text=True)
-            
-            if result.returncode == 0:
-                print(f"✅ {package_name} installed from wheel")
-                return True
-        
-        return False
-        
-    except:
-        return False
-
-def try_wheel_download(package_name, target_dir):
-    """Wheel download ile kurmayı dene"""
-    try:
-        # Python'u kullanarak wheel indir ve kur
-        result = subprocess.run([
-            sys.executable, "-m", "pip", "download", 
-            package_name, "-d", target_dir
-        ], capture_output=True, text=True, timeout=120)
-        
-        if result.returncode == 0:
-            # İndirilen wheel'leri bul ve kur
-            wheels = [f for f in os.listdir(target_dir) if f.endswith('.whl')]
-            for wheel in wheels:
-                wheel_path = os.path.join(target_dir, wheel)
-                subprocess.run([
-                    sys.executable, "-m", "pip", "install", wheel_path
-                ], capture_output=True)
-            
-            print(f"✅ {package_name} installed from downloaded wheel")
-            return True
-        
-        return False
-        
-    except:
-        return False
-
-def ensure_all_dependencies():
-    """Tüm bağımlılıkların kurulu olduğundan emin ol"""
-    print("🔄 Checking and installing dependencies...")
+                print(f"❌ Error installing {package}: {e}")
     
-    # Thread ile arka planda kur
+    print(f"📊 Installation result: {success_count}/{total_count} packages")
+    return success_count == total_count
+
+def ensure_dependencies():
+    """Bağımlılıkları garantiye al"""
+    print("🔄 Ensuring dependencies...")
+    
     def install_thread():
         try:
-            success = install_dependencies_completely()
+            success = install_all_dependencies()
             if success:
-                print("🎉 All dependencies are ready!")
+                print("🎉 ALL dependencies installed successfully!")
             else:
                 print("⚠️ Some dependencies may be missing, but continuing...")
         except Exception as e:
             print(f"❌ Dependency installation error: {e}")
     
-    # Arka planda kurulumu başlat
+    # Arka planda kur
     thread = threading.Thread(target=install_thread, daemon=True)
     thread.start()
     
-    # Hemen return et, uygulama beklemeye devam etsin
     return True
 
-# UYGULAMA BAŞLANGICI
-print("🚀 BupiliC Starting...")
-print("💡 Automatic dependency installation in background...")
+# HEMEN bağımlılıkları kontrol et
+ensure_dependencies()
 
-# Bağımlılıkları kontrol et ve kur (arka planda)
-ensure_all_dependencies()
+# ===== TÜM ALT PROGRAMLARI TEK EXE'DE ÇALIŞTIRMA =====
+def run_embedded_program(program_name):
+    """Alt programı embedded olarak çalıştır"""
+    try:
+        print(f"🚀 Starting {program_name}...")
+        
+        # Mevcut Python executable
+        python_exe = sys.executable
+        
+        # Alt program modülünü import et
+        try:
+            if program_name == "ISKONTO_HESABI":
+                # ISKONTO_HESABI kodunu doğrudan çalıştır
+                from ISKONTO_HESABI import main as iskonto_main
+                if hasattr(iskonto_main, 'main'):
+                    iskonto_main.main()
+                elif hasattr(iskonto_main, 'run_program'):
+                    iskonto_main.run_program()
+                else:
+                    # Eski stil
+                    iskonto_main.run_program()
+                return True
+                
+            elif program_name == "KARLILIK_ANALIZI":
+                # KARLILIK_ANALIZI kodunu doğrudan çalıştır
+                from KARLILIK_ANALIZI import gui as karlilik_gui
+                if hasattr(karlilik_gui, 'main'):
+                    karlilik_gui.main()
+                elif hasattr(karlilik_gui, 'run_program'):
+                    karlilik_gui.run_program()
+                else:
+                    # Eski stil
+                    karlilik_gui.run_program()
+                return True
+                
+            elif program_name == "Musteri_Sayisi_Kontrolu":
+                # Musteri_Sayisi_Kontrolu kodunu doğrudan çalıştır
+                from Musteri_Sayisi_Kontrolu import main as musteri_main
+                if hasattr(musteri_main, 'main'):
+                    musteri_main.main()
+                elif hasattr(musteri_main, 'run_program'):
+                    musteri_main.run_program()
+                else:
+                    # Eski stil
+                    musteri_main.run_program()
+                return True
+                
+            elif program_name == "YASLANDIRMA":
+                # YASLANDIRMA kodunu doğrudan çalıştır
+                from YASLANDIRMA import main as yaslandirma_main
+                if hasattr(yaslandirma_main, 'main'):
+                    yaslandirma_main.main()
+                elif hasattr(yaslandirma_main, 'run_program'):
+                    yaslandirma_main.run_program()
+                else:
+                    # Eski stil
+                    yaslandirma_main.run_program()
+                return True
+                
+        except ImportError as e:
+            print(f"❌ Import error: {e}")
+            # Fallback: Orijinal dosyayı çalıştır
+            return run_original_program(program_name)
+            
+    except Exception as e:
+        print(f"❌ Error starting {program_name}: {e}")
+        return False
 
-# Hemen ana uygulamaya geç
-print("⚡ Starting main application...")
+def run_original_program(program_name):
+    """Orijinal program dosyasını çalıştır"""
+    try:
+        program_dir = os.path.join(os.path.dirname(__file__), program_name)
+        if not os.path.exists(program_dir):
+            program_dir = os.path.join(os.path.dirname(sys.executable), program_name)
+        
+        if program_name == "KARLILIK_ANALIZI":
+            main_file = "gui.py"
+        else:
+            main_file = "main.py"
+        
+        main_path = os.path.join(program_dir, main_file)
+        
+        if os.path.exists(main_path):
+            # Sistem Python'u kullan
+            python_exe = "python"
+            try:
+                subprocess.run([python_exe, "--version"], capture_output=True, timeout=5)
+            except:
+                python_exe = "py"
+            
+            cmd = f'start "BupiliC - {program_name}" /D "{program_dir}" "{python_exe}" "{main_file}"'
+            os.system(cmd)
+            return True
+        
+        return False
+        
+    except Exception as e:
+        print(f"❌ Error running original program: {e}")
+        return False
 
-# Geri kalan importlar
+# GERI KALAN IMPORTLAR
 import customtkinter as ctk
 from PIL import Image, ImageTk
 import threading
@@ -329,22 +196,6 @@ from datetime import datetime
 import json
 import logging
 import locale
-from pathlib import Path
-import tempfile
-import shutil
-
-
-import customtkinter as ctk
-import subprocess
-import os
-from PIL import Image, ImageTk
-import threading
-import time
-from datetime import datetime
-import json
-import logging
-import locale
-import sys
 from pathlib import Path
 import tempfile
 import shutil
@@ -903,151 +754,23 @@ class BupilicDashboard:
         self.setup_welcome_section()
         self.setup_quick_access()
     
-    def run_subprogram(self, program_name, main_file="main.py"):
-        """Alt programı çalıştır - KESİN ÇÖZÜM"""
-        try:
-            print(f"🚀 {program_name} başlatılıyor...")
-            
-            # Yol bulma - ÖNCE mevcut dizini kontrol et
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            program_dir = os.path.join(current_dir, program_name)
-            
-            # Eğer yoksa frozen modda ara
-            if not os.path.exists(program_dir) and getattr(sys, 'frozen', False):
-                program_dir = os.path.join(os.path.dirname(sys.executable), program_name)
-                if not os.path.exists(program_dir):
-                    program_dir = os.path.join(self.base_path, program_name)
-            
-            print(f"🔍 Program dizini: {program_dir}")
-            
-            if not os.path.exists(program_dir):
-                self.show_message(f"{program_name} bulunamadı!")
-                return False
-            
-            # Tüm Python dosyalarını listele
-            py_files = [f for f in os.listdir(program_dir) if f.endswith('.py') and f != '__init__.py']
-            print(f"📁 {program_name} içindeki Python dosyaları: {py_files}")
-            
-            # ÖZEL DURUM: KARLILIK_ANALIZI için gui.py kullan
-            if program_name == "KARLILIK_ANALIZI":
-                main_file = "gui.py"
-                main_path = os.path.join(program_dir, main_file)
-                print(f"✅ KARLILIK_ANALIZI için özel dosya: {main_file}")
-            else:
-                # Ana dosyayı bul
-                main_path = None
-                possible_main_files = [main_file, f"{program_name}.py", "app.py", "gui.py", "program.py"]
-                
-                for possible_file in possible_main_files:
-                    test_path = os.path.join(program_dir, possible_file)
-                    if os.path.exists(test_path):
-                        main_path = test_path
-                        main_file = possible_file
-                        break
-                
-                if not main_path:
-                    # Hiçbiri yoksa ilk Python dosyasını kullan
-                    if py_files:
-                        main_path = os.path.join(program_dir, py_files[0])
-                        main_file = py_files[0]
-                    else:
-                        self.show_message(f"{program_name} içinde Python dosyası bulunamadı!")
-                        return False
-            
-            print(f"✅ Ana dosya bulundu: {main_file}")
-            
-            # Windows için kesin çözüm
-            if os.name == 'nt':
-                try:
-                    # Python executable'ı bul
-                    python_exe = sys.executable
-                    
-                    # Eğer frozen modda ise sistem Python'unu kullan
-                    if getattr(sys, 'frozen', False):
-                        # Sistemde Python kurulu mu kontrol et
-                        try:
-                            result = subprocess.run(['python', '--version'], 
-                                                  capture_output=True, text=True, timeout=5)
-                            if result.returncode == 0:
-                                python_exe = 'python'
-                                print("✅ Sistem Python'u kullanılacak")
-                            else:
-                                result = subprocess.run(['py', '--version'], 
-                                                      capture_output=True, text=True, timeout=5)
-                                if result.returncode == 0:
-                                    python_exe = 'py'
-                                    print("✅ Py launcher kullanılacak")
-                                else:
-                                    # Son çare: embedded Python'u kullan
-                                    python_exe = sys.executable
-                                    print("⚠️ Embedded Python kullanılacak")
-                        except:
-                            python_exe = sys.executable
-                            print("⚠️ Embedded Python kullanılacak (hata)")
-                    
-                    print(f"🐍 Python executable: {python_exe}")
-                    
-                    # start komutu ile yeni pencere aç
-                    cmd = f'start "BupiliC - {program_name}" /D "{program_dir}" "{python_exe}" "{main_file}"'
-                    print(f"⚡ Komut: {cmd}")
-                    
-                    # Komutu çalıştır
-                    import subprocess
-                    process = subprocess.Popen(cmd, shell=True)
-                    time.sleep(3)  # Programın açılması için bekle
-                    
-                    # Process durumunu kontrol et
-                    if process.poll() is None:
-                        print(f"✅ {program_name} başarıyla başlatıldı")
-                        return True
-                    else:
-                        # Alternatif yöntem - doğrudan çalıştır
-                        try:
-                            subprocess.Popen([python_exe, main_file], cwd=program_dir)
-                            print(f"✅ {program_name} alternatif yöntemle başlatıldı")
-                            return True
-                        except Exception as alt_error:
-                            print(f"❌ Alternatif yöntem de başarısız: {alt_error}")
-                            self.show_message(f"{program_name} başlatılamadı!")
-                            return False
-                            
-                except Exception as e:
-                    print(f"❌ Hata: {e}")
-                    # Son çare olarak subprocess dene
-                    try:
-                        subprocess.Popen([sys.executable, main_path], cwd=program_dir)
-                        print(f"✅ {program_name} son çare yöntemiyle başlatıldı")
-                        return True
-                    except:
-                        self.show_message(f"Hata: {e}")
-                        return False
-            else:
-                # Linux/Mac için
-                subprocess.Popen([sys.executable, main_path], cwd=program_dir)
-                return True
-                
-        except Exception as e:
-            print(f"❌ Genel hata: {e}")
-            self.show_message(f"Beklenmeyen hata: {e}")
-            return False
-
     def iskonto_ac(self):
-        success = self.run_subprogram("ISKONTO_HESABI", "main.py")
+        success = run_embedded_program("ISKONTO_HESABI")
         if not success:
             self.show_message("İskonto programı başlatılamadı!")
 
     def karlilik_ac(self):
-        success = self.run_subprogram("KARLILIK_ANALIZI", "main.py")
+        success = run_embedded_program("KARLILIK_ANALIZI")
         if not success:
             self.show_message("Karlılık analizi programı başlatılamadı!")
 
     def musteri_kayip_ac(self):
-        success = self.run_subprogram("Musteri_Sayisi_Kontrolu", "main.py")
+        success = run_embedded_program("Musteri_Sayisi_Kontrolu")
         if not success:
             self.show_message("Müşteri kayıp/kaçak programı başlatılamadı!")
 
     def yaslandirma_ac(self):
-        success = self.run_subprogram("YASLANDIRMA", "main.py")
+        success = run_embedded_program("YASLANDIRMA")
         if not success:
             self.show_message("Yaşlandırma programı başlatılamadı!")
     
@@ -1064,15 +787,15 @@ class BupilicDashboard:
         
         # Debug bilgilerini topla
         info_text = f"""DEBUG INFORMATION:
-    
-    Frozen Mode: {getattr(sys, 'frozen', False)}
-    Base Path: {getattr(sys, '_MEIPASS', 'Not frozen')}
-    Current Directory: {os.getcwd()}
-    Python Executable: {sys.executable}
-    Operating System: {os.name}
-    
-    SUBPROGRAMS STATUS:
-    """
+
+Frozen Mode: {getattr(sys, 'frozen', False)}
+Base Path: {getattr(sys, '_MEIPASS', 'Not frozen')}
+Current Directory: {os.getcwd()}
+Python Executable: {sys.executable}
+Operating System: {os.name}
+
+SUBPROGRAMS STATUS:
+"""
         
         subprograms = ["ISKONTO_HESABI", "KARLILIK_ANALIZI", "Musteri_Sayisi_Kontrolu", "YASLANDIRMA"]
         
