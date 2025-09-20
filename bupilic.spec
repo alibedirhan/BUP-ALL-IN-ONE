@@ -23,26 +23,26 @@ def get_data_files():
     """Tüm alt programları ve dosyalarını recursive olarak topla"""
     datas = []
     
-    # Ana dizinler
+    # Ana dizinler - BU ŞEKİLDE OLMALI
     directories = [
-        'ISKONTO_HESABI',
-        'KARLILIK_ANALIZI', 
-        'Musteri_Sayisi_Kontrolu',
-        'YASLANDIRMA',
-        'icon',
-        'config',
-        'data'
+        ('ISKONTO_HESABI', '.'),
+        ('KARLILIK_ANALIZI', '.'), 
+        ('Musteri_Sayisi_Kontrolu', '.'),
+        ('YASLANDIRMA', '.'),
+        ('icon', '.'),
+        ('config', '.'),
+        ('data', '.')
     ]
     
-    for directory in directories:
-        if os.path.exists(directory):
-            for root, dirs, files in os.walk(directory):
+    for source_dir, target_dir in directories:
+        if os.path.exists(source_dir):
+            for root, dirs, files in os.walk(source_dir):
                 for file in files:
                     # .pyc ve __pycache__ dosyalarını hariç tut
                     if not file.endswith('.pyc') and '__pycache__' not in root:
                         full_path = os.path.join(root, file)
                         # PyInstaller formatı: (kaynak, hedef_klasör)
-                        target_path = os.path.dirname(full_path)
+                        target_path = target_dir
                         datas.append((full_path, target_path))
     
     return datas
