@@ -2,35 +2,29 @@
 
 block_cipher = None
 
-# ==================== DATA FILES ====================
+# Ana dizinler
+directories = [
+    'ISKONTO_HESABI',
+    'KARLILIK_ANALIZI', 
+    'Musteri_Sayisi_Kontrolu',
+    'YASLANDIRMA',
+    'icon',
+    'config',
+    'data'
+]
+
 def get_data_files():
     datas = []
-    
-    directories = [
-        'ISKONTO_HESABI',
-        'KARLILIK_ANALIZI', 
-        'Musteri_Sayisi_Kontrolu',
-        'YASLANDIRMA',
-        'icon',
-        'config',
-        'data'
-    ]
-    
     for directory in directories:
         if os.path.exists(directory):
             for root, dirs, files in os.walk(directory):
                 for file in files:
-                    if (not file.endswith('.pyc') and 
-                        '__pycache__' not in root and
-                        not file.endswith('.log')):
-                        
+                    if not file.endswith('.pyc') and '__pycache__' not in root:
                         full_path = os.path.join(root, file)
                         target_dir = os.path.basename(root)
                         datas.append((full_path, target_dir))
-    
     return datas
 
-# ==================== ANALYSIS ====================
 a = Analysis(
     ['BUPILIC_ANA_PROGRAM.py'],
     pathex=[os.getcwd()],
@@ -54,10 +48,8 @@ a = Analysis(
     noarchive=False,
 )
 
-# ==================== PYZ ====================
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
-# ==================== EXE ====================
 exe = EXE(
     pyz,
     a.scripts,
@@ -72,7 +64,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
@@ -81,7 +73,6 @@ exe = EXE(
     icon=os.path.join('icon', 'bupilic_logo.ico') if os.path.exists(os.path.join('icon', 'bupilic_logo.ico')) else None,
 )
 
-# ==================== COLLECT ====================
 coll = COLLECT(
     exe,
     a.binaries,
