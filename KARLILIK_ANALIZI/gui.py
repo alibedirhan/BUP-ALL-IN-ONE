@@ -1,18 +1,30 @@
 import os
 import sys
 
-# Frozen durumu için özel ayarlar
+# FROZEN DURUMU İÇİN KRİTİK AYAR
 if getattr(sys, 'frozen', False):
     # PyInstaller ile paketlenmişse
-    application_path = os.path.dirname(sys.executable)
-    # Çalışma dizinini ayarla
-    os.chdir(os.path.join(application_path, os.path.dirname(__file__)))
+    base_path = sys._MEIPASS
+    program_path = os.path.join(base_path, os.path.basename(os.path.dirname(__file__)))
+    
+    # Çalışma dizinini AYNI SEVİYEDE olacak şekilde ayarla
+    target_dir = os.path.dirname(sys.executable)
+    target_program_dir = os.path.join(target_dir, os.path.basename(os.path.dirname(__file__)))
+    
+    # Eğer hedef dizin yoksa oluştur ve kopyala
+    if not os.path.exists(target_program_dir):
+        import shutil
+        shutil.copytree(program_path, target_program_dir)
+    
+    os.chdir(target_program_dir)
 else:
     # Normal Python ortamında çalışıyorsa
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-# Geri kalan kodlar...
+print(f"Çalışma dizini: {os.getcwd()}")
+print(f"Mevcut dosyalar: {os.listdir('.')}")
 
+# GERİ KALAN KODLARINIZ BURADAN SONRA GELMELİ
 
 # gui.py - Tamamen Hatasız ve Temiz Versiyon
 
