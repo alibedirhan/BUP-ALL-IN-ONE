@@ -107,9 +107,13 @@ def main():
         print(f"HATA: Uygulama başlatılamadı - {e}")
         sys.exit(1)
         
+def main():
+    # Programı başlat
+    from ISKONTO_HESABI.ui_components import create_main_window
+    create_main_window()
+
 def run_program():
-    """Ana programdan çağrılmak için"""
-    main()  # Mevcut main fonksiyonunuzu çağırın
+    main()
 
 if __name__ == "__main__":
     main()
