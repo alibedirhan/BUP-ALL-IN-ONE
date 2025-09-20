@@ -691,15 +691,25 @@ class BupilicDashboard:
             
             # 2. WINDOWS İÇİN KESİN ÇÖZÜM
             if os.name == 'nt':
-                # YENİ VE KESİN YÖNTEM: start komutu ile yeni pencere aç
                 try:
-                    python_exe = sys.executable
+                    # ÖNCE: Python'u bul (ana EXE değil!)
+                    if self.is_frozen:
+                        # Frozen modda: Python embedded içinde
+                        python_exe = os.path.join(self.base_path, "python.exe")
+                        if not os.path.exists(python_exe):
+                            # Embedded python yoksa, sistem python'unu kullan
+                            python_exe = "python"
+                    else:
+                        # Normal modda: sistem python
+                        python_exe = sys.executable
                     
-                    # start komutu ile YENİ CMD PENCERESİNDE aç
+                    print(f"🐍 Python executable: {python_exe}")
+                    
+                    # start komutu ile YENİ PENCERE aç
                     cmd = f'start "BupiliC - {program_name}" /D "{program_dir}" "{python_exe}" "{main_file}"'
                     print(f"⚡ Komut: {cmd}")
                     
-                    # os.system ile çalıştır (yeni pencere açar)
+                    # os.system ile çalıştır
                     result = os.system(cmd)
                     print(f"✅ Sonuç: {result}")
                     
@@ -707,22 +717,8 @@ class BupilicDashboard:
                     
                 except Exception as e:
                     print(f"❌ start komutu hatası: {e}")
-                    
-                    # FALLBACK: subprocess ile dene
-                    try:
-                        import subprocess
-                        # CREATE_NEW_CONSOLE flag'i ile yeni pencere aç
-                        process = subprocess.Popen(
-                            [sys.executable, main_file],
-                            cwd=program_dir,
-                            creationflags=subprocess.CREATE_NEW_CONSOLE
-                        )
-                        print(f"✅ Subprocess başlatıldı: PID {process.pid}")
-                        return True
-                    except Exception as e2:
-                        print(f"❌ Subprocess hatası: {e2}")
-                        self.show_message(f"Hata: {e2}")
-                        return False
+                    self.show_message(f"Hata: {e}")
+                    return False
             else:
                 # Linux/Mac
                 import subprocess
