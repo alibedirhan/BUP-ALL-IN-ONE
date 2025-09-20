@@ -2,47 +2,61 @@ import os
 import sys
 import traceback
 
+def setup_environment():
+    """Alt program için gerekli ortamı kurar"""
+    try:
+        # Frozen durumu için
+        if getattr(sys, 'frozen', False):
+            application_path = os.path.dirname(sys.executable)
+            # Ana programın dizinini sys.path'e ekle
+            if application_path not in sys.path:
+                sys.path.insert(0, application_path)
+        else:
+            application_path = os.path.dirname(os.path.abspath(__file__))
+        
+        return True
+        
+    except Exception as e:
+        print(f"Environment setup error: {e}")
+        return False
+
+# Ortamı kur
+if not setup_environment():
+    print("Environment setup failed!")
+    input("Press Enter to exit...")
+    sys.exit(1)
+
+# BASİT VE ETKİLİ IMPORT
 try:
-    # Gerekli modülleri import et
+    # Önce ana programdan yardım al
+    try:
+        # Ana programın modüllerini kullanmayı dene
+        from BUPILIC_ANA_PROGRAM import ensure_dependencies
+        ensure_dependencies()
+    except:
+        pass
+    
+    # Sonra import etmeyi dene
     import pandas as pd
     import numpy as np
     import pdfplumber
-    from datetime import datetime, timedelta
-    import tkinter as tk
-    from tkinter import ttk, messagebox, filedialog
-    import json
-    import logging
-    import matplotlib.pyplot as plt
-    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-    import seaborn as sns
     
 except ImportError as e:
-    print("Import error:", e)
-    print("Please wait, trying to install missing dependencies...")
-    
-    try:
-        import subprocess
-        # Eksik paketleri yükle
-        missing_package = str(e).split("'")[1]
-        subprocess.check_call([sys.executable, "-m", "pip", "install", missing_package])
-        
-        # Tekrar import etmeyi dene
-        if missing_package == "pdfplumber":
-            import pdfplumber
-        elif missing_package == "pandas":
-            import pandas as pd
-        elif missing_package == "numpy":
-            import numpy as np
-        elif missing_package == "matplotlib":
-            import matplotlib.pyplot as plt
-            
-        print("Dependency installed successfully! Restarting...")
-        
-    except Exception as install_error:
-        print("Failed to install dependency:", install_error)
-        print("Please run: pip install", missing_package)
-        input("Press Enter to exit...")
-        sys.exit(1)
+    print(f"Import error: {e}")
+    print("This is a frozen application. Please make sure all dependencies are included in the build.")
+    print("Contact support for assistance.")
+    input("Press Enter to exit...")
+    sys.exit(1)
+
+# Geri kalan importlar
+from datetime import datetime, timedelta
+import tkinter as tk
+from tkinter import ttk, messagebox, filedialog
+import json
+import logging
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import seaborn as sns
 
 # Geri kalan kodlar...
 
