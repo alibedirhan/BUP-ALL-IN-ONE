@@ -92,25 +92,24 @@ jobs:
 
     - name: Install application dependencies
       run: |
-        echo "📦 Tüm bağımlılıklar yükleniyor..."
+        echo "Installing all dependencies..."
         
         # Önce requirements.txt'den yükle
         pip install -r requirements.txt
         
-        # Ek paketleri de yükle
-        pip install packaging
-        pip install tkcalendar
-        
-        # Versiyonları kontrol et
+        # Versiyonları kontrol et (Unicode karakterleri kaldır)
         python -c "
-        import pandas as pd
-        import numpy as np
-        import pdfplumber
-        import customtkinter as ctk
-        print('✅ Pandas:', pd.__version__)
-        print('✅ NumPy:', np.__version__)
-        print('✅ PDFPlumber:', pdfplumber.__version__)
-        print('✅ CustomTkinter:', ctk.__version__)
+        try:
+            import pandas as pd
+            import numpy as np
+            import pdfplumber
+            import customtkinter as ctk
+            print('Pandas:', pd.__version__)
+            print('NumPy:', np.__version__)
+            print('PDFPlumber:', getattr(pdfplumber, '__version__', 'unknown'))
+            print('CustomTkinter:', getattr(ctk, '__version__', 'unknown'))
+        except Exception as e:
+            print('Error:', e)
         "
 
     - name: Build with PyInstaller
