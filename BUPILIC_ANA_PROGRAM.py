@@ -7,10 +7,38 @@ import threading
 import time
 from pathlib import Path
 
-# ===== KESİN ÇÖZÜM: TÜM BAĞIMLILIKLAR =====
+# PyInstaller için path düzeltmeleri
+def setup_paths():
+    """PyInstaller bundle için path'leri düzelt"""
+    if getattr(sys, 'frozen', False):
+        # PyInstaller bundle modunda
+        bundle_dir = sys._MEIPASS
+        print(f"PyInstaller mode detected. Bundle dir: {bundle_dir}")
+        
+        # Alt modül klasörlerini sys.path'e ekle
+        module_dirs = [
+            'ISKONTO_HESABI',
+            'KARLILIK_ANALIZI', 
+            'Musteri_Sayisi_Kontrolu',
+            'YASLANDIRMA',
+            'YASLANDIRMA/gui',
+            'YASLANDIRMA/modules'
+        ]
+        
+        for module_dir in module_dirs:
+            full_path = os.path.join(bundle_dir, module_dir)
+            if os.path.exists(full_path) and full_path not in sys.path:
+                sys.path.insert(0, full_path)
+                print(f"Added to path: {full_path}")
+    else:
+        print("Normal Python mode")
+
+# Path'leri hemen ayarla
+setup_paths()
+
 def install_missing_dependencies():
     """Sadece eksik bağımlılıkları yükle"""
-    print("🔧 Checking for missing dependencies...")
+    print("Checking for missing dependencies...")
     
     required_packages = [
         'pandas', 'numpy', 'matplotlib', 'pdfplumber', 'customtkinter',
@@ -22,26 +50,32 @@ def install_missing_dependencies():
     
     for package in required_packages:
         try:
-            importlib.import_module(package)
+            if package == 'PIL':
+                importlib.import_module('PIL')
+            else:
+                importlib.import_module(package)
             print(f"✅ {package} already installed")
         except ImportError:
             missing_packages.append(package)
             print(f"❌ {package} missing")
     
     if not missing_packages:
-        print("🎉 All dependencies are already installed!")
+        print("All dependencies are already installed!")
         return True
     
-    print(f"⬇️ Installing missing packages: {missing_packages}")
+    print(f"Installing missing packages: {missing_packages}")
     
     # Python executable'ı bul
     python_exe = sys.executable
     
     for package in missing_packages:
         try:
-            print(f"📦 Installing {package}...")
+            print(f"Installing {package}...")
+            # Pillow için özel isim
+            install_name = 'Pillow' if package == 'PIL' else package
+            
             result = subprocess.run([
-                python_exe, "-m", "pip", "install", package
+                python_exe, "-m", "pip", "install", install_name
             ], capture_output=True, text=True, timeout=300)
             
             if result.returncode == 0:
@@ -68,106 +102,101 @@ def ensure_dependencies_async():
 # HEMEN bağımlılıkları kontrol et (arka planda)
 ensure_dependencies_async()
 
-# ===== TÜM ALT PROGRAMLARI ÇALIŞTIRMA =====
 def run_embedded_program(program_name):
     """Gömülü programı çalıştır"""
     try:
-        print(f"🚀 Starting {program_name}...")
+        print(f"Starting {program_name}...")
         
-        # Embedded modüllerden çalıştır
-        try:
-            if program_name == "ISKONTO_HESABI":
-                # ISKONTO_HESABI modüllerini içe aktar
+        if program_name == "ISKONTO_HESABI":
+            try:
+                # Farklı import yollarını dene
                 try:
                     from ISKONTO_HESABI import main as iskonto_main
                     if hasattr(iskonto_main, 'main'):
                         iskonto_main.main()
-                        return True
-                    elif hasattr(iskonto_main, 'run_program'):
-                        iskonto_main.run_program()
-                        return True
-                except ImportError as e:
-                    print(f"❌ ISKONTO_HESABI import error: {e}")
-                    return False
-                    
-            elif program_name == "KARLILIK_ANALIZI":
-                # KARLILIK_ANALIZI modüllerini içe aktar
+                    else:
+                        print("main() function not found in ISKONTO_HESABI.main")
+                    return True
+                except ImportError:
+                    # Alternatif import
+                    import ISKONTO_HESABI.main
+                    ISKONTO_HESABI.main.main()
+                    return True
+            except Exception as e:
+                print(f"❌ ISKONTO_HESABI error: {e}")
+                return False
+                
+        elif program_name == "KARLILIK_ANALIZI":
+            try:
                 try:
                     from KARLILIK_ANALIZI import gui as karlilik_gui
                     if hasattr(karlilik_gui, 'main'):
                         karlilik_gui.main()
-                        return True
-                    elif hasattr(karlilik_gui, 'run_program'):
-                        karlilik_gui.run_program()
-                        return True
-                except ImportError as e:
-                    print(f"❌ KARLILIK_ANALIZI import error: {e}")
-                    return False
-                    
-            elif program_name == "Musteri_Sayisi_Kontrolu":
-                # Musteri_Sayisi_Kontrolu modüllerini içe aktar
+                    else:
+                        print("main() function not found in KARLILIK_ANALIZI.gui")
+                    return True
+                except ImportError:
+                    import KARLILIK_ANALIZI.gui
+                    KARLILIK_ANALIZI.gui.main()
+                    return True
+            except Exception as e:
+                print(f"❌ KARLILIK_ANALIZI error: {e}")
+                return False
+                
+        elif program_name == "Musteri_Sayisi_Kontrolu":
+            try:
                 try:
                     from Musteri_Sayisi_Kontrolu import main as musteri_main
                     if hasattr(musteri_main, 'main'):
                         musteri_main.main()
-                        return True
-                    elif hasattr(musteri_main, 'run_program'):
-                        musteri_main.run_program()
-                        return True
-                except ImportError as e:
-                    print(f"❌ Musteri_Sayisi_Kontrolu import error: {e}")
-                    return False
-                    
-            elif program_name == "YASLANDIRMA":
-                # YASLANDIRMA modüllerini içe aktar
+                    else:
+                        print("main() function not found in Musteri_Sayisi_Kontrolu.main")
+                    return True
+                except ImportError:
+                    import Musteri_Sayisi_Kontrolu.main
+                    Musteri_Sayisi_Kontrolu.main.main()
+                    return True
+            except Exception as e:
+                print(f"❌ Musteri_Sayisi_Kontrolu error: {e}")
+                return False
+                
+        elif program_name == "YASLANDIRMA":
+            try:
                 try:
                     from YASLANDIRMA import main as yaslandirma_main
                     if hasattr(yaslandirma_main, 'main'):
                         yaslandirma_main.main()
-                        return True
-                    elif hasattr(yaslandirma_main, 'run_program'):
-                        yaslandirma_main.run_program()
-                        return True
-                except ImportError as e:
-                    print(f"❌ YASLANDIRMA import error: {e}")
-                    return False
-                    
-        except Exception as e:
-            print(f"❌ Error running {program_name}: {e}")
-            return False
-            
+                    else:
+                        print("main() function not found in YASLANDIRMA.main")
+                    return True
+                except ImportError:
+                    import YASLANDIRMA.main
+                    YASLANDIRMA.main.main()
+                    return True
+            except Exception as e:
+                print(f"❌ YASLANDIRMA error: {e}")
+                return False
+                
     except Exception as e:
         print(f"❌ General error starting {program_name}: {e}")
         return False
 
-# GERI KALAN IMPORTLAR
-import customtkinter as ctk
-from PIL import Image, ImageTk
-import threading
-import time
-from datetime import datetime
-import json
-import logging
-import locale
-from pathlib import Path
-import tempfile
-import shutil
-
-# ... (BUPILIC_ANA_PROGRAM.py'nin geri kalanı AYNI KALACAK)
-# class BupilicDashboard: ... etc.
-
-# GERI KALAN IMPORTLAR
-import customtkinter as ctk
-from PIL import Image, ImageTk
-import threading
-import time
-from datetime import datetime
-import json
-import logging
-import locale
-from pathlib import Path
-import tempfile
-import shutil
+# Şimdi GUI kütüphanelerini import et
+try:
+    import customtkinter as ctk
+    from PIL import Image, ImageTk
+    import threading
+    import time
+    from datetime import datetime
+    import json
+    import logging
+    import locale
+    from pathlib import Path
+    import tempfile
+    import shutil
+    print("✅ GUI libraries imported successfully")
+except Exception as e:
+    print(f"❌ GUI library import error: {e}")
 
 class BupilicDashboard:
     def __init__(self):
@@ -181,7 +210,7 @@ class BupilicDashboard:
                 print("Türkçe locale ayarlanamadı, İngilizce devam edilecek.")
         
         self.root = ctk.CTk()
-        self.root.title("Bupiliç İşletme Yönetim Sistemi")
+        self.root.title("BupiliÇ İşletme Yönetim Sistemi")
         self.root.geometry("1000x600")
         self.root.resizable(True, True)
         
@@ -419,9 +448,6 @@ class BupilicDashboard:
         if self.logo_image:
             logo_label = ctk.CTkLabel(left_frame, image=self.logo_image, text="")
             logo_label.pack(side="left", padx=(0, 15))
-        else:
-            ctk.CTkLabel(left_frame, text="🐔", 
-                       font=ctk.CTkFont(size=28)).pack(side="left", padx=(0, 15))
         
         self.title_label = ctk.CTkLabel(left_frame, text="BUPİLİÇ", 
                            font=ctk.CTkFont(size=26, weight="bold"),
@@ -453,10 +479,6 @@ class BupilicDashboard:
         user_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
         user_frame.pack(pady=30, padx=10, fill="x")
         
-        ctk.CTkLabel(user_frame, text="👤", 
-                   font=ctk.CTkFont(size=32),
-                   text_color="white").pack(pady=5)
-        
         self.user_name_label = ctk.CTkLabel(user_frame, text=self.user_data["name"], 
                    font=ctk.CTkFont(size=16, weight="bold"), 
                    text_color="white")
@@ -471,13 +493,13 @@ class BupilicDashboard:
         nav_frame.pack(pady=20, padx=10, fill="x")
         
         nav_buttons = [
-            ("📊 Ana Sayfa", self.show_dashboard),
-            ("💰 İskonto Hesaplama", self.iskonto_ac),
-            ("📈 Karlılık Analizi", self.karlilik_ac),
-            ("👥 Müşteri Kayıp/Kaçak", self.musteri_kayip_ac),
-            ("📊 Yaşlandırma", self.yaslandirma_ac),
-            ("⚙️ Ayarlar", self.show_settings),
-            ("🐛 Debug", self.show_debug_info)
+            ("Ana Sayfa", self.show_dashboard),
+            ("İskonto Hesaplama", self.iskonto_ac),
+            ("Karlılık Analizi", self.karlilik_ac),
+            ("Müşteri Kayıp/Kaçak", self.musteri_kayip_ac),
+            ("Yaşlandırma", self.yaslandirma_ac),
+            ("Ayarlar", self.show_settings),
+            ("Debug", self.show_debug_info)
         ]
         
         for text, command in nav_buttons:
@@ -499,7 +521,7 @@ class BupilicDashboard:
     
     def setup_welcome_section(self):
         self.welcome_label = ctk.CTkLabel(self.main, 
-                                   text="Bupiliç İşletme Yönetim Sistemine Hoş Geldiniz",
+                                   text="BupiliÇ İşletme Yönetim Sistemine Hoş Geldiniz",
                                    font=ctk.CTkFont(size=18, weight="bold"),
                                    text_color=self.get_color("text"))
         self.welcome_label.pack(pady=(20, 10))
@@ -514,7 +536,7 @@ class BupilicDashboard:
         quick_frame = ctk.CTkFrame(self.main, fg_color="transparent")
         quick_frame.pack(expand=True, pady=20)
         
-        self.title_label = ctk.CTkLabel(quick_frame, text="🚀 Hızlı Erişim", 
+        self.title_label = ctk.CTkLabel(quick_frame, text="Hızlı Erişim", 
                                  font=ctk.CTkFont(size=20, weight="bold"),
                                  text_color=self.get_color("text"))
         self.title_label.pack(pady=(0, 30))
@@ -523,14 +545,13 @@ class BupilicDashboard:
         main_buttons_frame.pack()
         
         main_buttons = [
-            ("💰 İskonto Hesaplama", self.iskonto_ac, "#E63946"),
-            ("📈 Karlılık Analizi", self.karlilik_ac, "#457B9D"),
-            ("👥 Müşteri Kayıp/Kaçak", self.musteri_kayip_ac, "#2A9D8F"),
-            ("📊 Yaşlandırma", self.yaslandirma_ac, "#F4A261")
+            ("İskonto Hesaplama", self.iskonto_ac, "#E63946"),
+            ("Karlılık Analizi", self.karlilik_ac, "#457B9D"),
+            ("Müşteri Kayıp/Kaçak", self.musteri_kayip_ac, "#2A9D8F"),
+            ("Yaşlandırma", self.yaslandirma_ac, "#F4A261")
         ]
         
         self.buttons = []
-        self.desc_labels = []
         
         for i, (text, command, color) in enumerate(main_buttons):
             row = i // 2
@@ -549,20 +570,6 @@ class BupilicDashboard:
                               text_color="white")
             btn.pack()
             self.buttons.append(btn)
-            
-            descriptions = {
-                "💰 İskonto Hesaplama": "İskontolarını hesapla",
-                "📈 Karlılık Analizi": "Şube karlılık analizleri",
-                "👥 Müşteri Kayıp/Kaçak": "Müşteri kayıp/kaçak analizleri",
-                "📊 Yaşlandırma": "Yaşlandırma raporları"
-            }
-            
-            desc_label = ctk.CTkLabel(btn_frame, 
-                                    text=descriptions[text],
-                                    font=ctk.CTkFont(size=12),
-                                    text_color=self.get_color("text_secondary"))
-            desc_label.pack(pady=(5, 0))
-            self.desc_labels.append(desc_label)
     
     def show_settings(self):
         self.clear_main_content()
@@ -570,56 +577,10 @@ class BupilicDashboard:
         settings_frame = ctk.CTkFrame(self.main, fg_color=self.get_color("background"))
         settings_frame.pack(expand=True, fill="both", padx=50, pady=50)
         
-        title_label = ctk.CTkLabel(settings_frame, text="⚙️ Kullanıcı Ayarları", 
+        title_label = ctk.CTkLabel(settings_frame, text="Kullanıcı Ayarları", 
                                  font=ctk.CTkFont(size=24, weight="bold"),
                                  text_color=self.get_color("text"))
         title_label.pack(pady=(0, 30))
-        
-        form_frame = ctk.CTkFrame(settings_frame, fg_color="transparent")
-        form_frame.pack(pady=20)
-        
-        ctk.CTkLabel(form_frame, text="İsim:", 
-                   font=ctk.CTkFont(size=14),
-                   text_color=self.get_color("text")).grid(row=0, column=0, sticky="w", pady=10)
-        
-        self.name_entry = ctk.CTkEntry(form_frame, 
-                                     width=250,
-                                     height=40,
-                                     font=ctk.CTkFont(size=14))
-        self.name_entry.insert(0, self.user_data["name"])
-        self.name_entry.grid(row=0, column=1, padx=20, pady=10)
-        
-        ctk.CTkLabel(form_frame, text="Pozisyon:", 
-                   font=ctk.CTkFont(size=14),
-                   text_color=self.get_color("text")).grid(row=1, column=0, sticky="w", pady=10)
-        
-        self.position_entry = ctk.CTkEntry(form_frame, 
-                                         width=250,
-                                         height=40,
-                                         font=ctk.CTkFont(size=14))
-        self.position_entry.insert(0, self.user_data["position"])
-        self.position_entry.grid(row=1, column=1, padx=20, pady=10)
-        
-        ctk.CTkLabel(form_frame, text="Yeni Şifre:", 
-                   font=ctk.CTkFont(size=14),
-                   text_color=self.get_color("text")).grid(row=2, column=0, sticky="w", pady=10)
-        
-        self.new_password_entry = ctk.CTkEntry(form_frame, 
-                                             width=250,
-                                             height=40,
-                                             show="*",
-                                             font=ctk.CTkFont(size=14),
-                                             placeholder_text="Yeni şifre (boş bırakılırsa değişmez)")
-        self.new_password_entry.grid(row=2, column=1, padx=20, pady=10)
-        
-        save_btn = ctk.CTkButton(form_frame, text="Kaydet", 
-                               command=self.save_user_settings,
-                               height=45,
-                               width=200,
-                               fg_color=self.get_color("button"),
-                               hover_color=self.get_color("button_hover"),
-                               font=ctk.CTkFont(size=15, weight="bold"))
-        save_btn.grid(row=3, column=0, columnspan=2, pady=30)
         
         back_btn = ctk.CTkButton(settings_frame, text="← Geri", 
                                command=self.setup_main_content,
@@ -628,26 +589,6 @@ class BupilicDashboard:
                                fg_color="transparent",
                                font=ctk.CTkFont(size=13))
         back_btn.pack(pady=20)
-    
-    def save_user_settings(self):
-        new_name = self.name_entry.get()
-        new_position = self.position_entry.get()
-        new_password = self.new_password_entry.get()
-        
-        if new_name:
-            self.user_data["name"] = new_name
-            self.user_name_label.configure(text=new_name)
-        
-        if new_position:
-            self.user_data["position"] = new_position
-            self.user_position_label.configure(text=new_position)
-        
-        if new_password:
-            self.user_data["password"] = new_password
-        
-        self.user_data["theme"] = self.appearance_mode
-        self.save_settings()
-        self.show_message("Ayarlar kaydedildi!")
     
     def clear_window(self):
         for widget in self.root.winfo_children():
@@ -687,9 +628,6 @@ class BupilicDashboard:
         self.welcome_label.configure(text_color=self.get_color("text"))
         self.desc_label.configure(text_color=self.get_color("text_secondary"))
         self.title_label.configure(text_color=self.get_color("text"))
-        
-        for label in self.desc_labels:
-            label.configure(text_color=self.get_color("text_secondary"))
     
     def get_turkish_date(self):
         now = datetime.now()
@@ -745,11 +683,17 @@ class BupilicDashboard:
     
     def show_message(self, message):
         print(f"INFO: {message}")
+        # MessageBox göster
+        try:
+            import tkinter.messagebox as msgbox
+            msgbox.showinfo("Bilgi", message)
+        except:
+            print(f"GUI Message: {message}")
     
     def show_debug_info(self):
         """Debug bilgilerini göster"""
         debug_window = ctk.CTkToplevel(self.root)
-        debug_window.title("🐛 Debug Information")
+        debug_window.title("Debug Information")
         debug_window.geometry("800x600")
         debug_window.transient(self.root)
         debug_window.grab_set()
@@ -769,7 +713,10 @@ SUBPROGRAMS STATUS:
         subprograms = ["ISKONTO_HESABI", "KARLILIK_ANALIZI", "Musteri_Sayisi_Kontrolu", "YASLANDIRMA"]
         
         for program in subprograms:
-            program_path = os.path.join(self.base_path, program)
+            if hasattr(self, 'base_path'):
+                program_path = os.path.join(self.base_path, program)
+            else:
+                program_path = program
             exists = os.path.exists(program_path)
             
             info_text += f"\n{program}:"
@@ -777,19 +724,11 @@ SUBPROGRAMS STATUS:
             info_text += f"\n  Exists: {'YES' if exists else 'NO'}"
             
             if exists:
-                # Python dosyalarını listele
-                py_files = [f for f in os.listdir(program_path) if f.endswith('.py') and f != '__init__.py']
-                info_text += f"\n  Python Files: {py_files}"
-                
-                # Ana dosya kontrolü
-                main_files = ["main.py", "gui.py", "app.py"]
-                main_found = None
-                for main_file in main_files:
-                    if os.path.exists(os.path.join(program_path, main_file)):
-                        main_found = main_file
-                        break
-                
-                info_text += f"\n  Main File: {main_found if main_found else 'NOT FOUND'}"
+                try:
+                    py_files = [f for f in os.listdir(program_path) if f.endswith('.py')]
+                    info_text += f"\n  Python Files: {py_files}"
+                except:
+                    info_text += f"\n  Files: Cannot read directory"
         
         info_text += f"\n\nDEPENDENCIES STATUS:"
         dependencies = ['pandas', 'numpy', 'matplotlib', 'pdfplumber', 'customtkinter', 
