@@ -668,78 +668,111 @@ class BupilicDashboard:
         self.logger.info("Ana sayfa gösterildi.")
     
     def run_subprogram(self, program_name, main_file="main.py"):
-        """Windows için ÖZEL çözüm - KESİN ÇALIŞIR"""
+        """Alt programı çalıştır - DEBUG MODU"""
         try:
-            print(f"🔍 Attempting to run {program_name} on Windows...")
+            print(f"DEBUG: {program_name} başlatılıyor...")
             
-            # 1. ÖNCE frozen durumunu kontrol et
+            # Frozen durumunda mıyız kontrol et
             if self.is_frozen:
-                print("📦 Frozen mode detected")
+                print("DEBUG: Frozen modda çalışıyor")
+                program_dir = os.path.join(self.base_path, program_name)
+                print(f"DEBUG: Frozen program_dir: {program_dir}")
                 
-                # A. _internal içinde ara
-                internal_path = os.path.join(self.base_path, '_internal', program_name)
-                if os.path.exists(internal_path):
-                    program_dir = internal_path
-                    print(f"✅ Found in _internal: {program_dir}")
-                
-                # B. Ana dizinde ara
-                else:
-                    program_dir = os.path.join(self.base_path, program_name)
-                    if os.path.exists(program_dir):
-                        print(f"✅ Found in base: {program_dir}")
-                    else:
-                        print(f"❌ Program not found: {program_name}")
-                        return False
+                # Frozen durumunda alt programları çıkart
+                self.extract_subprograms()
+                program_dir = os.path.join(os.path.dirname(self.base_path), program_name)
+                print(f"DEBUG: Extracted program_dir: {program_dir}")
             else:
-                # Normal mod
+                print("DEBUG: Normal modda çalışıyor")
                 program_dir = self.get_resource_path(program_name)
-                print(f"📁 Normal mode: {program_dir}")
-
-            # 2. Main dosyasını kontrol et
-            main_path = os.path.join(program_dir, main_file)
-            if not os.path.exists(main_path):
-                print(f"❌ Main file not found: {main_path}")
+                print(f"DEBUG: Normal program_dir: {program_dir}")
+            
+            # Dizinin varlığını kontrol et
+            if not os.path.exists(program_dir):
+                error_msg = f"DEBUG: {program_name} dizini bulunamadı: {program_dir}"
+                print(error_msg)
+                self.show_message(error_msg)
                 return False
-
-            print(f"🎯 Target: {main_path}")
-
-            # 3. WINDOWS ÖZEL ÇÖZÜM - YENİ PENCERE
-            if os.name == 'nt':  # Windows
+            
+            print(f"DEBUG: Dizin içeriği: {os.listdir(program_dir)}")
+            
+            main_path = os.path.join(program_dir, main_file)
+            print(f"DEBUG: Main path: {main_path}")
+            
+            if not os.path.exists(main_path):
+                error_msg = f"DEBUG: {program_name} ana dosyası bulunamadı: {main_path}"
+                print(error_msg)
+                self.show_message(error_msg)
+                return False
+            
+            # Python executable yolunu belirle
+            python_exe = sys.executable
+            print(f"DEBUG: Python exe: {python_exe}")
+            
+            # Windows için
+            if os.name == 'nt':
+                print("DEBUG: Windows işletim sistemi")
+                
+                # 1. YÖNTEM: subprocess ile doğrudan çalıştır (hata yakalamak için)
                 try:
-                    # YÖNTEM 1: subprocess ile yeni pencere
-                    startupinfo = subprocess.STARTUPINFO()
-                    startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-                    startupinfo.wShowWindow = 1  # SW_SHOWNORMAL
+                    import subprocess
+                    print("DEBUG: subprocess denemesi...")
                     
+                    # Process'i başlat ve çıktıyı yakala
                     process = subprocess.Popen(
-                        [sys.executable, main_file],
+                        [python_exe, main_file],
                         cwd=program_dir,
-                        startupinfo=startupinfo,
-                        creationflags=subprocess.CREATE_NEW_CONSOLE
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        text=True
                     )
                     
-                    print(f"✅ Started with PID: {process.pid}")
-                    return True
+                    # Çıktıyı bekle ve yakala
+                    stdout, stderr = process.communicate(timeout=10)
                     
-                except Exception as e:
-                    print(f"❌ Subprocess failed: {e}")
+                    print(f"DEBUG: stdout: {stdout}")
+                    print(f"DEBUG: stderr: {stderr}")
+                    print(f"DEBUG: returncode: {process.returncode}")
                     
-                    # YÖNTEM 2: os.system ile dene
-                    try:
-                        cmd = f'start "BupiliC_{program_name}" /D "{program_dir}" "{sys.executable}" "{main_file}"'
-                        os.system(cmd)
-                        print("✅ Started with os.system")
+                    if process.returncode == 0:
+                        print(f"DEBUG: {program_name} başarıyla başlatıldı")
                         return True
-                    except Exception as e2:
-                        print(f"❌ os.system failed: {e2}")
+                    else:
+                        error_msg = f"DEBUG: {program_name} hatası: {stderr}"
+                        print(error_msg)
+                        self.show_message(error_msg)
                         return False
-            
-            else:  # Linux/Mac
-                subprocess.Popen([sys.executable, main_file], cwd=program_dir)
+                        
+                except subprocess.TimeoutExpired:
+                    print("DEBUG: Process timeout oldu ama çalışıyor olabilir")
+                    return True
+                except Exception as e:
+                    print(f"DEBUG: subprocess hatası: {e}")
+                    
+                    # 2. YÖNTEM: os.system ile dene
+                    try:
+                        print("DEBUG: os.system denemesi...")
+                        cmd = f'cd /d "{program_dir}" && "{python_exe}" "{main_file}"'
+                        print(f"DEBUG: Command: {cmd}")
+                        result = os.system(cmd)
+                        print(f"DEBUG: os.system result: {result}")
+                        return result == 0
+                    except Exception as e2:
+                        error_msg = f"DEBUG: os.system hatası: {e2}"
+                        print(error_msg)
+                        return False
+            else:
+                # Linux/Mac
+                subprocess.Popen([python_exe, main_file], cwd=program_dir)
+                print(f"DEBUG: {program_name} Linux/Mac'te başlatıldı")
                 return True
                 
         except Exception as e:
-            print(f"💥 Critical error: {e}")
+            error_msg = f"DEBUG: Genel hata: {str(e)}"
+            print(error_msg)
+            import traceback
+            traceback.print_exc()
+            self.show_message(error_msg)
             return False
 
     def iskonto_ac(self):
