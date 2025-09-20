@@ -171,12 +171,15 @@ jobs:
     - name: 🔨 Build with PyInstaller
       timeout-minutes: 45
       run: |
-        echo "🔨 Building ${{ env.APP_NAME }}..."
+        echo "Building ${{ env.APP_NAME }}..."
         
-        # Spec dosyasını kullanarak build yap
+        # Önce spec dosyasındaki Unicode karakterleri kaldır
+        (Get-Content -Path "BupiliC.spec") -replace '[^\x00-\x7F]', '' | Set-Content -Path "BupiliC.spec"
+        
+        # Sonra build et
         pyinstaller BupiliC.spec --noconfirm
         
-        echo "✅ Build completed successfully!"
+        echo "Build completed successfully!"
 
     - name: 🧪 Test the executable
       run: |
