@@ -90,27 +90,20 @@ jobs:
   # WINDOWS BUILD
   # ===============================================
   build-windows:
-    name: 🪟 Build Windows (${{ matrix.arch }})
+    name: 🪟 Build Windows
     runs-on: windows-latest
     needs: pre-checks
     timeout-minutes: 60
-    
-    strategy:
-      matrix:
-        arch: [x64]
-        include:
-          - arch: x64
-            python-arch: x64
     
     steps:
     - name: 📥 Checkout repository  
       uses: actions/checkout@v4
 
-    - name: 🐍 Setup Python ${{ env.PYTHON_VERSION }} (${{ matrix.python-arch }})
+    - name: 🐍 Setup Python ${{ env.PYTHON_VERSION }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ env.PYTHON_VERSION }}
-        architecture: ${{ matrix.python-arch }}
+        architecture: x64
 
     - name: 🔧 Install build dependencies
       run: |
@@ -120,7 +113,7 @@ jobs:
 
     - name: 📦 Install application dependencies
       run: |
-        echo "📦 Installing dependencies for ${{ matrix.arch }}..."
+        echo "📦 Installing dependencies..."
         
         pip install customtkinter==5.2.2
         pip install pandas==2.1.4
@@ -244,7 +237,7 @@ jobs:
     - name: 📤 Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: BupiliC-x64-${{ needs.pre-checks.outputs.version }}
+        name: BupiliC-${{ needs.pre-checks.outputs.version }}
         path: |
           dist/*.exe
           dist/*.zip
