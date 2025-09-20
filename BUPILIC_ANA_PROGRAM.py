@@ -70,14 +70,19 @@ ensure_dependencies_async()
 
 # ===== TÜM ALT PROGRAMLARI ÇALIŞTIRMA =====
 def run_embedded_program(program_name):
-    """Gömülü programı çalıştır - WINDOWS İÇİN KESİN ÇÖZÜM"""
+    """Gömülü programı çalıştır - KESİN ÇÖZÜM"""
     try:
         print(f"🚀 Starting {program_name}...")
         
         # PyInstaller ile paketlenmişse
         if getattr(sys, 'frozen', False):
             base_path = sys._MEIPASS
-            print(f"Running from frozen executable, base path: {base_path}")
+            print(f"Frozen mode detected. Base path: {base_path}")
+            
+            # Mevcut çalışma dizinini de sys.path'e ekle
+            current_dir = os.getcwd()
+            if current_dir not in sys.path:
+                sys.path.insert(0, current_dir)
             
             # Alt programın yolunu sys.path'e ekle
             program_path = os.path.join(base_path, program_name)
@@ -85,71 +90,48 @@ def run_embedded_program(program_name):
                 sys.path.insert(0, program_path)
                 print(f"Added to path: {program_path}")
         
-        # PROGRAM ÖZEL ÇÖZÜMLER
+        # PROGRAM ÖZEL ÇÖZÜMLER - EN GARANTİLİ YÖNTEM
         try:
             if program_name == "ISKONTO_HESABI":
-                try:
-                    from ISKONTO_HESABI import main as iskonto_main
-                    if hasattr(iskonto_main, 'main'):
-                        iskonto_main.main()
-                        return True
-                except ImportError as e:
-                    print(f"İskonto import hatası: {e}")
-                    # Doğrudan modülü içe aktarmayı dene
-                    import ISKONTO_HESABI.main
-                    ISKONTO_HESABI.main.main()
-                    return True
-                    
+                print("Importing ISKONTO_HESABI...")
+                # Doğrudan modülü import et
+                import ISKONTO_HESABI.main as iskonto_main
+                iskonto_main.main()
+                return True
+                
             elif program_name == "KARLILIK_ANALIZI":
+                print("Importing KARLILIK_ANALIZI...")
+                import KARLILIK_ANALIZI.gui as karlilik_gui
+                karlilik_gui.main()
+                return True
+                
+            elif program_name in ["Musteri_Sayisi_Kontrolu", "Musteri_Sayisi_KONTROLU"]:
+                print("Importing Musteri_Sayisi...")
+                # İki olası isim için deneme
                 try:
-                    from KARLILIK_ANALIZI import gui as karlilik_gui
-                    karlilik_gui.main()
-                    return True
-                except ImportError as e:
-                    print(f"Karlılık import hatası: {e}")
-                    import KARLILIK_ANALIZI.gui
-                    KARLILIK_ANALIZI.gui.main()
-                    return True
-                    
-            elif program_name == "Musteri_Sayisi_Kontrolu" or program_name == "Musteri_Sayisi_KONTROLU":
-                try:
-                    # İki olası isim için deneme
-                    try:
-                        from Musteri_Sayisi_Kontrolu import main as musteri_main
-                        musteri_main.main()
-                        return True
-                    except ImportError:
-                        from Musteri_Sayisi_KONTROLU import main as musteri_main
-                        musteri_main.main()
-                        return True
-                except ImportError as e:
-                    print(f"Müşteri import hatası: {e}")
-                    # Doğrudan import
-                    try:
-                        import Musteri_Sayisi_Kontrolu.main
-                        Musteri_Sayisi_Kontrolu.main.main()
-                    except:
-                        import Musteri_Sayisi_KONTROLU.main
-                        Musteri_Sayisi_KONTROLU.main.main()
-                    return True
-                    
+                    import Musteri_Sayisi_Kontrolu.main as musteri_main
+                    musteri_main.main()
+                except ImportError:
+                    import Musteri_Sayisi_KONTROLU.main as musteri_main
+                    musteri_main.main()
+                return True
+                
             elif program_name == "YASLANDIRMA":
-                try:
-                    from YASLANDIRMA import main as yaslandirma_main
-                    yaslandirma_main.main()
-                    return True
-                except ImportError as e:
-                    print(f"Yaşlandırma import hatası: {e}")
-                    import YASLANDIRMA.main
-                    YASLANDIRMA.main.main()
-                    return True
-                    
+                print("Importing YASLANDIRMA...")
+                import YASLANDIRMA.main as yaslandirma_main
+                yaslandirma_main.main()
+                return True
+                
         except Exception as e:
             print(f"❌ Error running {program_name}: {e}")
+            import traceback
+            traceback.print_exc()
             return False
             
     except Exception as e:
         print(f"❌ General error starting {program_name}: {e}")
+        import traceback
+        traceback.print_exc()
         return False
     
     return False
