@@ -993,12 +993,9 @@ class BupilicKarlilikGUI:
             self.on_closing()
 
 
-def run_program():
-    """Ana programdan çağrılmak için"""
-    # Burada GUI'yi başlatın
-    root = ctk.CTk()
-    app = KarlilikAnaliziApp(root)
-    root.mainloop()
+def main():
+    print("Karlılık analizi başlatılıyor...")
+    # Burada KARLILIK_ANALIZI programınızı başlatacak kodlar
 
 if __name__ == "__main__":
-    run_program()
+    main()
