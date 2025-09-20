@@ -1120,5 +1120,9 @@ def main():
         sys.exit(1)
 
 
+def main():
+    print("Müşteri sayısı kontrolü başlatılıyor...")
+    # Burada Musteri_Sayisi_Kontrolu programınızı başlatacak kodlar
+
 if __name__ == "__main__":
     main()
