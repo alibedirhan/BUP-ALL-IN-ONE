@@ -32,9 +32,6 @@ class BupilicDashboard:
         # PyInstaller için resource path'i ayarla
         self.setup_resource_path()
         
-        # DEBUG: Windows sorunlarını analiz et
-        self.debug_windows_issue()
-        
         # Klasör yapısını oluştur
         self.setup_directories()
         
@@ -46,7 +43,7 @@ class BupilicDashboard:
         self.user_data = {
             "name": "Ali Yılmaz",
             "position": "Satış Yöneticisi",
-            "password": "bupilic2024"  # Varsayılan şifre
+            "password": "bupilic2024"
         }
         
         # Ayarları yükle
@@ -66,69 +63,14 @@ class BupilicDashboard:
         # Önce login ekranı göster
         self.show_login_screen()
     
-    def debug_windows_issue(self):
-        """Windows spesifik sorunları debug et"""
-        print("=" * 60)
-        print("🐛 WINDOWS DEBUG INFORMATION")
-        print("=" * 60)
-        
-        print(f"🏷️ Frozen Mode: {self.is_frozen}")
-        print(f"📦 Base Path: {self.base_path}")
-        print(f"📂 Current Directory: {os.getcwd()}")
-        print(f"🐍 Python Executable: {sys.executable}")
-        print(f"🔧 Operating System: {os.name}")
-        
-        # _internal klasörünü kontrol et
-        if self.is_frozen:
-            internal_path = os.path.join(self.base_path, '_internal')
-            print(f"📁 _internal exists: {os.path.exists(internal_path)}")
-            
-            if os.path.exists(internal_path):
-                print("📋 _internal contents:")
-                try:
-                    items = os.listdir(internal_path)
-                    for item in items:
-                        item_path = os.path.join(internal_path, item)
-                        if os.path.isdir(item_path):
-                            print(f"  📂 {item}/")
-                        else:
-                            print(f"  📄 {item}")
-                except Exception as e:
-                    print(f"❌ Error listing _internal: {e}")
-        
-        # Alt programları kontrol et
-        programs = ["ISKONTO_HESABI", "KARLILIK_ANALIZI", "Musteri_Sayisi_Kontrolu", "YASLANDIRMA"]
-        print("\n🔍 Checking subprograms:")
-        for program in programs:
-            # Normal yol
-            program_path = os.path.join(self.base_path, program)
-            # _internal içindeki yol
-            internal_program_path = os.path.join(self.base_path, '_internal', program)
-            
-            normal_exists = os.path.exists(program_path)
-            internal_exists = os.path.exists(internal_program_path)
-            
-            print(f"  {program}:")
-            print(f"    Normal: {'✅' if normal_exists else '❌'} {program_path}")
-            print(f"    Internal: {'✅' if internal_exists else '❌'} {internal_program_path}")
-            
-            # Main.py kontrolü
-            if internal_exists:
-                main_path = os.path.join(internal_program_path, "main.py")
-                print(f"    Main.py: {'✅' if os.path.exists(main_path) else '❌'} {main_path}")
-        
-        print("=" * 60)
-    
     def setup_resource_path(self):
         """PyInstaller için resource path'i ayarlar"""
         try:
-            # PyInstaller'ın oluşturduğu geçici klasör
             self.base_path = sys._MEIPASS
             self.is_frozen = True
             self.logger = logging.getLogger(__name__)
             self.logger.info(f"Frozen mode detected. Base path: {self.base_path}")
         except Exception:
-            # Normal çalışma durumu
             self.base_path = os.path.abspath(".")
             self.is_frozen = False
             self.logger = logging.getLogger(__name__)
@@ -136,13 +78,10 @@ class BupilicDashboard:
     
     def get_resource_path(self, relative_path):
         """Göreceli yolu absolute path'e çevirir"""
-        # Frozen durumunda önce MEIPASS'ta ara, sonra çalışma dizininde
         if self.is_frozen:
             meipass_path = os.path.join(self.base_path, relative_path)
             if os.path.exists(meipass_path):
                 return meipass_path
-        
-        # Normal çalışma durumu veya MEIPASS'ta bulunamazsa
         return os.path.join(os.path.abspath("."), relative_path)
     
     def setup_directories(self):
@@ -160,7 +99,6 @@ class BupilicDashboard:
         for directory in directories:
             full_path = self.get_resource_path(directory)
             os.makedirs(full_path, exist_ok=True)
-            self.logger.info(f"Klasör oluşturuldu/doğrulandı: {full_path}")
     
     def setup_logging(self):
         """Loglama sistemini kurar"""
@@ -187,7 +125,6 @@ class BupilicDashboard:
                 with open(settings_path, "r", encoding="utf-8") as f:
                     saved_data = json.load(f)
                     self.user_data.update(saved_data)
-                    self.logger.info("Kullanıcı ayarları yüklendi.")
         except Exception as e:
             self.logger.error(f"Ayarlar yüklenirken hata: {str(e)}")
     
@@ -198,12 +135,10 @@ class BupilicDashboard:
             os.makedirs(os.path.dirname(settings_path), exist_ok=True)
             with open(settings_path, "w", encoding="utf-8") as f:
                 json.dump(self.user_data, f, ensure_ascii=False, indent=4)
-            self.logger.info("Kullanıcı ayarları kaydedildi.")
         except Exception as e:
             self.logger.error(f"Ayarlar kaydedilirken hata: {str(e)}")
     
     def setup_color_palette(self):
-        """Light ve dark mod için merkezi renk paleti"""
         self.colors = {
             "light": {
                 "primary": "#2A9D8F",
@@ -230,16 +165,13 @@ class BupilicDashboard:
         }
     
     def get_color(self, color_key):
-        """Mevcut temaya göre renk döndürür"""
         return self.colors[self.appearance_mode][color_key]
     
     def load_logo(self):
-        """Logoyu yükler ve CTkImage olarak döndürür"""
         try:
             logo_path = self.get_resource_path("icon/bupilic_logo.png")
             if os.path.exists(logo_path):
                 pil_image = Image.open(logo_path)
-                # CTkImage kullanarak yükle (HighDPI desteği için)
                 ctk_image = ctk.CTkImage(
                     light_image=pil_image,
                     dark_image=pil_image,
@@ -251,13 +183,11 @@ class BupilicDashboard:
         return None
     
     def show_login_screen(self):
-        """Giriş ekranını gösterir"""
         self.clear_window()
         
         login_frame = ctk.CTkFrame(self.root, fg_color=self.get_color("background"))
         login_frame.pack(expand=True, fill="both", padx=100, pady=100)
         
-        # Logo/Başlık
         title_label = ctk.CTkLabel(login_frame, text="BUPİLİÇ", 
                                  font=ctk.CTkFont(size=32, weight="bold"),
                                  text_color=self.get_color("text"))
@@ -268,7 +198,6 @@ class BupilicDashboard:
                                     text_color=self.get_color("text_secondary"))
         subtitle_label.pack(pady=(0, 50))
         
-        # Şifre girişi
         password_frame = ctk.CTkFrame(login_frame, fg_color="transparent")
         password_frame.pack(pady=20)
         
@@ -286,7 +215,6 @@ class BupilicDashboard:
         self.password_entry.pack(pady=10)
         self.password_entry.bind("<Return>", lambda e: self.check_login())
         
-        # Giriş butonu
         login_btn = ctk.CTkButton(password_frame, text="Giriş Yap", 
                                 command=self.check_login,
                                 height=40,
@@ -296,30 +224,25 @@ class BupilicDashboard:
                                 font=ctk.CTkFont(size=14, weight="bold"))
         login_btn.pack(pady=20)
         
-        # Hata mesajı
         self.login_error_label = ctk.CTkLabel(password_frame, text="", 
                                             text_color="red",
                                             font=ctk.CTkFont(size=12))
         self.login_error_label.pack()
     
     def check_login(self):
-        """Şifreyi kontrol eder"""
         password = self.password_entry.get()
         if password == self.user_data["password"]:
             self.logger.info("Kullanıcı giriş yaptı.")
             self.setup_ui()
         else:
             self.login_error_label.configure(text="Hatalı şifre! Lütfen tekrar deneyin.")
-            self.logger.warning("Hatalı şifre girişimi.")
     
     def setup_ui(self):
-        """Ana arayüzü kurar"""
         self.clear_window()
         
         self.root.grid_columnconfigure(1, weight=1)
         self.root.grid_rowconfigure(1, weight=1)
         
-        # Logoyu yükle
         self.logo_image = self.load_logo()
         
         self.setup_header()
@@ -337,7 +260,6 @@ class BupilicDashboard:
         left_frame = ctk.CTkFrame(self.header, fg_color="transparent")
         left_frame.pack(side="left", padx=20, pady=15)
         
-        # Logo ve başlık
         if self.logo_image:
             logo_label = ctk.CTkLabel(left_frame, image=self.logo_image, text="")
             logo_label.pack(side="left", padx=(0, 15))
@@ -399,8 +321,7 @@ class BupilicDashboard:
             ("👥 Müşteri Kayıp/Kaçak", self.musteri_kayip_ac),
             ("📊 Yaşlandırma", self.yaslandirma_ac),
             ("⚙️ Ayarlar", self.show_settings),
-            ("🐛 Debug", self.show_debug_info),
-            ("🔄 Test All", self.test_all_subprograms)
+            ("🐛 Debug", self.show_debug_info)
         ]
         
         for text, command in nav_buttons:
@@ -488,7 +409,6 @@ class BupilicDashboard:
             self.desc_labels.append(desc_label)
     
     def show_settings(self):
-        """Ayarlar panelini gösterir"""
         self.clear_main_content()
         
         settings_frame = ctk.CTkFrame(self.main, fg_color=self.get_color("background"))
@@ -499,11 +419,9 @@ class BupilicDashboard:
                                  text_color=self.get_color("text"))
         title_label.pack(pady=(0, 30))
         
-        # Kullanıcı bilgileri formu
         form_frame = ctk.CTkFrame(settings_frame, fg_color="transparent")
         form_frame.pack(pady=20)
         
-        # İsim
         ctk.CTkLabel(form_frame, text="İsim:", 
                    font=ctk.CTkFont(size=14),
                    text_color=self.get_color("text")).grid(row=0, column=0, sticky="w", pady=10)
@@ -515,7 +433,6 @@ class BupilicDashboard:
         self.name_entry.insert(0, self.user_data["name"])
         self.name_entry.grid(row=0, column=1, padx=20, pady=10)
         
-        # Pozisyon
         ctk.CTkLabel(form_frame, text="Pozisyon:", 
                    font=ctk.CTkFont(size=14),
                    text_color=self.get_color("text")).grid(row=1, column=0, sticky="w", pady=10)
@@ -527,7 +444,6 @@ class BupilicDashboard:
         self.position_entry.insert(0, self.user_data["position"])
         self.position_entry.grid(row=1, column=1, padx=20, pady=10)
         
-        # Şifre değiştirme
         ctk.CTkLabel(form_frame, text="Yeni Şifre:", 
                    font=ctk.CTkFont(size=14),
                    text_color=self.get_color("text")).grid(row=2, column=0, sticky="w", pady=10)
@@ -540,7 +456,6 @@ class BupilicDashboard:
                                              placeholder_text="Yeni şifre (boş bırakılırsa değişmez)")
         self.new_password_entry.grid(row=2, column=1, padx=20, pady=10)
         
-        # Kaydet butonu
         save_btn = ctk.CTkButton(form_frame, text="Kaydet", 
                                command=self.save_user_settings,
                                height=45,
@@ -550,7 +465,6 @@ class BupilicDashboard:
                                font=ctk.CTkFont(size=15, weight="bold"))
         save_btn.grid(row=3, column=0, columnspan=2, pady=30)
         
-        # Geri butonu
         back_btn = ctk.CTkButton(settings_frame, text="← Geri", 
                                command=self.setup_main_content,
                                height=40,
@@ -560,7 +474,6 @@ class BupilicDashboard:
         back_btn.pack(pady=20)
     
     def save_user_settings(self):
-        """Kullanıcı ayarlarını kaydeder"""
         new_name = self.name_entry.get()
         new_position = self.position_entry.get()
         new_password = self.new_password_entry.get()
@@ -576,20 +489,15 @@ class BupilicDashboard:
         if new_password:
             self.user_data["password"] = new_password
         
-        # Tema ayarını da kaydet
         self.user_data["theme"] = self.appearance_mode
-        
         self.save_settings()
         self.show_message("Ayarlar kaydedildi!")
-        self.logger.info("Kullanıcı ayarları güncellendi.")
     
     def clear_window(self):
-        """Pencereyi temizler"""
         for widget in self.root.winfo_children():
             widget.destroy()
     
     def clear_main_content(self):
-        """Ana içeriği temizler"""
         for widget in self.main.winfo_children():
             widget.destroy()
     
@@ -612,11 +520,8 @@ class BupilicDashboard:
         
         ctk.set_appearance_mode(self.appearance_mode)
         self.update_theme_colors()
-        
-        # Tema ayarını kaydet
         self.user_data["theme"] = self.appearance_mode
         self.save_settings()
-        self.logger.info(f"Tema değiştirildi: {self.appearance_mode}")
     
     def update_theme_colors(self):
         self.header.configure(fg_color=self.get_color("primary"))
@@ -631,10 +536,7 @@ class BupilicDashboard:
             label.configure(text_color=self.get_color("text_secondary"))
     
     def get_turkish_date(self):
-        """Türkçe tarih formatını döndürür"""
         now = datetime.now()
-        
-        # Türkçe ay isimları
         turkish_months = [
             "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
             "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"
@@ -654,7 +556,6 @@ class BupilicDashboard:
                     turkish_date = self.get_turkish_date()
                     self.time_label.configure(text=turkish_date)
                 except:
-                    # Fallback: İngilizce tarih formatı
                     english_date = datetime.now().strftime("%d %B %Y - %H:%M:%S")
                     self.time_label.configure(text=english_date)
                 time.sleep(1)
@@ -665,20 +566,19 @@ class BupilicDashboard:
         self.clear_main_content()
         self.setup_welcome_section()
         self.setup_quick_access()
-        self.logger.info("Ana sayfa gösterildi.")
     
     def run_subprogram(self, program_name, main_file="main.py"):
-        """Alt programı çalıştır - SON VE KESİN ÇÖZÜM"""
+        """Alt programı çalıştır - KESİN ÇÖZÜM"""
         try:
             print(f"🚀 {program_name} başlatılıyor...")
             
-            # 1. YOL BULMA
+            # Yol bulma
             if self.is_frozen:
                 program_dir = os.path.join(self.base_path, program_name)
                 if not os.path.exists(program_dir):
                     program_dir = os.path.join(os.path.dirname(sys.executable), program_name)
             else:
-                program_dir = self.get_resource_path(program_name)
+                program_dir = os.path.join(os.path.dirname(__file__), program_name)
             
             if not os.path.exists(program_dir):
                 self.show_message(f"{program_name} bulunamadı!")
@@ -689,45 +589,26 @@ class BupilicDashboard:
                 self.show_message(f"{main_file} bulunamadı!")
                 return False
             
-            # 2. WINDOWS İÇİN KESİN ÇÖZÜM
+            # Windows için kesin çözüm
             if os.name == 'nt':
-                try:
-                    # ÖNCE: Python'u bul (ana EXE değil!)
-                    if self.is_frozen:
-                        # Frozen modda: Python embedded içinde
-                        python_exe = os.path.join(self.base_path, "python.exe")
-                        if not os.path.exists(python_exe):
-                            # Embedded python yoksa, sistem python'unu kullan
-                            python_exe = "python"
-                    else:
-                        # Normal modda: sistem python
-                        python_exe = sys.executable
-                    
-                    print(f"🐍 Python executable: {python_exe}")
-                    
-                    # start komutu ile YENİ PENCERE aç
-                    cmd = f'start "BupiliC - {program_name}" /D "{program_dir}" "{python_exe}" "{main_file}"'
-                    print(f"⚡ Komut: {cmd}")
-                    
-                    # os.system ile çalıştır
-                    result = os.system(cmd)
-                    print(f"✅ Sonuç: {result}")
-                    
-                    return True
-                    
-                except Exception as e:
-                    print(f"❌ start komutu hatası: {e}")
-                    self.show_message(f"Hata: {e}")
-                    return False
+                # Sistem Python'unu kullan
+                python_exe = "python"
+                
+                # start komutu ile yeni pencere aç
+                cmd = f'start "BupiliC - {program_name}" /D "{program_dir}" "{python_exe}" "{main_file}"'
+                print(f"⚡ Komut: {cmd}")
+                
+                result = os.system(cmd)
+                print(f"✅ Sonuç: {result}")
+                return True
             else:
-                # Linux/Mac
                 import subprocess
                 subprocess.Popen([sys.executable, main_path], cwd=program_dir)
                 return True
                 
         except Exception as e:
-            print(f"❌ Genel hata: {e}")
-            self.show_message(f"Beklenmeyen hata: {e}")
+            print(f"❌ Hata: {e}")
+            self.show_message(f"Hata: {e}")
             return False
 
     def iskonto_ac(self):
@@ -750,84 +631,48 @@ class BupilicDashboard:
         if not success:
             self.show_message("Yaşlandırma programı başlatılamadı!")
     
-    def test_all_subprograms(self):
-        """Tüm alt programları test et"""
-        print("🧪 Testing all subprograms...")
-        
-        subprograms = [
-            ("ISKONTO_HESABI", "main.py"),
-            ("KARLILIK_ANALIZI", "main.py"),
-            ("Musteri_Sayisi_Kontrolu", "main.py"),
-            ("YASLANDIRMA", "main.py")
-        ]
-        
-        results = []
-        for program_name, main_file in subprograms:
-            success = self.run_subprogram(program_name, main_file)
-            results.append((program_name, success))
-            print(f"  {program_name}: {'✅' if success else '❌'}")
-            time.sleep(1)  # Her test arasında bekle
-        
-        print("📊 Test Results:")
-        for program_name, success in results:
-            print(f"  {program_name}: {'✅ PASS' if success else '❌ FAIL'}")
-    
     def show_message(self, message):
-        """Basit mesaj gösterimi"""
         print(f"INFO: {message}")
     
     def show_debug_info(self):
-        """Detaylı debug bilgilerini göster"""
         debug_window = ctk.CTkToplevel(self.root)
-        debug_window.title("🐛 Windows Debug Information")
-        debug_window.geometry("800x600")
+        debug_window.title("🐛 Debug Information")
+        debug_window.geometry("700x500")
         debug_window.transient(self.root)
         debug_window.grab_set()
         
-        info_text = f"""============================================================
-    🐛 WINDOWS DEBUG INFORMATION
-    ============================================================
-    🏷️ Frozen Mode: {self.is_frozen}
-    📦 Base Path: {self.base_path}
-    📂 Current Directory: {os.getcwd()}
-    🐍 Python Executable: {sys.executable}
-    🔧 Operating System: {os.name}
-    📁 _internal exists: {os.path.exists(os.path.join(self.base_path, '_internal'))}
-    
-    🔍 Checking subprograms:
-    """
+        info_text = f"""DEBUG INFORMATION:
+
+Frozen Mode: {self.is_frozen}
+Base Path: {self.base_path}
+Current Directory: {os.getcwd()}
+Python Executable: {sys.executable}
+Operating System: {os.name}
+
+Subprograms Status:
+"""
         
         subprograms = ["ISKONTO_HESABI", "KARLILIK_ANALIZI", "Musteri_Sayisi_Kontrolu", "YASLANDIRMA"]
         
         for program in subprograms:
-            normal_path = os.path.join(self.base_path, program)
-            internal_path = os.path.join(self.base_path, '_internal', program)
-            exe_path = os.path.join(os.path.dirname(sys.executable), program)
+            program_path = os.path.join(self.base_path, program)
+            exists = os.path.exists(program_path)
+            main_file = "main.py"
+            main_path = os.path.join(program_path, main_file) if exists else "N/A"
+            main_exists = os.path.exists(main_path) if exists else False
             
-            info_text += f"  {program}:\n"
-            info_text += f"    Normal: {'✅' if os.path.exists(normal_path) else '❌'} {normal_path}\n"
-            info_text += f"    Internal: {'✅' if os.path.exists(internal_path) else '❌'} {internal_path}\n"
-            info_text += f"    EXE Dir: {'✅' if os.path.exists(exe_path) else '❌'} {exe_path}\n"
+            info_text += f"\n{program}:"
+            info_text += f"\n  Path: {program_path}"
+            info_text += f"\n  Exists: {'YES' if exists else 'NO'}"
+            if exists:
+                info_text += f"\n  Main file: {main_path}"
+                info_text += f"\n  Main exists: {'YES' if main_exists else 'NO'}"
         
-        info_text += "============================================================\n"
-        
-        # Mevcut dosyaları listele
-        info_text += f"\n📁 Base Path Contents:\n"
-        try:
-            for item in os.listdir(self.base_path):
-                if os.path.isdir(os.path.join(self.base_path, item)):
-                    info_text += f"📁 {item}/\n"
-                else:
-                    info_text += f"📄 {item}\n"
-        except Exception as e:
-            info_text += f"Error listing base path: {e}\n"
-        
-        textbox = ctk.CTkTextbox(debug_window, width=780, height=550)
+        textbox = ctk.CTkTextbox(debug_window, width=680, height=450)
         textbox.pack(padx=10, pady=10, fill="both", expand=True)
         textbox.insert("1.0", info_text)
         textbox.configure(state="disabled")
         
-        # Kapatma butonu
         close_btn = ctk.CTkButton(debug_window, text="Kapat", 
                                 command=debug_window.destroy,
                                 height=40,
