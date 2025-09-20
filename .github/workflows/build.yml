@@ -21,7 +21,8 @@ on:
 
 env:
   APP_NAME: BupiliC
-  PYTHON_VERSION: '3.10'
+  PYTHON_VERSION: '3.10'  # 3.13 yerine 3.10 kullan
+  BUILD_TYPE: release
 
 jobs:
   pre-checks:
