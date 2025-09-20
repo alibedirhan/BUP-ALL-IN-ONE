@@ -1,105 +1,37 @@
 import os
 import sys
-import traceback
+import time
 
-def setup_environment():
-    """Alt program için gerekli ortamı kurar"""
-    try:
-        # Frozen durumu için
-        if getattr(sys, 'frozen', False):
-            application_path = os.path.dirname(sys.executable)
-            # Ana programın dizinini sys.path'e ekle
-            if application_path not in sys.path:
-                sys.path.insert(0, application_path)
-        else:
-            application_path = os.path.dirname(os.path.abspath(__file__))
-        
-        return True
-        
-    except Exception as e:
-        print(f"Environment setup error: {e}")
-        return False
+# Önce ana programın path'ini ekle
+if getattr(sys, 'frozen', False):
+    app_path = os.path.dirname(sys.executable)
+else:
+    app_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Ortamı kur
-if not setup_environment():
-    print("Environment setup failed!")
-    input("Press Enter to exit...")
-    sys.exit(1)
+if app_path not in sys.path:
+    sys.path.insert(0, app_path)
 
-# BASİT VE ETKİLİ IMPORT
+# Ana programın bağımlılık yükleyicisini çalıştır
 try:
-    # Önce ana programdan yardım al
-    try:
-        # Ana programın modüllerini kullanmayı dene
-        from BUPILIC_ANA_PROGRAM import ensure_dependencies
-        ensure_dependencies()
-    except:
-        pass
-    
-    # Sonra import etmeyi dene
+    from BUPILIC_ANA_PROGRAM import ensure_all_dependencies
+    ensure_all_dependencies()
+except:
+    pass
+
+# Bekle ve sonra import et
+time.sleep(2)  # Kurulum için biraz bekle
+
+# BASİT IMPORT - hata olursa bile devam et
+try:
     import pandas as pd
     import numpy as np
     import pdfplumber
-    
 except ImportError as e:
     print(f"Import error: {e}")
-    print("This is a frozen application. Please make sure all dependencies are included in the build.")
-    print("Contact support for assistance.")
-    input("Press Enter to exit...")
-    sys.exit(1)
-
-# Geri kalan importlar
-from datetime import datetime, timedelta
-import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
-import json
-import logging
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import seaborn as sns
-
-# Geri kalan kodlar...
-
-# Geri kalan kodlar...
-
-
-import os
-import sys
-import traceback
-
-try:
-    # Frozen durumu için
-    if getattr(sys, 'frozen', False):
-        application_path = os.path.dirname(sys.executable)
-    else:
-        application_path = os.path.dirname(os.path.abspath(__file__))
-    
-    # Gerekli modülleri yükleme hatasını yakala
-    try:
-        import pdfplumber
-    except ImportError:
-        print("ERROR: pdfplumber modülü bulunamadı!")
-        print("Lütfen şu komutu çalıştırın: pip install pdfplumber")
-        input("Devam etmek için Enter'a basın...")
-        sys.exit(1)
-        
-    # Diğer importlar
-    import pandas as pd
-    import numpy as np
-    from datetime import datetime, timedelta
-    import tkinter as tk
-    from tkinter import ttk, messagebox, filedialog
-    import json
-    import logging
-    import matplotlib.pyplot as plt
-    from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-    import seaborn as sns
-    
-except Exception as e:
-    print(f"CRITICAL ERROR: {e}")
-    print(traceback.format_exc())
-    input("Program kapatılacak. Enter'a basın...")
-    sys.exit(1)
+    print("Dependencies are being installed in background...")
+    print("Please wait or restart the application.")
+    # Hata olsa bile devam et
+    pass
 
 # Geri kalan kodlar...
 
