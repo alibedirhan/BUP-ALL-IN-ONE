@@ -611,7 +611,7 @@ class BupilicDashboard:
         self.logger.info("Ana sayfa gösterildi.")
     
     def extract_subprograms(self):
-        """Frozen durumunda alt programları çıkart"""
+        """Frozen durumunda alt programları çıkart - GÜNCELLENDİ"""
         if not self.is_frozen:
             return
             
@@ -626,15 +626,19 @@ class BupilicDashboard:
             source_dir = self.get_resource_path(program)
             target_dir = os.path.join(os.path.dirname(self.base_path), program)
             
-            if os.path.exists(source_dir) and not os.path.exists(target_dir):
+            if os.path.exists(source_dir):
                 try:
+                    # Eğer hedef dizin varsa sil ve yeniden oluştur
+                    if os.path.exists(target_dir):
+                        shutil.rmtree(target_dir)
                     shutil.copytree(source_dir, target_dir)
                     self.logger.info(f"{program} çıkartıldı: {target_dir}")
+                    
                 except Exception as e:
                     self.logger.error(f"{program} çıkartılırken hata: {str(e)}")
-    
+
     def run_subprogram(self, program_name, main_file="main.py"):
-        """Alt programı çalıştır"""
+        """Alt programı çalıştır - KESİN ÇÖZÜM"""
         try:
             # Önce frozen durumunda alt programları çıkart
             if self.is_frozen:
@@ -649,48 +653,48 @@ class BupilicDashboard:
                 error_msg = f"{program_name} programı bulunamadı: {main_path}"
                 self.show_message(error_msg)
                 self.logger.error(error_msg)
-                return
+                return False
             
             # Python executable yolunu belirle
             python_exe = sys.executable
             
-            # Windows için özel ayarlar
+            # Windows için
             if os.name == 'nt':
-                # Batch dosyası oluştur (cmd penceresinin kapanmaması için)
-                batch_content = f"""@echo off
-chcp 65001 > nul
-cd /d "{program_dir}"
-"{python_exe}" "{main_file}"
-pause
-"""
-                batch_path = os.path.join(program_dir, f"run_{program_name}.bat")
-                with open(batch_path, 'w', encoding='utf-8') as f:
-                    f.write(batch_content)
-                
-                # Yeni konsol penceresinde aç
-                subprocess.Popen(["cmd", "/c", batch_path], creationflags=subprocess.CREATE_NEW_CONSOLE)
+                # YENİ YÖNTEM: start komutu ile doğrudan çalıştır
+                cmd = f'start "BupiliC - {program_name}" /D "{program_dir}" "{python_exe}" "{main_file}"'
+                os.system(cmd)
             else:
                 # Linux/Mac
                 subprocess.Popen([python_exe, main_file], cwd=program_dir)
-            
+                
             self.logger.info(f"{program_name} programı başlatıldı: {main_path}")
+            return True
             
         except Exception as e:
             error_msg = f"{program_name} programı açılamadı: {str(e)}"
             self.show_message(error_msg)
             self.logger.error(error_msg)
-    
+            return False
+
     def iskonto_ac(self):
-        self.run_subprogram("ISKONTO_HESABI", "main.py")
-    
+        success = self.run_subprogram("ISKONTO_HESABI", "main.py")
+        if not success:
+            self.show_message("İskonto programı başlatılamadı!")
+
     def karlilik_ac(self):
-        self.run_subprogram("KARLILIK_ANALIZI", "main.py")
-    
+        success = self.run_subprogram("KARLILIK_ANALIZI", "main.py")
+        if not success:
+            self.show_message("Karlılık analizi programı başlatılamadı!")
+
     def musteri_kayip_ac(self):
-        self.run_subprogram("Musteri_Sayisi_Kontrolu", "main.py")
-    
+        success = self.run_subprogram("Musteri_Sayisi_Kontrolu", "main.py")
+        if not success:
+            self.show_message("Müşteri kayıp/kaçak programı başlatılamadı!")
+
     def yaslandirma_ac(self):
-        self.run_subprogram("YASLANDIRMA", "main.py")
+        success = self.run_subprogram("YASLANDIRMA", "main.py")
+        if not success:
+            self.show_message("Yaşlandırma programı başlatılamadı!")
     
     def show_message(self, message):
         """Basit mesaj gösterimi"""
