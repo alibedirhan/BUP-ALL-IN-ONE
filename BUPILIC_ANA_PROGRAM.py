@@ -1,3 +1,91 @@
+import os
+import sys
+import subprocess
+import importlib
+import threading
+from packaging import version
+
+def check_and_install_dependencies():
+    """Eksik bağımlılıkları otomatik olarak yükler"""
+    required_packages = {
+        'customtkinter': '5.2.2',
+        'pandas': '2.1.4',
+        'numpy': '1.24.3',
+        'matplotlib': '3.7.2',
+        'pdfplumber': '0.10.3',
+        'openpyxl': '3.1.2',
+        'psutil': '5.9.6',
+        'Pillow': '10.1.0',
+        'seaborn': '0.13.2'
+    }
+    
+    missing_packages = []
+    
+    for package, required_version in required_packages.items():
+        try:
+            # Modülü import etmeyi dene
+            mod = importlib.import_module(package)
+            # Versiyon kontrolü
+            if hasattr(mod, '__version__'):
+                current_version = mod.__version__
+                if version.parse(current_version) < version.parse(required_version):
+                    missing_packages.append(f"{package}>={required_version}")
+            else:
+                missing_packages.append(f"{package}>={required_version}")
+        except ImportError:
+            missing_packages.append(f"{package}>={required_version}")
+    
+    if missing_packages:
+        print(f"📦 Eksik bağımlılıklar bulundu: {missing_packages}")
+        print("⏳ Yükleniyor...")
+        
+        try:
+            # pip'i kullanarak eksik paketleri yükle
+            for package_spec in missing_packages:
+                subprocess.check_call([sys.executable, "-m", "pip", "install", package_spec])
+            
+            print("✅ Bağımlılıklar başarıyla yüklendi!")
+            return True
+            
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Bağımlılık yükleme hatası: {e}")
+            # Fallback: tekrar dene
+            try:
+                for package_spec in missing_packages:
+                    package_name = package_spec.split('>')[0]
+                    subprocess.check_call([sys.executable, "-m", "pip", "install", package_name])
+                return True
+            except:
+                return False
+        except Exception as e:
+            print(f"❌ Beklenmeyen hata: {e}")
+            return False
+    
+    return True
+
+# Uygulama başlamadan önce bağımlılıkları kontrol et
+if not getattr(sys, 'frozen', False):  # Sadece frozen olmayan modda
+    print("🔍 Bağımlılıklar kontrol ediliyor...")
+    success = check_and_install_dependencies()
+    if not success:
+        print("⚠️  Bazı bağımlılıklar yüklenemedi. Program devam ediyor...")
+
+# Geri kalan importlar
+import customtkinter as ctk
+from PIL import Image, ImageTk
+import threading
+import time
+from datetime import datetime
+import json
+import logging
+import locale
+from pathlib import Path
+import tempfile
+import shutil
+
+
+
+
 import customtkinter as ctk
 import subprocess
 import os
