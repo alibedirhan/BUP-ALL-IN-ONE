@@ -55,33 +55,115 @@ def install_with_pip(packages):
         print(f"❌ Pip installation failed: {e}")
         return False
 
-def install_in_frozen_mode(packages):
-    """Frozen modda özel kurulum yöntemi"""
-    print("🚀 Starting automatic installation...")
-    
-    # Geçici dizin oluştur
-    temp_dir = tempfile.mkdtemp(prefix="bupilic_deps_")
-    print(f"📁 Temporary directory: {temp_dir}")
-    
-    try:
-        # Her paket için ayrı ayrı dene
-        for package in packages:
-            if not install_single_package(package, temp_dir):
-                print(f"⚠️ Could not install {package}, but continuing...")
+    def install_in_frozen_mode(packages):
+        """Frozen modda özel kurulum yöntemi"""
+        print("🚀 Starting automatic installation...")
         
-        # Başarılı say
-        print("✅ Installation process completed")
-        return True
+        # Frozen modda genellikle birçok paket zaten embedded halde gelir
+        # Sadece gerçekten eksik olanları yüklemeye çalış
         
-    except Exception as e:
-        print(f"❌ Installation failed: {e}")
-        return False
-    finally:
-        # Temizlik
+        # ÖNEMLİ: Frozen modda pip kurulumu zor olabilir, bu yüzden
+        # sadece kritik olanları yüklemeye çalışıyoruz
+        
+        critical_packages = ['Pillow', 'python-dateutil', 'tkcalendar']
+        
+        print(f"⭐ Critical packages to check: {critical_packages}")
+        
+        # Geçici dizin oluştur
+        temp_dir = tempfile.mkdtemp(prefix="bupilic_deps_")
+        print(f"📁 Temporary directory: {temp_dir}")
+        
         try:
-            shutil.rmtree(temp_dir, ignore_errors=True)
-        except:
-            pass
+            # Önce hangilerinin zaten mevcut olduğunu kontrol et
+            available_packages = []
+            missing_packages = []
+            
+            for package in critical_packages:
+                try:
+                    importlib.import_module(package)
+                    available_packages.append(package)
+                    print(f"✅ {package} already available")
+                except ImportError:
+                    missing_packages.append(package)
+                    print(f"❌ {package} missing")
+            
+            if not missing_packages:
+                print("🎉 All critical packages are already available!")
+                return True
+                
+            print(f"⬇️ Missing critical packages: {missing_packages}")
+            
+            # Frozen modda özel çözüm - embedded pip kullan
+            try:
+                # Embedded pip yolunu bul
+                python_dir = os.path.dirname(sys.executable)
+                pip_path = os.path.join(python_dir, "Scripts", "pip.exe")
+                
+                if os.path.exists(pip_path):
+                    print(f"🔧 Found embedded pip: {pip_path}")
+                    
+                    for package in missing_packages:
+                        try:
+                            print(f"📦 Installing {package} using embedded pip...")
+                            result = subprocess.run([
+                                sys.executable, pip_path, "install", package
+                            ], capture_output=True, text=True, timeout=120)
+                            
+                            if result.returncode == 0:
+                                print(f"✅ {package} installed successfully")
+                            else:
+                                print(f"❌ Failed to install {package}: {result.stderr}")
+                        except Exception as e:
+                            print(f"⚠️ Error installing {package}: {e}")
+                
+                else:
+                    print("⚠️ Embedded pip not found, trying direct download...")
+                    
+                    # Direct download dene
+                    for package in missing_packages:
+                        try:
+                            # Basitçe Python'u kullanarak kur
+                            result = subprocess.run([
+                                sys.executable, "-m", "pip", "install", package
+                            ], capture_output=True, text=True, timeout=120)
+                            
+                            if result.returncode == 0:
+                                print(f"✅ {package} installed via direct pip")
+                            else:
+                                print(f"❌ Failed to install {package}: {result.stderr}")
+                        except Exception as e:
+                            print(f"⚠️ Error installing {package}: {e}")
+            
+            except Exception as e:
+                print(f"❌ Package installation failed: {e}")
+            
+            # Son kontrol
+            finally_missing = []
+            for package in missing_packages:
+                try:
+                    importlib.import_module(package)
+                    print(f"✅ {package} successfully installed")
+                except ImportError:
+                    finally_missing.append(package)
+                    print(f"❌ {package} still missing")
+            
+            if finally_missing:
+                print(f"⚠️ Some packages could not be installed: {finally_missing}")
+                print("ℹ️ Application will continue, but some features may not work properly")
+            else:
+                print("🎉 All missing packages installed successfully!")
+            
+            return True  # Uygulama devam etsin, bağımlılıklar kritik değil
+            
+        except Exception as e:
+            print(f"❌ Installation failed: {e}")
+            return True  # Hata olsa bile uygulama devam etsin
+        finally:
+            # Temizlik
+            try:
+                shutil.rmtree(temp_dir, ignore_errors=True)
+            except:
+                pass
 
 def install_single_package(package_name, target_dir):
     """Tek bir paketi kur"""
@@ -973,40 +1055,62 @@ class BupilicDashboard:
         print(f"INFO: {message}")
     
     def show_debug_info(self):
+        """Debug bilgilerini göster"""
         debug_window = ctk.CTkToplevel(self.root)
         debug_window.title("🐛 Debug Information")
-        debug_window.geometry("700x500")
+        debug_window.geometry("800x600")
         debug_window.transient(self.root)
         debug_window.grab_set()
         
+        # Debug bilgilerini topla
         info_text = f"""DEBUG INFORMATION:
-
-Frozen Mode: {self.is_frozen}
-Base Path: {self.base_path}
-Current Directory: {os.getcwd()}
-Python Executable: {sys.executable}
-Operating System: {os.name}
-
-Subprograms Status:
-"""
+    
+    Frozen Mode: {getattr(sys, 'frozen', False)}
+    Base Path: {getattr(sys, '_MEIPASS', 'Not frozen')}
+    Current Directory: {os.getcwd()}
+    Python Executable: {sys.executable}
+    Operating System: {os.name}
+    
+    SUBPROGRAMS STATUS:
+    """
         
         subprograms = ["ISKONTO_HESABI", "KARLILIK_ANALIZI", "Musteri_Sayisi_Kontrolu", "YASLANDIRMA"]
         
         for program in subprograms:
             program_path = os.path.join(self.base_path, program)
             exists = os.path.exists(program_path)
-            main_file = "main.py"
-            main_path = os.path.join(program_path, main_file) if exists else "N/A"
-            main_exists = os.path.exists(main_path) if exists else False
             
             info_text += f"\n{program}:"
             info_text += f"\n  Path: {program_path}"
             info_text += f"\n  Exists: {'YES' if exists else 'NO'}"
+            
             if exists:
-                info_text += f"\n  Main file: {main_path}"
-                info_text += f"\n  Main exists: {'YES' if main_exists else 'NO'}"
+                # Python dosyalarını listele
+                py_files = [f for f in os.listdir(program_path) if f.endswith('.py') and f != '__init__.py']
+                info_text += f"\n  Python Files: {py_files}"
+                
+                # Ana dosya kontrolü
+                main_files = ["main.py", "gui.py", "app.py"]
+                main_found = None
+                for main_file in main_files:
+                    if os.path.exists(os.path.join(program_path, main_file)):
+                        main_found = main_file
+                        break
+                
+                info_text += f"\n  Main File: {main_found if main_found else 'NOT FOUND'}"
         
-        textbox = ctk.CTkTextbox(debug_window, width=680, height=450)
+        info_text += f"\n\nDEPENDENCIES STATUS:"
+        dependencies = ['pandas', 'numpy', 'matplotlib', 'pdfplumber', 'customtkinter', 
+                       'PIL', 'python-dateutil', 'tkcalendar']
+        
+        for dep in dependencies:
+            try:
+                importlib.import_module(dep)
+                info_text += f"\n  {dep}: ✅ AVAILABLE"
+            except ImportError:
+                info_text += f"\n  {dep}: ❌ MISSING"
+        
+        textbox = ctk.CTkTextbox(debug_window, width=780, height=550)
         textbox.pack(padx=10, pady=10, fill="both", expand=True)
         textbox.insert("1.0", info_text)
         textbox.configure(state="disabled")
