@@ -2,10 +2,10 @@
 
 import os
 import sys
+import glob
 from PyInstaller.building.build_main import Analysis, EXE, PYZ
 from PyInstaller.building.datastruct import TOC
 
-# Ana dizin
 block_cipher = None
 
 # Tüm alt modüllerin path'lerini ekle
@@ -13,35 +13,44 @@ pathex = [
     '.',
     './ISKONTO_HESABI',
     './KARLILIK_ANALIZI', 
-    './Musteri_Sayisi_Kontrolu',
+    './Musteri_Sayisi_KONTROLU',  # Dikkat: Kontrolu değil KONTROLU
     './YASLANDIRMA',
     './YASLANDIRMA/gui',
     './YASLANDIRMA/modules'
 ]
 
-# Ana script analizi - BUPILIC_ANA_PROGRAM.py kullan
+# Tüm Python dosyalarını topla - YENİ YÖNTEM
+def collect_all_py_files(directory):
+    py_files = []
+    for root, dirs, files in os.walk(directory):
+        for file in files:
+            if file.endswith('.py') and not file.startswith('__'):
+                full_path = os.path.join(root, file)
+                # Temp dizinindeki yolu hesapla
+                dest_path = os.path.relpath(root, '.')
+                py_files.append((full_path, dest_path))
+    return py_files
+
+# Tüm alt program dosyalarını topla
+all_datas = []
+for module in ['ISKONTO_HESABI', 'KARLILIK_ANALIZI', 'Musteri_Sayisi_KONTROLU', 'YASLANDIRMA']:
+    if os.path.exists(module):
+        all_datas.extend(collect_all_py_files(module))
+
+# Icon ve diğer dosyaları ekle
+if os.path.exists('icon'):
+    all_datas.append(('icon/*', 'icon'))
+
+# Ana script analizi
 a = Analysis(
-    ['BUPILIC_ANA_PROGRAM.py'],  # Ana script dosyanız
+    ['BUPILIC_ANA_PROGRAM.py'],
     pathex=pathex,
     binaries=[],
-    datas=[
-        # Tüm Python dosyalarını ve klasör yapısını dahil et
-        ('ISKONTO_HESABI/**/*.py', 'ISKONTO_HESABI'),
-        ('KARLILIK_ANALIZI/**/*.py', 'KARLILIK_ANALIZI'),
-        ('Musteri_Sayisi_Kontrolu/**/*.py', 'Musteri_Sayisi_Kontrolu'),
-        ('YASLANDIRMA/**/*.py', 'YASLANDIRMA'),
-        
-        # Gerekli data dosyaları
-        ('*.txt', '.'),
-        ('*.csv', '.'),
-        ('*.json', '.'),
-        ('icon/*.ico', 'icon'),
-        ('icon/*.png', 'icon'),
-    ],
+    datas=all_datas,  # Tüm dosyaları burada kullan
     hiddenimports=[
-        # Tüm alt modülleri belirt
+        # TÜM MODÜLLERİ TEK TEK EKLEYİN
         'ISKONTO_HESABI.main',
-        'ISKONTO_HESABI.ui_components',
+        'ISKONTO_HESABI.ui_components', 
         'ISKONTO_HESABI.pdf_processor',
         'ISKONTO_HESABI.export_manager',
         
@@ -55,9 +64,9 @@ a = Analysis(
         'KARLILIK_ANALIZI.veri_analizi',
         'KARLILIK_ANALIZI.zaman_analizi',
         
-        'Musteri_Sayisi_Kontrolu.main',
-        'Musteri_Sayisi_Kontrolu.ui',
-        'Musteri_Sayisi_Kontrolu.kurulum',
+        'Musteri_Sayisi_KONTROLU.main',
+        'Musteri_Sayisi_KONTROLU.ui',
+        'Musteri_Sayisi_KONTROLU.kurulum',
         
         'YASLANDIRMA.main',
         'YASLANDIRMA.gui',
@@ -79,22 +88,11 @@ a = Analysis(
         'YASLANDIRMA.modules.reports',
         'YASLANDIRMA.modules.visualization',
         
-        # Gerekli kütüphaneler
-        'pandas',
-        'numpy',
-        'matplotlib',
-        'matplotlib.backends.backend_tkagg',
-        'customtkinter',
-        'pdfplumber',
-        'PIL',
-        'openpyxl',
-        'seaborn',
-        'xlsxwriter',
-        'xlrd',
-        'xlwt',
-        'psutil',
-        'tkcalendar',
-        'python-dateutil',
+        # GEREKLİ KÜTÜPHANELER
+        'pandas', 'numpy', 'matplotlib', 'customtkinter',
+        'pdfplumber', 'PIL', 'openpyxl', 'seaborn', 
+        'xlsxwriter', 'xlrd', 'xlwt', 'psutil',
+        'tkcalendar', 'python-dateutil'
     ],
     hookspath=[],
     hooksconfig={},
@@ -122,11 +120,11 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,  # Final versiyonda False yapın
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=os.path.join('icon', 'bupilic_logo.ico') if os.path.exists(os.path.join('icon', 'bupilic_logo.ico')) else None,
+    icon='icon/bupilic_logo.ico' if os.path.exists('icon/bupilic_logo.ico') else None,
 )
