@@ -1121,8 +1121,11 @@ def main():
 
 
 def main():
-    print("Müşteri sayısı kontrolü başlatılıyor...")
-    # Burada Musteri_Sayisi_Kontrolu programınızı başlatacak kodlar
+    from Musteri_Sayisi_Kontrolu.ui import musteri_sayisi_app
+    musteri_sayisi_app()
+
+def run_program():
+    main()
 
 if __name__ == "__main__":
     main()
