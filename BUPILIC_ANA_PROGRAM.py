@@ -835,54 +835,52 @@ class BupilicDashboard:
         print(f"INFO: {message}")
     
     def show_debug_info(self):
-        """Debug bilgilerini göster"""
+        """Detaylı debug bilgilerini göster"""
         debug_window = ctk.CTkToplevel(self.root)
-        debug_window.title("🐛 Debug Information")
-        debug_window.geometry("700x500")
+        debug_window.title("🐛 Windows Debug Information")
+        debug_window.geometry("800x600")
         debug_window.transient(self.root)
         debug_window.grab_set()
         
-        info_text = f"""=== BUPİLİÇ DEBUG BİLGİLERİ ===
-
-Base Path: {self.base_path}
-Frozen: {self.is_frozen}
-Current Directory: {os.getcwd()}
-Python Executable: {sys.executable}
-Python Version: {sys.version}
-
-Available Subprograms:
-"""
+        info_text = f"""============================================================
+    🐛 WINDOWS DEBUG INFORMATION
+    ============================================================
+    🏷️ Frozen Mode: {self.is_frozen}
+    📦 Base Path: {self.base_path}
+    📂 Current Directory: {os.getcwd()}
+    🐍 Python Executable: {sys.executable}
+    🔧 Operating System: {os.name}
+    📁 _internal exists: {os.path.exists(os.path.join(self.base_path, '_internal'))}
+    
+    🔍 Checking subprograms:
+    """
         
         subprograms = ["ISKONTO_HESABI", "KARLILIK_ANALIZI", "Musteri_Sayisi_Kontrolu", "YASLANDIRMA"]
         
         for program in subprograms:
-            program_path = self.get_resource_path(program)
-            exists = os.path.exists(program_path)
-            main_file = "main.py"
-            main_path = os.path.join(program_path, main_file) if exists else "N/A"
-            main_exists = os.path.exists(main_path) if exists else False
+            normal_path = os.path.join(self.base_path, program)
+            internal_path = os.path.join(self.base_path, '_internal', program)
+            exe_path = os.path.join(os.path.dirname(sys.executable), program)
             
-            info_text += f"\n{program}:"
-            info_text += f"\n  - Path: {program_path}"
-            info_text += f"\n  - Exists: {'✅' if exists else '❌'}"
-            if exists:
-                info_text += f"\n  - Main file: {main_path}"
-                info_text += f"\n  - Main exists: {'✅' if main_exists else '❌'}"
-            
-            info_text += "\n"
+            info_text += f"  {program}:\n"
+            info_text += f"    Normal: {'✅' if os.path.exists(normal_path) else '❌'} {normal_path}\n"
+            info_text += f"    Internal: {'✅' if os.path.exists(internal_path) else '❌'} {internal_path}\n"
+            info_text += f"    EXE Dir: {'✅' if os.path.exists(exe_path) else '❌'} {exe_path}\n"
+        
+        info_text += "============================================================\n"
         
         # Mevcut dosyaları listele
-        info_text += f"\nCurrent Directory Files:\n"
+        info_text += f"\n📁 Base Path Contents:\n"
         try:
-            for item in os.listdir('.'):
-                if os.path.isdir(item):
+            for item in os.listdir(self.base_path):
+                if os.path.isdir(os.path.join(self.base_path, item)):
                     info_text += f"📁 {item}/\n"
                 else:
                     info_text += f"📄 {item}\n"
         except Exception as e:
-            info_text += f"Error listing directory: {e}\n"
+            info_text += f"Error listing base path: {e}\n"
         
-        textbox = ctk.CTkTextbox(debug_window, width=680, height=450)
+        textbox = ctk.CTkTextbox(debug_window, width=780, height=550)
         textbox.pack(padx=10, pady=10, fill="both", expand=True)
         textbox.insert("1.0", info_text)
         textbox.configure(state="disabled")
