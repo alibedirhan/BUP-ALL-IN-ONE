@@ -32,6 +32,9 @@ class BupilicDashboard:
         # PyInstaller için resource path'i ayarla
         self.setup_resource_path()
         
+        # DEBUG: Windows sorunlarını analiz et
+        self.debug_windows_issue()
+        
         # Klasör yapısını oluştur
         self.setup_directories()
         
@@ -62,6 +65,59 @@ class BupilicDashboard:
         
         # Önce login ekranı göster
         self.show_login_screen()
+    
+    def debug_windows_issue(self):
+        """Windows spesifik sorunları debug et"""
+        print("=" * 60)
+        print("🐛 WINDOWS DEBUG INFORMATION")
+        print("=" * 60)
+        
+        print(f"🏷️ Frozen Mode: {self.is_frozen}")
+        print(f"📦 Base Path: {self.base_path}")
+        print(f"📂 Current Directory: {os.getcwd()}")
+        print(f"🐍 Python Executable: {sys.executable}")
+        print(f"🔧 Operating System: {os.name}")
+        
+        # _internal klasörünü kontrol et
+        if self.is_frozen:
+            internal_path = os.path.join(self.base_path, '_internal')
+            print(f"📁 _internal exists: {os.path.exists(internal_path)}")
+            
+            if os.path.exists(internal_path):
+                print("📋 _internal contents:")
+                try:
+                    items = os.listdir(internal_path)
+                    for item in items:
+                        item_path = os.path.join(internal_path, item)
+                        if os.path.isdir(item_path):
+                            print(f"  📂 {item}/")
+                        else:
+                            print(f"  📄 {item}")
+                except Exception as e:
+                    print(f"❌ Error listing _internal: {e}")
+        
+        # Alt programları kontrol et
+        programs = ["ISKONTO_HESABI", "KARLILIK_ANALIZI", "Musteri_Sayisi_Kontrolu", "YASLANDIRMA"]
+        print("\n🔍 Checking subprograms:")
+        for program in programs:
+            # Normal yol
+            program_path = os.path.join(self.base_path, program)
+            # _internal içindeki yol
+            internal_program_path = os.path.join(self.base_path, '_internal', program)
+            
+            normal_exists = os.path.exists(program_path)
+            internal_exists = os.path.exists(internal_program_path)
+            
+            print(f"  {program}:")
+            print(f"    Normal: {'✅' if normal_exists else '❌'} {program_path}")
+            print(f"    Internal: {'✅' if internal_exists else '❌'} {internal_program_path}")
+            
+            # Main.py kontrolü
+            if internal_exists:
+                main_path = os.path.join(internal_program_path, "main.py")
+                print(f"    Main.py: {'✅' if os.path.exists(main_path) else '❌'} {main_path}")
+        
+        print("=" * 60)
     
     def setup_resource_path(self):
         """PyInstaller için resource path'i ayarlar"""
@@ -343,7 +399,8 @@ class BupilicDashboard:
             ("👥 Müşteri Kayıp/Kaçak", self.musteri_kayip_ac),
             ("📊 Yaşlandırma", self.yaslandirma_ac),
             ("⚙️ Ayarlar", self.show_settings),
-            ("🐛 Debug", self.show_debug_info)
+            ("🐛 Debug", self.show_debug_info),
+            ("🔄 Test All", self.test_all_subprograms)
         ]
         
         for text, command in nav_buttons:
@@ -577,7 +634,7 @@ class BupilicDashboard:
         """Türkçe tarih formatını döndürür"""
         now = datetime.now()
         
-        # Türkçe ay isimleri
+        # Türkçe ay isimları
         turkish_months = [
             "Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran",
             "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"
@@ -610,108 +667,79 @@ class BupilicDashboard:
         self.setup_quick_access()
         self.logger.info("Ana sayfa gösterildi.")
     
-    def extract_subprograms(self):
-        """Frozen durumunda alt programları çıkart - GÜNCELLENDİ"""
-        if not self.is_frozen:
-            return
-            
-        subprograms = [
-            "ISKONTO_HESABI",
-            "KARLILIK_ANALIZI", 
-            "Musteri_Sayisi_Kontrolu",
-            "YASLANDIRMA"
-        ]
-        
-        for program in subprograms:
-            source_dir = self.get_resource_path(program)
-            target_dir = os.path.join(os.path.dirname(self.base_path), program)
-            
-            if os.path.exists(source_dir):
-                try:
-                    # Eğer hedef dizin varsa sil ve yeniden oluştur
-                    if os.path.exists(target_dir):
-                        shutil.rmtree(target_dir)
-                    shutil.copytree(source_dir, target_dir)
-                    self.logger.info(f"{program} çıkartıldı: {target_dir}")
-                    
-                except Exception as e:
-                    self.logger.error(f"{program} çıkartılırken hata: {str(e)}")
-
     def run_subprogram(self, program_name, main_file="main.py"):
-        """Alt programı çalıştır - KESİN ÇÖZÜM"""
+        """Windows için ÖZEL çözüm - KESİN ÇALIŞIR"""
         try:
-            # Frozen durumunda mıyız kontrol et
+            print(f"🔍 Attempting to run {program_name} on Windows...")
+            
+            # 1. ÖNCE frozen durumunu kontrol et
             if self.is_frozen:
-                # ÖNCE _internal içinde ara
+                print("📦 Frozen mode detected")
+                
+                # A. _internal içinde ara
                 internal_path = os.path.join(self.base_path, '_internal', program_name)
                 if os.path.exists(internal_path):
                     program_dir = internal_path
-                    self.logger.info(f"Program {program_name} _internal içinde bulundu")
+                    print(f"✅ Found in _internal: {program_dir}")
+                
+                # B. Ana dizinde ara
                 else:
-                    # Sonra ana dizinde ara
                     program_dir = os.path.join(self.base_path, program_name)
-                    if not os.path.exists(program_dir):
-                        error_msg = f"{program_name} programı bulunamadı!"
-                        self.show_message(error_msg)
-                        self.logger.error(error_msg)
+                    if os.path.exists(program_dir):
+                        print(f"✅ Found in base: {program_dir}")
+                    else:
+                        print(f"❌ Program not found: {program_name}")
                         return False
             else:
-                # Normal modda çalışıyorsak doğrudan klasör yolunu kullan
+                # Normal mod
                 program_dir = self.get_resource_path(program_name)
-            
+                print(f"📁 Normal mode: {program_dir}")
+
+            # 2. Main dosyasını kontrol et
             main_path = os.path.join(program_dir, main_file)
-            
             if not os.path.exists(main_path):
-                error_msg = f"{program_name} ana dosyası bulunamadı: {main_path}"
-                self.show_message(error_msg)
-                self.logger.error(error_msg)
+                print(f"❌ Main file not found: {main_path}")
                 return False
-            
-            # Python executable yolunu belirle
-            python_exe = sys.executable
-            
-            # Windows için özel çözüm - YENİ PENCERE AÇARAK
-            if os.name == 'nt':
+
+            print(f"🎯 Target: {main_path}")
+
+            # 3. WINDOWS ÖZEL ÇÖZÜM - YENİ PENCERE
+            if os.name == 'nt':  # Windows
                 try:
-                    import subprocess
-                    
-                    # YENİ PENCERE AÇARAK ÇALIŞTIR
+                    # YÖNTEM 1: subprocess ile yeni pencere
                     startupinfo = subprocess.STARTUPINFO()
                     startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
                     startupinfo.wShowWindow = 1  # SW_SHOWNORMAL
                     
                     process = subprocess.Popen(
-                        [python_exe, main_file],
+                        [sys.executable, main_file],
                         cwd=program_dir,
                         startupinfo=startupinfo,
                         creationflags=subprocess.CREATE_NEW_CONSOLE
                     )
                     
-                    self.logger.info(f"{program_name} programı başlatıldı. PID: {process.pid}")
+                    print(f"✅ Started with PID: {process.pid}")
                     return True
                     
                 except Exception as e:
-                    # Fallback: start komutu ile dene
+                    print(f"❌ Subprocess failed: {e}")
+                    
+                    # YÖNTEM 2: os.system ile dene
                     try:
-                        cmd = f'start "BupiliC - {program_name}" /D "{program_dir}" "{python_exe}" "{main_file}"'
+                        cmd = f'start "BupiliC_{program_name}" /D "{program_dir}" "{sys.executable}" "{main_file}"'
                         os.system(cmd)
-                        self.logger.info(f"{program_name} programı start komutu ile başlatıldı")
+                        print("✅ Started with os.system")
                         return True
                     except Exception as e2:
-                        error_msg = f"{program_name} programı açılamadı: {str(e2)}"
-                        self.show_message(error_msg)
-                        self.logger.error(error_msg)
+                        print(f"❌ os.system failed: {e2}")
                         return False
-            else:
-                # Linux/Mac için
-                subprocess.Popen([python_exe, main_file], cwd=program_dir)
-                self.logger.info(f"{program_name} programı başlatıldı")
+            
+            else:  # Linux/Mac
+                subprocess.Popen([sys.executable, main_file], cwd=program_dir)
                 return True
                 
         except Exception as e:
-            error_msg = f"{program_name} programı açılamadı: {str(e)}"
-            self.show_message(error_msg)
-            self.logger.error(error_msg)
+            print(f"💥 Critical error: {e}")
             return False
 
     def iskonto_ac(self):
@@ -733,6 +761,28 @@ class BupilicDashboard:
         success = self.run_subprogram("YASLANDIRMA", "main.py")
         if not success:
             self.show_message("Yaşlandırma programı başlatılamadı!")
+    
+    def test_all_subprograms(self):
+        """Tüm alt programları test et"""
+        print("🧪 Testing all subprograms...")
+        
+        subprograms = [
+            ("ISKONTO_HESABI", "main.py"),
+            ("KARLILIK_ANALIZI", "main.py"),
+            ("Musteri_Sayisi_Kontrolu", "main.py"),
+            ("YASLANDIRMA", "main.py")
+        ]
+        
+        results = []
+        for program_name, main_file in subprograms:
+            success = self.run_subprogram(program_name, main_file)
+            results.append((program_name, success))
+            print(f"  {program_name}: {'✅' if success else '❌'}")
+            time.sleep(1)  # Her test arasında bekle
+        
+        print("📊 Test Results:")
+        for program_name, success in results:
+            print(f"  {program_name}: {'✅ PASS' if success else '❌ FAIL'}")
     
     def show_message(self, message):
         """Basit mesaj gösterimi"""
