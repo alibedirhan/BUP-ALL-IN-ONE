@@ -107,10 +107,9 @@ def main():
         print(f"HATA: Uygulama başlatılamadı - {e}")
         sys.exit(1)
         
-    def run_program():
-        """Ana programdan çağrılmak için"""
-        main()  # Mevcut main fonksiyonunuzu çağırın
-    
+def run_program():
+    """Ana programdan çağrılmak için"""
+    main()  # Mevcut main fonksiyonunuzu çağırın
 
 if __name__ == "__main__":
     main()
