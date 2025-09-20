@@ -1,14 +1,23 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-# BU SPEC DOSYASI TÜM BAĞIMLILIKLARI GARANTILI ŞEKILDE TEK EXE'YE PAKETLER
-# KULLANICI HIÇBIR ŞEY YÜKLEMEZ, SADECE ÇIFT TIKLAR
-
 import os
 import sys
+from pathlib import Path
 
 block_cipher = None
 
-# Tüm modül path'leri
+# Mevcut dosyaları kontrol eden güvenli fonksiyon
+def safe_glob(pattern):
+    """Sadece mevcut dosyaları döndürür"""
+    import glob
+    files = glob.glob(pattern)
+    result = []
+    for file in files:
+        if os.path.exists(file):
+            result.append((file, '.'))
+    return result
+
+# Ana modül path'leri
 pathex = [
     '.',
     'ISKONTO_HESABI',
@@ -19,28 +28,35 @@ pathex = [
     'YASLANDIRMA/modules'
 ]
 
-# Ana analiz - TÜM BAĞIMLILIKLAR DAHİL
+# Data dosyaları - sadece mevcut olanlar
+data_files = []
+
+# Python modülleri - zorunlu
+required_modules = [
+    ('ISKONTO_HESABI', 'ISKONTO_HESABI'),
+    ('KARLILIK_ANALIZI', 'KARLILIK_ANALIZI'),
+    ('Musteri_Sayisi_Kontrolu', 'Musteri_Sayisi_Kontrolu'),
+    ('YASLANDIRMA', 'YASLANDIRMA'),
+]
+
+for src_dir, dst_dir in required_modules:
+    if os.path.exists(src_dir):
+        # Python dosyalarını ekle
+        for py_file in Path(src_dir).rglob('*.py'):
+            rel_path = str(py_file.relative_to(src_dir))
+            data_files.append((str(py_file), f'{dst_dir}/{os.path.dirname(rel_path)}' if os.path.dirname(rel_path) else dst_dir))
+
+# Opsiyonel dosyalar - varsa ekle
+optional_patterns = ['*.txt', '*.csv', '*.json', '*.ico', '*.png', '*.jpg']
+for pattern in optional_patterns:
+    data_files.extend(safe_glob(pattern))
+
+# Ana PyInstaller analizi
 a = Analysis(
     ['BUPILIC_ANA_PROGRAM.py'],
     pathex=pathex,
     binaries=[],
-    datas=[
-        # Python modülleri
-        ('ISKONTO_HESABI/*.py', 'ISKONTO_HESABI'),
-        ('KARLILIK_ANALIZI/*.py', 'KARLILIK_ANALIZI'),
-        ('Musteri_Sayisi_Kontrolu/*.py', 'Musteri_Sayisi_Kontrolu'),
-        ('YASLANDIRMA/*.py', 'YASLANDIRMA'),
-        ('YASLANDIRMA/gui/*.py', 'YASLANDIRMA/gui'),
-        ('YASLANDIRMA/modules/*.py', 'YASLANDIRMA/modules'),
-        
-        # Data dosyaları (varsa)
-        ('*.txt', '.'),
-        ('*.csv', '.'),
-        ('*.json', '.'),
-        ('*.ico', '.'),
-        ('*.png', '.'),
-        ('*.jpg', '.'),
-    ],
+    datas=data_files,
     hiddenimports=[
         # Ana modüller
         'ISKONTO_HESABI',
@@ -86,13 +102,12 @@ a = Analysis(
         'YASLANDIRMA.modules.reports',
         'YASLANDIRMA.modules.visualization',
         
-        # TÜM BAĞIMLILIKLAR ZORUNLU
+        # Temel kütüphaneler
         'pandas',
         'numpy',
         'matplotlib',
         'matplotlib.pyplot',
         'matplotlib.figure',
-        'matplotlib.backends',
         'matplotlib.backends.backend_tkagg',
         'tkinter',
         'tkinter.ttk',
@@ -101,8 +116,6 @@ a = Analysis(
         'tkinter.simpledialog',
         'customtkinter',
         'openpyxl',
-        'openpyxl.workbook',
-        'openpyxl.worksheet',
         'pdfplumber',
         'PIL',
         'PIL.Image',
@@ -112,6 +125,9 @@ a = Analysis(
         'xlrd',
         'xlwt',
         'psutil',
+        'tkcalendar',
+        
+        # Sistem modülleri
         'datetime',
         'os',
         'sys',
@@ -120,7 +136,6 @@ a = Analysis(
         'json',
         'csv',
         'sqlite3',
-        'tkcalendar',
         'locale',
         'threading',
         'time',
@@ -128,54 +143,48 @@ a = Analysis(
         'tempfile',
         'shutil',
         'importlib',
+        'platform',
+        'collections',
+        'itertools',
+        'functools',
+        'traceback',
+        'warnings',
         
-        # PDF ve Excel için ekstra
-        'pdfminer',
-        'pdfminer.six',
-        'cryptography',
-        'charset_normalizer',
+        # Veri işleme
         'python_dateutil',
         'pytz',
         'tzdata',
         
-        # CustomTkinter için ekstra
-        'darkdetect',
+        # PDF işleme
+        'pdfminer.six',
+        'cryptography',
+        'charset_normalizer',
         
-        # Matplotlib için ekstra
+        # GUI gelişmiş
+        'darkdetect',
+        'babel',
+        
+        # Matplotlib gelişmiş
         'contourpy',
         'cycler',
         'fonttools',
         'kiwisolver',
         'pyparsing',
-        
-        # Windows için ekstra
-        'win32api',
-        'win32con',
-        'win32gui',
-        'pywintypes',
+        'packaging',
     ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[
-        # Gereksizleri hariç tut
-        'FixTk',
-        'tcl',
-        'tk',
-        '_tkinter',
-        'test',
-        'unittest',
-    ],
+    excludes=[],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
     noarchive=False,
 )
 
-# Python bytecode'u paketleme
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
-# TEK DOSYA EXE - HİÇBİR BAĞIMLILIK KALMASIN
+# TEK DOSYA EXE
 exe = EXE(
     pyz,
     a.scripts,
@@ -190,7 +199,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,  # GUI aplikasyon
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
