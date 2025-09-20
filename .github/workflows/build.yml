@@ -152,8 +152,6 @@ jobs:
                 print(f'{dir} does not exist')
         "
         
-        # Derleme
-        pyinstaller BupiliC.spec --noconfirm --clean
 
     - name: Check build result
       run: |
