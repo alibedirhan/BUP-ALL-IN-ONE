@@ -85,8 +85,12 @@ class Program:
         self.root.mainloop()
 
 def main():
-    print("Yaşlandırma programı başlatılıyor...")
-    # Burada YASLANDIRMA programınızı başlatacak kodlar
+    from YASLANDIRMA.gui.main_gui import YaslandirmaApp
+    app = YaslandirmaApp()
+    app.run()
+
+def run_program():
+    main()
 
 if __name__ == "__main__":
     main()
