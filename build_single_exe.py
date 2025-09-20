@@ -2,55 +2,91 @@
 import os
 import sys
 import shutil
-import subprocess
-import tempfile
-from pathlib import Path
 
-def build_single_exe():
-    print("🚀 Building SINGLE EXE with ALL programs...")
+def embed_all_programs():
+    """Tüm alt programları ana EXE'ye göm"""
+    print("🚀 Embedding ALL programs into single EXE...")
     
-    # Tüm alt programların kodlarını oku ve birleştir
-    programs = {
-        'ISKONTO_HESABI': 'ISKONTO_HESABI/main.py',
-        'KARLILIK_ANALIZI': 'KARLILIK_ANALIZI/gui.py', 
-        'Musteri_Sayisi_Kontrolu': 'Musteri_Sayisi_Kontrolu/main.py',
-        'YASLANDIRMA': 'YASLANDIRMA/main.py'
-    }
+    # Tüm alt program dosyalarını topla
+    all_files = []
     
-    # Ana program kodunu oku
+    programs = [
+        'ISKONTO_HESABI', 
+        'KARLILIK_ANALIZI', 
+        'Musteri_Sayisi_Kontrolu', 
+        'YASLANDIRMA'
+    ]
+    
+    for program in programs:
+        if os.path.exists(program):
+            for root, dirs, files in os.walk(program):
+                for file in files:
+                    if file.endswith('.py'):
+                        full_path = os.path.join(root, file)
+                        all_files.append(full_path)
+                        print(f"✅ Added: {full_path}")
+    
+    # Ana programı oku
     with open('BUPILIC_ANA_PROGRAM.py', 'r', encoding='utf-8') as f:
         main_code = f.read()
     
-    # Tüm alt program kodlarını ana programa embed et
+    # Tüm dosyaları embedded olarak ekle
     embedded_code = "\n\n# ===== EMBEDDED SUBPROGRAMS =====\n\n"
     
-    for prog_name, prog_path in programs.items():
-        if os.path.exists(prog_path):
-            try:
-                with open(prog_path, 'r', encoding='utf-8') as f:
-                    prog_code = f.read()
-                
-                # Fonksiyonları değiştirerek embed et
-                prog_code = prog_code.replace('if __name__ == "__main__":', 
-                                            f'def run_{prog_name}():')
-                prog_code = prog_code.replace('sys.exit(', 'return')
-                
-                embedded_code += f"# --- {prog_name} ---\n{prog_code}\n\n"
-                print(f"✅ Embedded {prog_name}")
-                
-            except Exception as e:
-                print(f"❌ Error embedding {prog_name}: {e}")
-        else:
-            print(f"⚠️ {prog_path} not found")
+    for file_path in all_files:
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                file_content = f.read()
+            
+            # Modül adını dosya yolundan al
+            module_name = file_path.replace('\\', '.').replace('/', '.').replace('.py', '')
+            
+            embedded_code += f"# --- {file_path} ---\n"
+            embedded_code += f"# Embedded content of {file_path}\n"
+            embedded_code += file_content + "\n\n"
+            
+        except Exception as e:
+            print(f"❌ Error reading {file_path}: {e}")
+    
+    # Importları düzenle
+    embedded_code += """
+# ===== ALTERNATIVE IMPORT FALLBACKS =====
+import sys
+import os
+
+# ui_components fallback
+try:
+    from ISKONTO_HESABI import ui_components
+except ImportError:
+    print("⚠️ ui_components not found, using fallback")
+    class ui_components:
+        @staticmethod
+        def setup_ui():
+            print("Fallback UI components loaded")
+    
+# Diğer gerekli fallback'ler
+try:
+    from ISKONTO_HESABI import export_manager, pdf_processor
+except ImportError:
+    print("⚠️ ISKONTO_HESABI modules not found")
+
+try:
+    from KARLILIK_ANALIZI import analiz_dashboard, data_operations, veri_analizi, zaman_analizi
+except ImportError:
+    print("⚠️ KARLILIK_ANALIZI modules not found")
+"""
     
     # Ana koda embedded kodları ekle
-    main_code = main_code.replace('# GERI KALAN IMPORTLAR', embedded_code + '\n# GERI KALAN IMPORTLAR')
+    if '# GERI KALAN IMPORTLAR' in main_code:
+        main_code = main_code.replace('# GERI KALAN IMPORTLAR', embedded_code + '\n# GERI KALAN IMPORTLAR')
+    else:
+        main_code += embedded_code
     
     # Yeni ana programı kaydet
-    with open('BUPILIC_SINGLE_EXE.py', 'w', encoding='utf-8') as f:
+    with open('BUPILIC_EMBEDDED.py', 'w', encoding='utf-8') as f:
         f.write(main_code)
     
-    print("✅ Single EXE source created!")
+    print("✅ All programs embedded into single file!")
     return True
 
 def create_final_spec():
@@ -68,7 +104,7 @@ data_files = []
 if os.path.exists('icon/bupilic_logo.ico'):
     data_files.append(('icon/bupilic_logo.ico', '.'))
 
-# Gerekli klasörler
+# Gerekli klasörler - SADECE config ve data
 folders = ['config', 'data', 'icon']
 for folder in folders:
     if os.path.exists(folder):
@@ -80,7 +116,7 @@ for folder in folders:
                     data_files.append((full_path, rel_path))
 
 a = Analysis(
-    ['BUPILIC_SINGLE_EXE.py'],
+    ['BUPILIC_EMBEDDED.py'],
     pathex=[os.getcwd()],
     binaries=[],
     datas=data_files,
@@ -113,11 +149,17 @@ a = Analysis(
         
         # CustomTkinter için
         'customtkinter.windows.widgets', 'customtkinter.windows.ctk_tk',
-        'customtkinter.windows.ctk_theme', 'customtkinter.windows.core_rendering'
+        'customtkinter.windows.ctk_theme', 'customtkinter.windows.core_rendering',
+        
+        # Özel modüller için
+        'ISKONTO_HESABI.ui_components', 'ISKONTO_HESABI.export_manager', 
+        'ISKONTO_HESABI.pdf_processor', 'KARLILIK_ANALIZI.analiz_dashboard',
+        'KARLILIK_ANALIZI.data_operations', 'KARLILIK_ANALIZI.veri_analizi',
+        'KARLILIK_ANALIZI.zaman_analizi'
     ],
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=[],
+    runtime_hooks=['runtime_hook.py'],
     excludes=['test', 'tests', 'unittest'],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
@@ -169,12 +211,12 @@ coll = COLLECT(
     return True
 
 if __name__ == "__main__":
-    print("🛠️  Building BupiliC SINGLE EXE...")
-    print("=" * 50)
+    print("🛠️  Building BupiliC SINGLE EXE with ALL programs embedded...")
+    print("=" * 60)
     
-    if build_single_exe() and create_final_spec():
-        print("\n🎉 Now run this command:")
+    if embed_all_programs() and create_final_spec():
+        print("\\n🎉 Now run this command:")
         print("pyinstaller BupiliC_FINAL.spec --clean --noconfirm")
-        print("\n🚀 This will create a SINGLE EXE with ALL programs!")
+        print("\\n🚀 This will create a SINGLE EXE with ALL programs INSIDE!")
     else:
         print("❌ Build failed!")
