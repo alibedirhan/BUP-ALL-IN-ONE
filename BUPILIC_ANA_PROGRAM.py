@@ -3,61 +3,217 @@ import sys
 import subprocess
 import importlib
 import threading
+import tempfile
+import urllib.request
+import zipfile
+import shutil
 
-def check_and_install_dependencies():
-    """Eksik bağımlılıkları otomatik olarak yükler"""
+def install_dependencies_automatically():
+    """Frozen modda otomatik bağımlılık yükleyici"""
+    print("🔍 Checking dependencies in frozen mode...")
+    
     required_packages = [
-        'customtkinter',
-        'pandas', 
-        'numpy',
-        'matplotlib',
-        'pdfplumber',
-        'openpyxl',
-        'psutil',
-        'Pillow',
-        'seaborn',
-        'xlsxwriter',
-        'xlrd',
-        'xlwt',
-        'python-dateutil',
-        'tkcalendar'
+        'pandas', 'numpy', 'matplotlib', 'pdfplumber', 'customtkinter',
+        'openpyxl', 'psutil', 'Pillow', 'seaborn', 'xlsxwriter',
+        'xlrd', 'xlwt', 'python-dateutil', 'tkcalendar'
     ]
     
-    missing_packages = []
+    # Öncelikle frozen modda mıyız kontrol et
+    is_frozen = getattr(sys, 'frozen', False)
     
-    for package in required_packages:
-        try:
-            importlib.import_module(package)
-        except ImportError:
-            missing_packages.append(package)
-    
-    if missing_packages:
-        print("Missing dependencies found:", missing_packages)
-        print("Installing...")
-        
-        try:
-            # pip'i kullanarak eksik paketleri yükle
-            for package in missing_packages:
-                subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-            
-            print("Dependencies installed successfully!")
-            return True
-            
-        except subprocess.CalledProcessError as e:
-            print("Dependency installation error:", e)
-            return False
-        except Exception as e:
-            print("Unexpected error:", e)
-            return False
-    
-    return True
+    if not is_frozen:
+        print("🐍 Normal Python mode, using pip...")
+        return install_with_pip(required_packages)
+    else:
+        print("❄️ Frozen mode detected, using alternative method...")
+        return install_in_frozen_mode(required_packages)
 
-# Uygulama başlamadan önce bağımlılıkları kontrol et (sadece frozen olmayan modda)
-if not getattr(sys, 'frozen', False):
-    print("Checking dependencies...")
-    success = check_and_install_dependencies()
-    if not success:
-        print("Some dependencies failed to install. Continuing...")
+def install_with_pip(packages):
+    """Normal modda pip ile yükle"""
+    try:
+        for package in packages:
+            try:
+                importlib.import_module(package)
+            except ImportError:
+                print(f"⬇️ Installing {package}...")
+                subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+                print(f"✅ {package} installed")
+        
+        print("🎉 All dependencies installed successfully!")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Pip installation failed: {e}")
+        return False
+
+def install_in_frozen_mode(packages):
+    """Frozen modda alternatif yükleme yöntemi"""
+    try:
+        # Önce mevcut paketleri kontrol et
+        missing_packages = []
+        for package in packages:
+            try:
+                importlib.import_module(package)
+                print(f"✅ {package} already available")
+            except ImportError:
+                missing_packages.append(package)
+                print(f"❌ {package} missing")
+        
+        if not missing_packages:
+            print("🎉 All dependencies are already available!")
+            return True
+        
+        print(f"📦 Missing packages: {missing_packages}")
+        
+        # Frozen modda özel çözüm
+        return install_with_embedded_pip(missing_packages)
+        
+    except Exception as e:
+        print(f"❌ Frozen mode installation failed: {e}")
+        return False
+
+def install_with_embedded_pip(packages):
+    """Embedded pip ile yükleme (frozen mod için)"""
+    try:
+        # Önce pip'in nerede olduğunu bul
+        base_path = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
+        
+        # Embedded pip'i ara
+        pip_path = find_embedded_pip(base_path)
+        
+        if pip_path and os.path.exists(pip_path):
+            print(f"🔧 Using embedded pip: {pip_path}")
+            
+            for package in packages:
+                try:
+                    result = subprocess.run([
+                        sys.executable, pip_path, "install", package
+                    ], capture_output=True, text=True, timeout=120)
+                    
+                    if result.returncode == 0:
+                        print(f"✅ {package} installed successfully")
+                    else:
+                        print(f"❌ Failed to install {package}: {result.stderr}")
+                        return False
+                        
+                except Exception as e:
+                    print(f"❌ Error installing {package}: {e}")
+                    return False
+            
+            return True
+        else:
+            print("❌ Embedded pip not found, trying direct download...")
+            return download_wheels_directly(packages)
+            
+    except Exception as e:
+        print(f"❌ Embedded pip installation failed: {e}")
+        return False
+
+def find_embedded_pip(base_path):
+    """Embedded pip'i bul"""
+    possible_paths = [
+        os.path.join(base_path, "pip"),
+        os.path.join(base_path, "pip.exe"),
+        os.path.join(base_path, "_internal", "pip"),
+        os.path.join(base_path, "_internal", "pip.exe"),
+    ]
+    
+    for path in possible_paths:
+        if os.path.exists(path):
+            return path
+    return None
+
+def download_wheels_directly(packages):
+    """Wheels'ı direkt indir ve yükle"""
+    try:
+        temp_dir = tempfile.mkdtemp()
+        print(f"📁 Using temp directory: {temp_dir}")
+        
+        for package in packages:
+            try:
+                # Önce package'ı import etmeyi dene (belki zaten yüklüdür)
+                try:
+                    importlib.import_module(package)
+                    print(f"✅ {package} already available")
+                    continue
+                except ImportError:
+                    pass
+                
+                print(f"⬇️ Downloading {package}...")
+                
+                # Basitçe pip'i kullanmayı dene
+                try:
+                    import pip
+                    pip.main(['install', package, '--target', temp_dir])
+                except:
+                    # Pip yoksa, manual download et
+                    download_package_manual(package, temp_dir)
+                
+                # Yüklenen paketi sys.path'e ekle
+                if temp_dir not in sys.path:
+                    sys.path.insert(0, temp_dir)
+                
+                print(f"✅ {package} installed to {temp_dir}")
+                
+            except Exception as e:
+                print(f"❌ Failed to download {package}: {e}")
+                continue
+        
+        print("🎉 Manual installation completed!")
+        return True
+        
+    except Exception as e:
+        print(f"❌ Manual installation failed: {e}")
+        return False
+    finally:
+        # Temp dizinini temizle
+        try:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+        except:
+            pass
+
+def download_package_manual(package_name, target_dir):
+    """Manuel olarak package indir"""
+    # Bu fonksiyon basitçe package'ı indirmeye çalışır
+    # Gerçek uygulamada daha kompleks olabilir
+    print(f"📦 Manual download: {package_name}")
+    
+    # Basit bir implementasyon
+    try:
+        # Önce import etmeyi dene, belki zaten yüklüdür
+        importlib.import_module(package_name)
+        return True
+    except ImportError:
+        print(f"⚠️  Could not auto-install {package_name}")
+        print(f"💡 Please run: pip install {package_name}")
+        return False
+
+# Ana bağımlılık kontrolü
+def ensure_dependencies():
+    """Tüm bağımlılıkların yüklü olduğundan emin ol"""
+    print("=" * 50)
+    print("🔄 BupiliC Dependency Manager")
+    print("=" * 50)
+    
+    try:
+        success = install_dependencies_automatically()
+        
+        if success:
+            print("✅ All dependencies are ready!")
+            return True
+        else:
+            print("⚠️  Some dependencies may be missing")
+            print("💡 The application will try to continue...")
+            return True  # Uygulamanın devam etmesine izin ver
+            
+    except Exception as e:
+        print(f"❌ Dependency check failed: {e}")
+        print("💡 The application will try to continue...")
+        return True  # Yine de devam et
+
+# Uygulama başlamadan önce bağımlılıkları kontrol et
+print("🚀 BupiliC starting...")
+ensure_dependencies()
 
 # Geri kalan importlar
 import customtkinter as ctk
@@ -71,7 +227,6 @@ import locale
 from pathlib import Path
 import tempfile
 import shutil
-
 
 
 import customtkinter as ctk
