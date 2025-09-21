@@ -37,26 +37,50 @@ def run_embedded_program(program_name):
     print(f"[START] Starting {program_name}...")
     
     try:
-        if program_name == "ISKONTO_HESABI":
-            from ISKONTO_HESABI.main import main
-            main()
-            return True
-            
-        elif program_name == "KARLILIK_ANALIZI":
-            from KARLILIK_ANALIZI.gui import main
-            main()
-            return True
-            
-        elif program_name == "Musteri_Sayisi_Kontrolu":
-            from Musteri_Sayisi_Kontrolu.main import main
-            main()
-            return True
-            
-        elif program_name == "YASLANDIRMA":
-            from YASLANDIRMA.main import main
-            main()
-            return True
-            
+        # PyInstaller ile oluşturulmuş exe içinde çalışıyorsak
+        if getattr(sys, 'frozen', False):
+            # Alt programları ayrı process olarak başlat
+            if program_name == "ISKONTO_HESABI":
+                from ISKONTO_HESABI.main import main
+                main()
+                return True
+                
+            elif program_name == "KARLILIK_ANALIZI":
+                from KARLILIK_ANALIZI.gui import main
+                main()
+                return True
+                
+            elif program_name == "Musteri_Sayisi_Kontrolu":
+                from Musteri_Sayisi_Kontrolu.main import main
+                main()
+                return True
+                
+            elif program_name == "YASLANDIRMA":
+                from YASLANDIRMA.main import main
+                main()
+                return True
+        else:
+            # Normal Python ortamında çalışıyorsak
+            if program_name == "ISKONTO_HESABI":
+                from ISKONTO_HESABI.main import main
+                main()
+                return True
+                
+            elif program_name == "KARLILIK_ANALIZI":
+                from KARLILIK_ANALIZI.gui import main
+                main()
+                return True
+                
+            elif program_name == "Musteri_Sayisi_Kontrolu":
+                from Musteri_Sayisi_Kontrolu.main import main
+                main()
+                return True
+                
+            elif program_name == "YASLANDIRMA":
+                from YASLANDIRMA.main import main
+                main()
+                return True
+                
     except Exception as e:
         print(f"[ERROR] Error running {program_name}: {e}")
         import traceback
