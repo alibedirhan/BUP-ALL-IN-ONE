@@ -125,22 +125,22 @@ jobs:
           if (Test-Path "build/icon_converter.py") {
             python build/icon_converter.py
           } else {
-            # Simple fallback converter
-            @"
-from PIL import Image
-import os
-
-# Convert PNG to ICO
-png_path = 'icon/bupilic_logo.png'
-ico_path = 'build/app_icon.ico'
-
-if os.path.exists(png_path):
-    img = Image.open(png_path)
-    img.save(ico_path, format='ICO', sizes=[(16,16), (32,32), (48,48), (64,64), (128,128), (256,256)])
-    print(f'Created {ico_path}')
-else:
-    print(f'PNG not found: {png_path}')
-"@ | Out-File -FilePath "build/icon_converter_temp.py" -Encoding UTF8
+            # Create simple converter script
+            $converterScript = @'
+          from PIL import Image
+          import os
+          
+          png_path = "icon/bupilic_logo.png"
+          ico_path = "build/app_icon.ico"
+          
+          if os.path.exists(png_path):
+              img = Image.open(png_path)
+              img.save(ico_path, format="ICO", sizes=[(16,16), (32,32), (48,48), (64,64), (128,128), (256,256)])
+              print(f"Created {ico_path}")
+          else:
+              print(f"PNG not found: {png_path}")
+          '@
+            $converterScript | Out-File -FilePath "build/icon_converter_temp.py" -Encoding UTF8
             python build/icon_converter_temp.py
           }
 
