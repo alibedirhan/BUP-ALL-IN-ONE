@@ -417,9 +417,9 @@ class BupilicDashboard:
             ctk.CTkLabel(left_frame, text="🐔", 
                        font=ctk.CTkFont(size=28)).pack(side="left", padx=(0, 15))
         
-        self.title_label = ctk.CTkLabel(left_frame, text="BUPİLİÇ", 
-                           font=ctk.CTkFont(size=26, weight="bold"),
-                           text_color="white")
+            ctk.CTkLabel(left_frame, text="BUPİLİÇ", 
+                       font=ctk.CTkFont(size=26, weight="bold"),
+                       text_color="white").pack(side="left")
         self.title_label.pack(side="left")
         
         right_frame = ctk.CTkFrame(self.header, fg_color="transparent")
@@ -447,7 +447,7 @@ class BupilicDashboard:
         user_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
         user_frame.pack(pady=30, padx=10, fill="x")
         
-        ctk.CTkLabel(user_frame, text="👤", 
+        ctk.CTkLabel(user_frame, text="Kullanıcı", 
                    font=ctk.CTkFont(size=32),
                    text_color="white").pack(pady=5)
         
@@ -464,14 +464,15 @@ class BupilicDashboard:
         nav_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
         nav_frame.pack(pady=20, padx=10, fill="x")
         
+        # Tüm emojileri Unicode escape ile yazın:
         nav_buttons = [
-            ("📊 Ana Sayfa", self.show_dashboard),
-            ("💰 İskonto Hesaplama", self.iskonto_ac),
-            ("📈 Karlılık Analizi", self.karlilik_ac),
-            ("👥 Müşteri Kayıp/Kaçak", self.musteri_kayip_ac),
-            ("📊 Yaşlandırma", self.yaslandirma_ac),
-            ("⚙️ Ayarlar", self.show_settings),
-            ("Debug", self.show_debug_info)
+            ("\U0001F4CA Ana Sayfa", self.show_dashboard),
+            ("\U0001F4B0 İskonto Hesaplama", self.iskonto_ac),
+            ("\U0001F4C8 Karlılık Analizi", self.karlilik_ac),
+            ("\U0001F465 Müşteri Kayıp/Kaçak", self.musteri_kayip_ac),
+            ("\U0001F4CA Yaşlandırma", self.yaslandirma_ac),
+            ("\U00002699 Ayarlar", self.show_settings),
+            ("\U0001F41B Debug", self.show_debug_info)
         ]
         
         for text, command in nav_buttons:
@@ -517,10 +518,10 @@ class BupilicDashboard:
         main_buttons_frame.pack()
         
         main_buttons = [
-            ("💰 İskonto Hesaplama", self.iskonto_ac, "#E63946"),
-            ("📈 Karlılık Analizi", self.karlilik_ac, "#457B9D"),
-            ("👥 Müşteri Kayıp/Kaçak", self.musteri_kayip_ac, "#2A9D8F"),
-            ("📊 Yaşlandırma", self.yaslandirma_ac, "#F4A261")
+            ("İskonto Hesaplama", self.iskonto_ac, "#E63946"),
+            ("Karlılık Analizi", self.karlilik_ac, "#457B9D"),
+            ("Müşteri Kayıp/Kaçak", self.musteri_kayip_ac, "#2A9D8F"),
+            ("Yaşlandırma", self.yaslandirma_ac, "#F4A261")
         ]
         
         self.buttons = []
