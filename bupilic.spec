@@ -51,20 +51,15 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=False,  # set to False to avoid AV false positives; set True if UPX installed and safe
+    upx=False,
     console=False,
     icon=str(project_root / "build" / "app_icon.ico") if (project_root / "build" / "app_icon.ico").exists() else None
 )
 
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    strip=False,
-    upx=False,
-    name='BupiliC'
-)
+# Tek dosya çıkarmak için, COLLECT değil, BUNDLE kullanmalısın:
+from PyInstaller.building.api import BUNDLE
+app = BUNDLE(exe, name='BupiliC')
+
 
 # If you want single-file (onefile), use the following instead of EXE+COLLECT:
 # from PyInstaller.building import EXE, COLLECT, MERGE
