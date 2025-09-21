@@ -1,8 +1,12 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-import sys
+# -*- mode: python ; coding: utf-8 -*-
+import os
 from pathlib import Path
-project_root = Path(__file__).parent.resolve()
+
+project_root = Path(os.getcwd()).resolve()
+block_cipher = None
+
 
 block_cipher = None
 
