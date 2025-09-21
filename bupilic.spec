@@ -59,23 +59,21 @@ hiddenimports = [
 runtime_hooks = [str(project_root / "runtime_hook.py")]
 
 a = Analysis(
-    [main_script],
+    ['BUPILIC_ANA_PROGRAM.py'],
     pathex=[str(project_root)],
     binaries=[],
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=runtime_hooks,
-    excludes=[
-        "tests", "test", "unittest",
-        "distutils", "_pytest", "pytest", "pdb", "doctest",
-    ],
+    runtime_hooks=['runtime_hook.py'],  # <--- BURASI EKLENDİ
+    excludes=['tests', 'test', 'unittest'],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
     noarchive=False,
 )
+
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
