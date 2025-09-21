@@ -98,6 +98,14 @@ jobs:
 
     - name: Build with PyInstaller
       run: |
+        # Önce tüm dosyaların var olduğundan emin ol
+        echo "Checking files..."
+        dir ISKONTO_HESABI
+        dir KARLILIK_ANALIZI
+        dir Musteri_Sayisi_Kontrolu
+        dir YASLANDIRMA
+        
+        # Derle
         pyinstaller BupiliC.spec --noconfirm --clean
 
     - name: Test the executable
