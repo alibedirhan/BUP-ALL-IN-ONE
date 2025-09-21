@@ -78,6 +78,11 @@ hiddenimports = [
     'YASLANDIRMA.modules.visualization',
 ]
 
+# Runtime hook ekle
+runtime_hooks = []
+if (project_root / 'runtime_hook.py').exists():
+    runtime_hooks.append(str(project_root / 'runtime_hook.py'))
+
 a = Analysis(
     ['BUPILIC_ANA_PROGRAM.py'],
     pathex=[
@@ -91,7 +96,7 @@ a = Analysis(
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[str(project_root / 'hooks')] if (project_root / 'hooks').exists() else [],
-    runtime_hooks=[],  # Runtime hook'u devre dışı bırak
+    runtime_hooks=runtime_hooks,
     excludes=[
         'test',
         'tests',
@@ -122,7 +127,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=False,
+    upx=True,  # UPX sıkıştırmayı etkinleştir (dosya boyutunu küçültür)
     upx_exclude=[],
     runtime_tmpdir=None,
     console=False,  # GUI app - konsol penceresi gösterme
