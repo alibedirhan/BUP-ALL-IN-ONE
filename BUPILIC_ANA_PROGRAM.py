@@ -75,55 +75,45 @@ class BupilicDashboard:
                 locale.setlocale(locale.LC_TIME, 'Turkish_Turkey.1254')
             except:
                 pass
-
+        
         self.root = ctk.CTk()
         self.root.title("BupiliÇ İşletme Yönetim Sistemi")
         self.root.geometry("1000x600")
         self.root.resizable(True, True)
-
+        
         # PyInstaller için resource path
         self.setup_resource_path()
-
+        
         # Klasör yapısını oluştur
         self.setup_directories()
-
+        
         # Loglama
         self.logger = self.setup_logging()
         self.logger.info("Uygulama başlatıldı")
-
+        
         # Kullanıcı verileri
         self.user_data = {
             "name": "Ali Yılmaz",
             "position": "Satış Yöneticisi",
             "password": "bupilic2024"
         }
-
+        
         # Ayarları yükle
         self.load_settings()
-
+        
         # Görünüm modu
         self.appearance_mode = self.user_data.get("theme", "light")
         ctk.set_appearance_mode(self.appearance_mode)
         ctk.set_default_color_theme("blue")
-
+        
         # Renk paleti
         self.setup_color_palette()
-
+        
         # Logo referansı
         self.logo_image = None
-
-        # Debug bilgileri → Hata ayıklama için
-        try:
-            print("[DEBUG] frozen mod:", getattr(sys, 'frozen', False))
-            print("[DEBUG] sys.executable:", sys.executable)
-            print("[DEBUG] ctk version:", getattr(ctk, '__version__', 'unknown'))
-            print("[DEBUG] tkinter version:", self.root.tk.call('info', 'patchlevel'))
-        except Exception as e:
-            print("[DEBUG ERROR]", e)
-
+        
         # Login ekranını göster
         self.show_login_screen()
-
     
     def setup_resource_path(self):
         """PyInstaller için resource path ayarları"""
@@ -231,68 +221,50 @@ class BupilicDashboard:
     def show_login_screen(self):
         """Login ekranı"""
         self.clear_window()
-    
+        
         login_frame = ctk.CTkFrame(self.root, fg_color=self.get_color("background"))
-        login_frame.pack(expand=True, fill="both", padx=int(100), pady=int(100))
-    
-        title_label = ctk.CTkLabel(
-            login_frame,
-            text="BUPİLİÇ",
-            font=ctk.CTkFont(size=int(32), weight="bold"),
-            text_color=self.get_color("text")
-        )
-        title_label.pack(pady=(int(50), int(20)))
-    
-        subtitle_label = ctk.CTkLabel(
-            login_frame,
-            text="İşletme Yönetim Sistemi",
-            font=ctk.CTkFont(size=int(18)),
-            text_color=self.get_color("text_secondary")
-        )
-        subtitle_label.pack(pady=(int(0), int(50)))
-    
+        login_frame.pack(expand=True, fill="both", padx=100, pady=100)
+        
+        title_label = ctk.CTkLabel(login_frame, text="BUPİLİÇ", 
+                                 font=ctk.CTkFont(size=32, weight="bold"),
+                                 text_color=self.get_color("text"))
+        title_label.pack(pady=(50, 20))
+        
+        subtitle_label = ctk.CTkLabel(login_frame, text="İşletme Yönetim Sistemi", 
+                                    font=ctk.CTkFont(size=18),
+                                    text_color=self.get_color("text_secondary"))
+        subtitle_label.pack(pady=(0, 50))
+        
         password_frame = ctk.CTkFrame(login_frame, fg_color="transparent")
-        password_frame.pack(pady=int(20))
-    
-        password_label = ctk.CTkLabel(
-            password_frame,
-            text="Şifre:",
-            font=ctk.CTkFont(size=int(14)),
-            text_color=self.get_color("text")
-        )
+        password_frame.pack(pady=20)
+        
+        password_label = ctk.CTkLabel(password_frame, text="Şifre:", 
+                                    font=ctk.CTkFont(size=14),
+                                    text_color=self.get_color("text"))
         password_label.pack()
-    
-        self.password_entry = ctk.CTkEntry(
-            password_frame,
-            placeholder_text="Şifrenizi giriniz",
-            show="*",
-            width=int(250),
-            height=int(40),
-            font=ctk.CTkFont(size=int(14))
-        )
-        self.password_entry.pack(pady=int(10))
+        
+        self.password_entry = ctk.CTkEntry(password_frame, 
+                                         placeholder_text="Şifrenizi giriniz",
+                                         show="*",
+                                         width=250,
+                                         height=40,
+                                         font=ctk.CTkFont(size=14))
+        self.password_entry.pack(pady=10)
         self.password_entry.bind("<Return>", lambda e: self.check_login())
-    
-        login_btn = ctk.CTkButton(
-            password_frame,
-            text="Giriş Yap",
-            command=self.check_login,
-            height=int(40),
-            width=int(150),
-            fg_color=self.get_color("button"),
-            hover_color=self.get_color("button_hover"),
-            font=ctk.CTkFont(size=int(14), weight="bold")
-        )
-        login_btn.pack(pady=int(20))
-    
-        self.login_error_label = ctk.CTkLabel(
-            password_frame,
-            text="",
-            text_color="red",
-            font=ctk.CTkFont(size=int(12))
-        )
+        
+        login_btn = ctk.CTkButton(password_frame, text="Giriş Yap", 
+                                command=self.check_login,
+                                height=40,
+                                width=150,
+                                fg_color=self.get_color("button"),
+                                hover_color=self.get_color("button_hover"),
+                                font=ctk.CTkFont(size=14, weight="bold"))
+        login_btn.pack(pady=20)
+        
+        self.login_error_label = ctk.CTkLabel(password_frame, text="", 
+                                            text_color="red",
+                                            font=ctk.CTkFont(size=12))
         self.login_error_label.pack()
-
     
     def check_login(self):
         """Login kontrolü"""
@@ -318,51 +290,51 @@ class BupilicDashboard:
     
     def setup_header(self):
         """Üst başlık"""
-        self.header = ctk.CTkFrame(self.root, height=int(70), 
+        self.header = ctk.CTkFrame(self.root, height=70, 
                                  fg_color=self.get_color("primary"), 
-                                 corner_radius=int(0))
+                                 corner_radius=0)
         self.header.grid(row=0, column=0, columnspan=2, sticky="ew")
         self.header.grid_propagate(False)
         
         left_frame = ctk.CTkFrame(self.header, fg_color="transparent")
-        left_frame.pack(side="left", padx=int(20), pady=int(15))
+        left_frame.pack(side="left", padx=20, pady=15)
         
         if self.logo_image:
             logo_label = ctk.CTkLabel(left_frame, image=self.logo_image, text="")
-            logo_label.pack(side="left", padx=(int(0), int(15)))
+            logo_label.pack(side="left", padx=(0, 15))
         
         title_label = ctk.CTkLabel(left_frame, text="BUPİLİÇ", 
-                                   font=ctk.CTkFont(size=int(26), weight="bold"),
+                                   font=ctk.CTkFont(size=26, weight="bold"),
                                    text_color="white")
         title_label.pack(side="left")
     
     def setup_sidebar(self):
         """Sol menü"""
-        self.sidebar = ctk.CTkFrame(self.root, width=int(220), 
+        self.sidebar = ctk.CTkFrame(self.root, width=220, 
                                   fg_color=self.get_color("primary"), 
-                                  corner_radius=int(0))
+                                  corner_radius=0)
         self.sidebar.grid(row=1, column=0, sticky="ns")
         self.sidebar.grid_propagate(False)
         
         user_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
-        user_frame.pack(pady=int(30), padx=int(10), fill="x")
+        user_frame.pack(pady=30, padx=10, fill="x")
         
         ctk.CTkLabel(user_frame, text="Kullanıcı", 
-                   font=ctk.CTkFont(size=int(14)),
-                   text_color="white").pack(pady=int(5))
+                   font=ctk.CTkFont(size=14),
+                   text_color="white").pack(pady=5)
         
         self.user_name_label = ctk.CTkLabel(user_frame, text=self.user_data["name"], 
-                   font=ctk.CTkFont(size=int(16), weight="bold"), 
+                   font=ctk.CTkFont(size=16, weight="bold"), 
                    text_color="white")
         self.user_name_label.pack()
         
         self.user_position_label = ctk.CTkLabel(user_frame, text=self.user_data["position"], 
-                   font=ctk.CTkFont(size=int(12)), 
+                   font=ctk.CTkFont(size=12), 
                    text_color="#E9C46A")
-        self.user_position_label.pack(pady=int(2))
+        self.user_position_label.pack(pady=2)
         
         nav_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
-        nav_frame.pack(pady=int(20), padx=int(10), fill="x")
+        nav_frame.pack(pady=20, padx=10, fill="x")
         
         nav_buttons = [
             ("Ana Sayfa", self.show_dashboard),
@@ -378,15 +350,15 @@ class BupilicDashboard:
                               fg_color="transparent", 
                               hover_color=self.get_color("sidebar_hover"),
                               anchor="w", 
-                              height=int(40),
-                              font=ctk.CTkFont(size=int(14)),
+                              height=40,
+                              font=ctk.CTkFont(size=14),
                               text_color="white")
-            btn.pack(fill="x", pady=int(3))
+            btn.pack(fill="x", pady=3)
     
     def setup_main_content(self):
         """Ana içerik"""
         self.main = ctk.CTkFrame(self.root, fg_color=self.get_color("background"))
-        self.main.grid(row=1, column=1, sticky="nsew", padx=int(20), pady=int(20))
+        self.main.grid(row=1, column=1, sticky="nsew", padx=20, pady=20)
         
         self.setup_welcome_section()
         self.setup_quick_access()
@@ -395,25 +367,25 @@ class BupilicDashboard:
         """Hoşgeldin bölümü"""
         self.welcome_label = ctk.CTkLabel(self.main, 
                                    text="BupiliÇ İşletme Yönetim Sistemine Hoş Geldiniz",
-                                   font=ctk.CTkFont(size=int(18), weight="bold"),
+                                   font=ctk.CTkFont(size=18, weight="bold"),
                                    text_color=self.get_color("text"))
-        self.welcome_label.pack(pady=(int(20), int(10)))
+        self.welcome_label.pack(pady=(20, 10))
         
         self.desc_label = ctk.CTkLabel(self.main, 
                                 text="Aşağıdaki butonlardan istediğiniz işlemi başlatabilirsiniz",
-                                font=ctk.CTkFont(size=int(14)),
+                                font=ctk.CTkFont(size=14),
                                 text_color=self.get_color("text_secondary"))
-        self.desc_label.pack(pady=(int(0), int(30)))
+        self.desc_label.pack(pady=(0, 30))
     
     def setup_quick_access(self):
         """Hızlı erişim butonları - TÜM 4 PROGRAM"""
         quick_frame = ctk.CTkFrame(self.main, fg_color="transparent")
-        quick_frame.pack(expand=True, pady=int(20))
+        quick_frame.pack(expand=True, pady=20)
         
         self.title_label = ctk.CTkLabel(quick_frame, text="Hızlı Erişim", 
-                                 font=ctk.CTkFont(size=int(20), weight="bold"),
+                                 font=ctk.CTkFont(size=20, weight="bold"),
                                  text_color=self.get_color("text"))
-        self.title_label.pack(pady=(int(0), int(30)))
+        self.title_label.pack(pady=(0, 30))
         
         main_buttons_frame = ctk.CTkFrame(quick_frame, fg_color="transparent")
         main_buttons_frame.pack()
@@ -434,15 +406,15 @@ class BupilicDashboard:
             col = i % 2
             
             btn_frame = ctk.CTkFrame(main_buttons_frame, fg_color="transparent")
-            btn_frame.grid(row=row, column=col, padx=int(15), pady=int(15))
+            btn_frame.grid(row=row, column=col, padx=15, pady=15)
             
             btn = ctk.CTkButton(btn_frame, text=text, command=command,
-                              height=int(60), 
-                              width=int(220), 
+                              height=60, 
+                              width=220, 
                               fg_color=color,
                               hover_color=self.darken_color(color),
-                              font=ctk.CTkFont(size=int(15), weight="bold"),
-                              corner_radius=int(12),
+                              font=ctk.CTkFont(size=15, weight="bold"),
+                              corner_radius=12,
                               text_color="white")
             btn.pack()
             self.buttons.append(btn)
@@ -456,9 +428,9 @@ class BupilicDashboard:
             
             desc_label = ctk.CTkLabel(btn_frame, 
                                     text=descriptions.get(text, ""),
-                                    font=ctk.CTkFont(size=int(12)),
+                                    font=ctk.CTkFont(size=12),
                                     text_color=self.get_color("text_secondary"))
-            desc_label.pack(pady=(int(5), int(0)))
+            desc_label.pack(pady=(5, 0))
             self.desc_labels.append(desc_label)
     
     def show_settings(self):
@@ -466,20 +438,20 @@ class BupilicDashboard:
         self.clear_main_content()
         
         settings_frame = ctk.CTkFrame(self.main, fg_color=self.get_color("background"))
-        settings_frame.pack(expand=True, fill="both", padx=int(50), pady=int(50))
+        settings_frame.pack(expand=True, fill="both", padx=50, pady=50)
         
         title_label = ctk.CTkLabel(settings_frame, text="Kullanıcı Ayarları", 
-                                 font=ctk.CTkFont(size=int(24), weight="bold"),
+                                 font=ctk.CTkFont(size=24, weight="bold"),
                                  text_color=self.get_color("text"))
-        title_label.pack(pady=(int(0), int(30)))
+        title_label.pack(pady=(0, 30))
         
         back_btn = ctk.CTkButton(settings_frame, text="Geri", 
                                command=self.setup_main_content,
-                               height=int(40),
-                               width=int(120),
+                               height=40,
+                               width=120,
                                fg_color="transparent",
-                               font=ctk.CTkFont(size=int(13)))
-        back_btn.pack(pady=int(20))
+                               font=ctk.CTkFont(size=13))
+        back_btn.pack(pady=20)
     
     def clear_window(self):
         """Pencereyi temizle"""
@@ -544,7 +516,7 @@ class BupilicDashboard:
         popup.geometry("300x150")
         
         ctk.CTkLabel(popup, text=message, 
-                    font=ctk.CTkFont(size=int(14))).pack(pady=int(30))
+                    font=ctk.CTkFont(size=14)).pack(pady=30)
         
         ctk.CTkButton(popup, text="Tamam", 
                      command=popup.destroy).pack()
