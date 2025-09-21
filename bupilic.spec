@@ -18,13 +18,6 @@ datas = [
 
 # Gerekli tüm modülleri dahil et
 hiddenimports = [
-    'email',
-    'email.mime',
-    'email.mime.text',
-    'email.mime.multipart',
-    'email.mime.base',
-    'pkg_resources',
-    'pkg_resources.py31compat',
     'customtkinter',
     'PIL',
     'PIL._tkinter_finder',
@@ -78,11 +71,6 @@ hiddenimports = [
     'YASLANDIRMA.modules.visualization',
 ]
 
-# Runtime hook ekle
-runtime_hooks = []
-if (project_root / 'runtime_hook.py').exists():
-    runtime_hooks.append(str(project_root / 'runtime_hook.py'))
-
 a = Analysis(
     ['BUPILIC_ANA_PROGRAM.py'],
     pathex=[
@@ -96,11 +84,14 @@ a = Analysis(
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[str(project_root / 'hooks')] if (project_root / 'hooks').exists() else [],
-    runtime_hooks=runtime_hooks,
+    runtime_hooks=[],  # Runtime hook'u devre dışı bırak
     excludes=[
         'test',
         'tests',
         'unittest',
+        'email',
+        'http',
+        'xml',
         'pydoc',
     ],
     win_no_prefer_redirects=False,
@@ -127,7 +118,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,  # UPX sıkıştırmayı etkinleştir (dosya boyutunu küçültür)
+    upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
     console=False,  # GUI app - konsol penceresi gösterme
