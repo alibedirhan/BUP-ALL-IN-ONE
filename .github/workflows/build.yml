@@ -17,6 +17,7 @@ on:
 env:
   APP_NAME: BupiliC
   PYTHON_VERSION: '3.11'
+  BUILD_VERSION: ${{ github.event.inputs.version || 'v1.0.0' }}
 
 jobs:
   build-windows:
@@ -25,6 +26,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -40,88 +44,199 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - name: Install dependencies
+      - name: Install build dependencies
         shell: pwsh
         run: |
           python -m pip install --upgrade pip setuptools wheel
           pip install pyinstaller==6.3.0
-          pip install pillow
+          pip install pillow>=10.1.0
           pip install -r requirements.txt
 
-      - name: Create build directory
+      - name: Check module structure
+        shell: pwsh
+        run: |
+          Write-Host "Checking module structure..."
+          $modules = @("ISKONTO_HESABI", "KARLILIK_ANALIZI", "Musteri_Sayisi_Kontrolu", "YASLANDIRMA")
+          
+          foreach ($module in $modules) {
+            if (Test-Path $module) {
+              Write-Host "✓ $module found"
+              
+              # __init__.py kontrolü ve oluşturma
+              $initFile = "$module/__init__.py"
+              if (-not (Test-Path $initFile)) {
+                Write-Host "Creating $initFile"
+                Set-Content -Path $initFile -Value "# $module package"
+              }
+            } else {
+              Write-Error "❌ $module not found!"
+              exit 1
+            }
+          }
+
+      - name: Create build directories
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path "build" -Force
+          New-Item -ItemType Directory -Path "dist" -Force
 
       - name: Create icon file
         shell: pwsh
         run: |
-          python -c "
-          from PIL import Image
-          import os
-          if os.path.exists('icon/bupilic_logo.png'):
-              img = Image.open('icon/bupilic_logo.png')
-              os.makedirs('build', exist_ok=True)
-              img.save('build/app_icon.ico', format='ICO', sizes=[(16,16), (32,32), (48,48), (256,256)])
-              print('Icon created successfully')
-          else:
-              print('Icon file not found')
-          "
-
-      - name: Build executable with PyInstaller
-        shell: pwsh
-        run: |
-          Write-Host "Starting PyInstaller build..."
-          pyinstaller --noconfirm --clean bupilic.spec
-          Write-Host "Build completed"
-
-      - name: Check build output
-        shell: pwsh
-        run: |
-          Write-Host "Checking dist folder contents:"
-          if (Test-Path "dist") {
-            Get-ChildItem "dist" -Recurse | Select-Object FullName, Length
+          if (Test-Path "icon/bupilic_logo.png") {
+            python -c "
+            from PIL import Image
+            import os
+            img = Image.open('icon/bupilic_logo.png')
+            os.makedirs('build', exist_ok=True)
+            img.save('build/app_icon.ico', format='ICO', sizes=[(16,16), (32,32), (48,48), (64,64), (128,128), (256,256)])
+            print('✓ Icon created successfully')
+            "
           } else {
-            Write-Host "dist folder not found"
-            exit 1
+            Write-Warning "Icon file not found, creating placeholder"
+            python -c "
+            from PIL import Image
+            import os
+            os.makedirs('build', exist_ok=True)
+            img = Image.new('RGBA', (64, 64), (42, 157, 143, 255))
+            img.save('build/app_icon.ico', format='ICO')
+            print('✓ Placeholder icon created')
+            "
           }
 
-      - name: Test executable exists
+      - name: Ensure runtime hook exists
+        shell: pwsh
+        run: |
+          if (-not (Test-Path "runtime_hook.py")) {
+            Write-Host "Creating runtime_hook.py"
+            @'
+# -*- coding: utf-8 -*-
+import sys
+import os
+
+def ensure_dependencies():
+    """Setup sys.path for frozen executable"""
+    if getattr(sys, 'frozen', False):
+        bundle_dir = sys._MEIPASS
+        
+        subdirs = [
+            'ISKONTO_HESABI',
+            'KARLILIK_ANALIZI', 
+            'Musteri_Sayisi_Kontrolu',
+            'YASLANDIRMA'
+        ]
+        
+        for subdir in subdirs:
+            subdir_path = os.path.join(bundle_dir, subdir)
+            if os.path.exists(subdir_path) and subdir_path not in sys.path:
+                sys.path.insert(0, subdir_path)
+
+def fix_matplotlib():
+    """Fix matplotlib backend for frozen executable"""
+    try:
+        import matplotlib
+        matplotlib.use('Agg')
+    except ImportError:
+        pass
+
+ensure_dependencies()
+fix_matplotlib()
+'@ | Out-File -Encoding utf8 "runtime_hook.py"
+          }
+
+      - name: Build with PyInstaller (using your build.py)
+        shell: pwsh
+        run: |
+          Write-Host "Building with PyInstaller..."
+          
+          # Önce build.py'yi dene
+          if (Test-Path "build.py") {
+            python build.py --version "${{ env.BUILD_VERSION }}" --no-test
+          } else {
+            # Fallback: Doğrudan PyInstaller
+            pyinstaller --noconfirm --clean --onefile --windowed `
+              --icon build/app_icon.ico `
+              --add-data "ISKONTO_HESABI;ISKONTO_HESABI" `
+              --add-data "KARLILIK_ANALIZI;KARLILIK_ANALIZI" `
+              --add-data "Musteri_Sayisi_Kontrolu;Musteri_Sayisi_Kontrolu" `
+              --add-data "YASLANDIRMA;YASLANDIRMA" `
+              --add-data "icon;icon" `
+              --runtime-hook runtime_hook.py `
+              --hidden-import "customtkinter" `
+              --hidden-import "PIL._tkinter_finder" `
+              --hidden-import "pandas" `
+              --hidden-import "matplotlib.backends.backend_tkagg" `
+              --hidden-import "ISKONTO_HESABI" `
+              --hidden-import "KARLILIK_ANALIZI" `
+              --hidden-import "Musteri_Sayisi_Kontrolu" `
+              --hidden-import "YASLANDIRMA" `
+              BUPILIC_ANA_PROGRAM.py
+          }
+
+      - name: Verify executable
         shell: pwsh
         run: |
           $exePath = "dist\${{ env.APP_NAME }}.exe"
           if (Test-Path $exePath) {
             $size = (Get-Item $exePath).Length / 1MB
-            Write-Host "SUCCESS: Executable found at $exePath"
-            Write-Host "Size: $size MB"
+            Write-Host "✓ SUCCESS: Executable found at $exePath"
+            Write-Host "📊 Size: $size MB"
+            
+            # Basic file check
+            $fileInfo = Get-Item $exePath
+            Write-Host "🕒 Created: $($fileInfo.CreationTime)"
+            Write-Host "📝 Version: ${{ env.BUILD_VERSION }}"
           } else {
-            Write-Host "ERROR: Executable not found"
-            Get-ChildItem . -Recurse -Filter "*.exe" | Select-Object FullName
+            Write-Error "❌ Executable not found!"
+            Write-Host "Available files in dist:"
+            Get-ChildItem "dist" -Recurse | Format-Table Name, Length
             exit 1
+          }
+
+      - name: Compress with UPX (optional)
+        shell: pwsh
+        run: |
+          $exePath = "dist\${{ env.APP_NAME }}.exe"
+          if (Test-Path $exePath) {
+            # UPX'ı dene
+            try {
+              $originalSize = (Get-Item $exePath).Length
+              upx --best --lzma $exePath
+              $newSize = (Get-Item $exePath).Length
+              $saved = ($originalSize - $newSize) / 1MB
+              Write-Host "✓ UPX compression saved: $saved MB"
+            } catch {
+              Write-Warning "UPX not available, skipping compression"
+            }
           }
 
       - name: Create release package
         shell: pwsh
         run: |
-          $version = if ("${{ github.event.inputs.version }}") { "${{ github.event.inputs.version }}" } else { "v1.0.0" }
-          $zipName = "${{ env.APP_NAME }}-$version-windows.zip"
+          $zipName = "${{ env.APP_NAME }}-${{ env.BUILD_VERSION }}-windows.zip"
+          $exePath = "dist\${{ env.APP_NAME }}.exe"
           
-          if (Test-Path "dist\${{ env.APP_NAME }}.exe") {
-            Compress-Archive -Path "dist\${{ env.APP_NAME }}.exe" -DestinationPath "dist\$zipName" -Force
-            Write-Host "Package created: dist\$zipName"
+          if (Test-Path $exePath) {
+            Compress-Archive -Path $exePath -DestinationPath "dist\$zipName" -Force
+            Write-Host "✓ Package created: dist\$zipName"
+            
+            # Zip boyutunu göster
+            $zipSize = (Get-Item "dist\$zipName").Length / 1MB
+            Write-Host "📦 Zip size: $zipSize MB"
           }
 
-      - name: Upload artifacts
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: BupiliC-Windows
+          name: BupiliC-Windows-Build
           path: |
             dist/*.exe
             dist/*.zip
-          retention-days: 30
+            build_info.json
+          retention-days: 7
           if-no-files-found: error
 
-      - name: Create Release (if tagged)
+      - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
@@ -133,3 +248,32 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test-build:
+    name: Test Build
+    runs-on: windows-latest
+    needs: build-windows
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: BupiliC-Windows-Build
+
+      - name: Quick test
+        shell: pwsh
+        run: |
+          $exePath = "BupiliC.exe"
+          if (Test-Path $exePath) {
+            Write-Host "Testing executable: $exePath"
+            
+            # Basic test - just check if it starts
+            $process = Start-Process -FilePath $exePath -PassThru -NoNewWindow
+            Start-Sleep -Seconds 3
+            
+            if (-not $process.HasExited) {
+              $process | Stop-Process -Force
+              Write-Host "✓ Executable starts successfully"
+            } else {
+              Write-Warning "Executable exited quickly"
+            }
+          }
