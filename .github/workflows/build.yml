@@ -25,8 +25,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -34,80 +32,35 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           architecture: x64
 
-      - name: Cache pip packages
-        uses: actions/cache@v3
-        with:
-          path: ~\AppData\Local\pip\Cache
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
-
-      - name: Install build dependencies
-        shell: pwsh
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip setuptools wheel
           pip install pyinstaller==6.3.0
-          pip install pillow>=10.1.0
+          pip install pillow
           pip install -r requirements.txt
 
-      - name: Check module structure
-        shell: pwsh
+      - name: Create build directory
         run: |
-          Write-Host "Checking module structure..."
-          $modules = @("ISKONTO_HESABI", "KARLILIK_ANALIZI", "Musteri_Sayisi_Kontrolu", "YASLANDIRMA")
-          
-          foreach ($module in $modules) {
-            if (Test-Path $module) {
-              Write-Host "✓ $module found"
-              
-              # __init__.py kontrolü ve oluşturma
-              $initFile = "$module/__init__.py"
-              if (-not (Test-Path $initFile)) {
-                Write-Host "Creating $initFile"
-                Set-Content -Path $initFile -Value "# $module package"
-              }
-            } else {
-              Write-Error "❌ $module not found!"
-              exit 1
-            }
-          }
-
-      - name: Create build directories
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Path "build" -Force
-          New-Item -ItemType Directory -Path "dist" -Force
+          mkdir -p build
+          mkdir -p dist
 
       - name: Create icon file
-        shell: pwsh
         run: |
-          if (Test-Path "icon/bupilic_logo.png") {
-            python -c "
-            from PIL import Image
-            import os
-            img = Image.open('icon/bupilic_logo.png')
-            os.makedirs('build', exist_ok=True)
-            img.save('build/app_icon.ico', format='ICO', sizes=[(16,16), (32,32), (48,48), (64,64), (128,128), (256,256)])
-            print('✓ Icon created successfully')
-            "
-          } else {
-            Write-Warning "Icon file not found, creating placeholder"
-            python -c "
-            from PIL import Image
-            import os
-            os.makedirs('build', exist_ok=True)
-            img = Image.new('RGBA', (64, 64), (42, 157, 143, 255))
-            img.save('build/app_icon.ico', format='ICO')
-            print('✓ Placeholder icon created')
-            "
-          }
+          python -c "
+          from PIL import Image
+          import os
+          if os.path.exists('icon/bupilic_logo.png'):
+              img = Image.open('icon/bupilic_logo.png')
+              os.makedirs('build', exist_ok=True)
+              img.save('build/app_icon.ico', format='ICO', sizes=[(16,16), (32,32), (48,48), (256,256)])
+              print('Icon created successfully')
+          else:
+              print('Icon file not found')
+          "
 
-      - name: Ensure runtime hook exists
-        shell: pwsh
+      - name: Create runtime hook
         run: |
-          if (-not (Test-Path "runtime_hook.py")) {
-            Write-Host "Creating runtime_hook.py"
-            @'
+          cat > runtime_hook.py << 'EOF'
 # -*- coding: utf-8 -*-
 import sys
 import os
@@ -135,66 +88,60 @@ def fix_matplotlib():
 
 ensure_dependencies()
 fix_matplotlib()
-'@ | Out-File -Encoding utf8 "runtime_hook.py"
-          }
+EOF
 
       - name: Build with PyInstaller
-        shell: pwsh
         run: |
-          Write-Host "Building with PyInstaller..."
-          
-          # Önce build.py'yi dene
-          if (Test-Path "build.py") {
-            $version = "${{ github.event.inputs.version }}"
-            if (-not $version) { $version = "v1.0.0" }
-            python build.py --version "$version" --no-test
-          } else {
-            # Fallback: Doğrudan PyInstaller
-            pyinstaller --noconfirm --clean --onefile --windowed --icon build/app_icon.ico --add-data "ISKONTO_HESABI;ISKONTO_HESABI" --add-data "KARLILIK_ANALIZI;KARLILIK_ANALIZI" --add-data "Musteri_Sayisi_Kontrolu;Musteri_Sayisi_Kontrolu" --add-data "YASLANDIRMA;YASLANDIRMA" --add-data "icon;icon" --runtime-hook runtime_hook.py --hidden-import "customtkinter" --hidden-import "PIL._tkinter_finder" --hidden-import "pandas" --hidden-import "matplotlib.backends.backend_tkagg" --hidden-import "ISKONTO_HESABI" --hidden-import "KARLILIK_ANALIZI" --hidden-import "Musteri_Sayisi_Kontrolu" --hidden-import "YASLANDIRMA" BUPILIC_ANA_PROGRAM.py
-          }
+          pyinstaller --noconfirm --clean --onefile --windowed \
+            --icon build/app_icon.ico \
+            --add-data "ISKONTO_HESABI:ISKONTO_HESABI" \
+            --add-data "KARLILIK_ANALIZI:KARLILIK_ANALIZI" \
+            --add-data "Musteri_Sayisi_Kontrolu:Musteri_Sayisi_Kontrolu" \
+            --add-data "YASLANDIRMA:YASLANDIRMA" \
+            --add-data "icon:icon" \
+            --runtime-hook runtime_hook.py \
+            --hidden-import customtkinter \
+            --hidden-import PIL._tkinter_finder \
+            --hidden-import pandas \
+            --hidden-import matplotlib.backends.backend_tkagg \
+            --hidden-import ISKONTO_HESABI \
+            --hidden-import KARLILIK_ANALIZI \
+            --hidden-import Musteri_Sayisi_Kontrolu \
+            --hidden-import YASLANDIRMA \
+            BUPILIC_ANA_PROGRAM.py
 
       - name: Verify executable
-        shell: pwsh
         run: |
-          $exePath = "dist\${{ env.APP_NAME }}.exe"
-          if (Test-Path $exePath) {
-            $size = (Get-Item $exePath).Length / 1MB
-            Write-Host "✓ SUCCESS: Executable found at $exePath"
-            Write-Host "📊 Size: $size MB"
-            $fileInfo = Get-Item $exePath
-            Write-Host "🕒 Created: $($fileInfo.CreationTime)"
-          } else {
-            Write-Error "❌ Executable not found!"
-            Get-ChildItem "dist" -Recurse | Format-Table Name, Length
+          if [ -f "dist/$APP_NAME.exe" ]; then
+            size=$(du -h "dist/$APP_NAME.exe" | cut -f1)
+            echo "SUCCESS: Executable found at dist/$APP_NAME.exe"
+            echo "Size: $size"
+          else
+            echo "ERROR: Executable not found"
+            ls -la dist/
             exit 1
-          }
+          fi
 
       - name: Create release package
-        shell: pwsh
         run: |
-          $version = "${{ github.event.inputs.version }}"
-          if (-not $version) { $version = "v1.0.0" }
-          $zipName = "${{ env.APP_NAME }}-$version-windows.zip"
-          $exePath = "dist\${{ env.APP_NAME }}.exe"
-          
-          if (Test-Path $exePath) {
-            Compress-Archive -Path $exePath -DestinationPath "dist\$zipName" -Force
-            Write-Host "✓ Package created: dist\$zipName"
-            $zipSize = (Get-Item "dist\$zipName").Length / 1MB
-            Write-Host "📦 Zip size: $zipSize MB"
-          }
+          version="${{ github.event.inputs.version }}"
+          if [ -z "$version" ]; then
+            version="v1.0.0"
+          fi
+          zip_name="${APP_NAME}-${version}-windows.zip"
+          zip -r "dist/${zip_name}" "dist/${APP_NAME}.exe"
+          echo "Package created: dist/${zip_name}"
 
-      - name: Upload build artifacts
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: BupiliC-Windows-Build
+          name: BupiliC-Windows
           path: |
             dist/*.exe
             dist/*.zip
-          retention-days: 7
-          if-no-files-found: error
+          retention-days: 30
 
-      - name: Create GitHub Release
+      - name: Create Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v1
         with:
@@ -203,6 +150,5 @@ fix_matplotlib()
             dist/*.zip
           draft: false
           prerelease: false
-          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
