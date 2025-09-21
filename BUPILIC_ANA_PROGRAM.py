@@ -36,15 +36,18 @@ def run_embedded_program(program_name):
     """Alt programı çalıştır"""
     print(f"[START] Starting {program_name}...")
     print(f"[DEBUG] sys.path = {sys.path}")
+    print(f"[DEBUG] base_path = {base_path}")
 
     try:
         if program_name == "ISKONTO_HESABI":
             print("[DEBUG] importing ISKONTO_HESABI.main")
             from ISKONTO_HESABI.main import main
+            print("[DEBUG] calling main()")
             main()
             return True
 
         elif program_name == "KARLILIK_ANALIZI":
+            print("[DEBUG] importing KARLILIK_ANALIZI.gui")
             from KARLILIK_ANALIZI.gui import main
             main()
             return True
@@ -65,7 +68,6 @@ def run_embedded_program(program_name):
         traceback.print_exc()
         return False
 
-    return False
 
 
 class BupilicDashboard:
