@@ -223,7 +223,7 @@ class BupilicDashboard:
         self.clear_window()
         
         login_frame = ctk.CTkFrame(self.root, fg_color=self.get_color("background"))
-        login_frame.pack(expand=True, fill="both", padx=100, pady=100)
+        login_frame.pack(expand=True, fill="both", padx=int(100), pady=int(100))
         
         title_label = ctk.CTkLabel(login_frame, text="BUPİLİÇ", 
                                  font=ctk.CTkFont(size=32, weight="bold"),
