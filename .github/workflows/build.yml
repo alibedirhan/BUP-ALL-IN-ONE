@@ -98,6 +98,11 @@ jobs:
 
     - name: Build with PyInstaller
       run: |
+        # Icon dosyasını kontrol et
+        if (-Not (Test-Path "icon/bupilic_logo.ico")) {
+          echo "Icon file not found, continuing without icon..."
+        }
+        
         pyinstaller BupiliC.spec --noconfirm --clean
 
     - name: Test the executable
