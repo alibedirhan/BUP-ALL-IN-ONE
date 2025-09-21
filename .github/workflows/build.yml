@@ -129,6 +129,17 @@ jobs:
         name: BupiliC-${{ needs.pre-checks.outputs.version }}
         path: dist/*
         retention-days: 30
+        
+    - name: Create default icon if missing
+      run: |
+        if (-Not (Test-Path "icon")) {
+          mkdir icon
+        }
+        if (-Not (Test-Path "icon/bupilic_logo.ico")) {
+          echo "Creating placeholder icon..."
+          # Basit bir placeholder icon oluştur (opsiyonel)
+          # Veya icon'u komple kaldır
+        }
 
   create-release:
     name: Create Release
@@ -154,3 +165,5 @@ jobs:
         prerelease: ${{ github.event.inputs.prerelease || false }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+        
