@@ -13,13 +13,10 @@ block_cipher = None
 # include folders as data (each tuple: source, dest)
 datas = [
     (str(project_root / "icon" / "bupilic_logo.png"), "icon"),
-    # include whole subprogram folders - each will be placed under the bundle
     (str(project_root / "ISKONTO_HESABI"), "ISKONTO_HESABI"),
     (str(project_root / "KARLILIK_ANALIZI"), "KARLILIK_ANALIZI"),
     (str(project_root / "Musteri_Sayisi_Kontrolu"), "Musteri_Sayisi_Kontrolu"),
     (str(project_root / "YASLANDIRMA"), "YASLANDIRMA"),
-    # config / templates if any
-    (str(project_root / "config"), "config"),
 ]
 
 # Hidden imports that pyinstaller may not detect automatically
