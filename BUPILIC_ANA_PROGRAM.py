@@ -394,28 +394,16 @@ class BupilicDashboard:
             logo_label = ctk.CTkLabel(left_frame, image=self.logo_image, text="")
             logo_label.pack(side="left", padx=(0, 15))
         else:
-            ctk.CTkLabel(left_frame, text="🐔", 
+            ctk.CTkLabel(left_frame, text="BUP",  # EMOJİ YERİNE METİN
                        font=ctk.CTkFont(size=28)).pack(side="left", padx=(0, 15))
         
-            ctk.CTkLabel(left_frame, text="BUPİLİÇ", 
-                       font=ctk.CTkFont(size=26, weight="bold"),
-                       text_color="white").pack(side="left")
-        self.title_label.pack(side="left")
+        # title_label YERİNE doğrudan oluştur:
+        title_label = ctk.CTkLabel(left_frame, text="BUPİLİÇ", 
+                                   font=ctk.CTkFont(size=26, weight="bold"),
+                                   text_color="white")
+        title_label.pack(side="left")
         
-        right_frame = ctk.CTkFrame(self.header, fg_color="transparent")
-        right_frame.pack(side="right", padx=20, pady=15)
-        
-        self.theme_btn = ctk.CTkButton(right_frame, text="🌙", width=40, height=40,
-                                     command=self.toggle_theme,
-                                     fg_color="transparent", 
-                                     hover_color="#FFFFFF",
-                                     text_color="white")
-        self.theme_btn.pack(side="right", padx=10)
-        
-        self.time_label = ctk.CTkLabel(right_frame, text="", 
-                                     font=ctk.CTkFont(size=14), 
-                                     text_color="white")
-        self.time_label.pack(side="right", padx=10)
+        # self.title_label = title_label  # BU SATIRI SİL VEYA YORUM YAP
     
     def setup_sidebar(self):
         self.sidebar = ctk.CTkFrame(self.root, width=220, 
