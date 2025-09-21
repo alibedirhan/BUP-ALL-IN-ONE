@@ -19,9 +19,9 @@ def main():
 
         sizes = [(16,16), (32,32), (48,48), (64,64), (128,128), (256,256)]
         img.save(ico_path, format="ICO", sizes=sizes)
-        print(f"✅ ICON created: {ico_path}")
+        print(f"[OK] ICON created: {ico_path}")
     except Exception as e:
-        print(f"⚠️ ICON convert failed: {e}")
+        print(f"[WARN] ICON convert failed: {e}")
         print("Creating placeholder icon instead...")
 
         # placeholder ikon
@@ -29,8 +29,7 @@ def main():
         draw = ImageDraw.Draw(img)
         draw.rectangle((0, 0, 63, 63), fill=(42, 157, 143, 255))
         img.save(ico_path, format="ICO")
-        print(f"✅ Placeholder icon created: {ico_path}")
+        print(f"[OK] Placeholder icon created: {ico_path}")
 
 if __name__ == "__main__":
     main()
-
