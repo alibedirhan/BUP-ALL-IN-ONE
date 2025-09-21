@@ -31,3 +31,6 @@ psutil==5.9.6
 
 # Utilities
 pytz==2023.3
+
+fpdf==1.7.2
+
