@@ -56,4 +56,3 @@ def fix_matplotlib():
 ensure_dependencies()
 fix_matplotlib()
 print("Runtime hook executed successfully")
-
