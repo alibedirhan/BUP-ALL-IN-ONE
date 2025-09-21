@@ -221,50 +221,68 @@ class BupilicDashboard:
     def show_login_screen(self):
         """Login ekranı"""
         self.clear_window()
-        
+    
         login_frame = ctk.CTkFrame(self.root, fg_color=self.get_color("background"))
         login_frame.pack(expand=True, fill="both", padx=int(100), pady=int(100))
-        
-        title_label = ctk.CTkLabel(login_frame, text="BUPİLİÇ", 
-                                 font=ctk.CTkFont(size=int(32), weight="bold"),
-                                 text_color=self.get_color("text"))
+    
+        title_label = ctk.CTkLabel(
+            login_frame,
+            text="BUPİLİÇ",
+            font=ctk.CTkFont(size=int(32), weight="bold"),
+            text_color=self.get_color("text")
+        )
         title_label.pack(pady=(int(50), int(20)))
-        
-        subtitle_label = ctk.CTkLabel(login_frame, text="İşletme Yönetim Sistemi", 
-                                    font=ctk.CTkFont(size=int(18)),
-                                    text_color=self.get_color("text_secondary"))
+    
+        subtitle_label = ctk.CTkLabel(
+            login_frame,
+            text="İşletme Yönetim Sistemi",
+            font=ctk.CTkFont(size=int(18)),
+            text_color=self.get_color("text_secondary")
+        )
         subtitle_label.pack(pady=(int(0), int(50)))
-        
+    
         password_frame = ctk.CTkFrame(login_frame, fg_color="transparent")
         password_frame.pack(pady=int(20))
-        
-        password_label = ctk.CTkLabel(password_frame, text="Şifre:", 
-                                    font=ctk.CTkFont(size=int(14)),
-                                    text_color=self.get_color("text"))
+    
+        password_label = ctk.CTkLabel(
+            password_frame,
+            text="Şifre:",
+            font=ctk.CTkFont(size=int(14)),
+            text_color=self.get_color("text")
+        )
         password_label.pack()
-        
-        self.password_entry = ctk.CTkEntry(password_frame, 
-                                         placeholder_text="Şifrenizi giriniz",
-                                         show="*",
-                                         width=int(250),
-                                         height=int(40),
-                                         font=ctk.CTkFont(size=int(14)))
+    
+        self.password_entry = ctk.CTkEntry(
+            password_frame,
+            placeholder_text="Şifrenizi giriniz",
+            show="*",
+            width=int(250),
+            height=int(40),
+            font=ctk.CTkFont(size=int(14))
+        )
         self.password_entry.pack(pady=int(10))
         self.password_entry.bind("<Return>", lambda e: self.check_login())
-        
-        login_btn = ctk.CTkButton(password_frame, text="Giriş Yap", 
-                                command=self.check_login,
-                                height=int(40),
-                                width=int(150),
-                                fg_color=self.get_color("button"),
-                                hover_color=self.get_color("button_hover"),
-                                font=ctk.CTkFont(size=int(14), weight="bold"))
+    
+        login_btn = ctk.CTkButton(
+            password_frame,
+            text="Giriş Yap",
+            command=self.check_login,
+            height=int(40),
+            width=int(150),
+            fg_color=self.get_color("button"),
+            hover_color=self.get_color("button_hover"),
+            font=ctk.CTkFont(size=int(14), weight="bold")
+        )
         login_btn.pack(pady=int(20))
-        
-        self.login_error_label = ctk.CTkLabel(password_frame, text="", 
-                                            text_color="red",
-                                            font=ctk.CTkFont(size=int(12)))
+    
+        self.login_error_label = ctk.CTkLabel(
+            password_frame,
+            text="",
+            text_color="red",
+            font=ctk.CTkFont(size=int(12))
+        )
         self.login_error_label.pack()
+
     
     def check_login(self):
         """Login kontrolü"""
