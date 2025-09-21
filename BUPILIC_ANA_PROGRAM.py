@@ -383,6 +383,9 @@ class BupilicDashboard:
         self.setup_sidebar()
         self.setup_main_content()
         self.update_datetime()
+        
+        # title_label attribute'unu kaldır veya düzelt
+        # self.title_label kullanan tüm satırları bul ve düzelt
     
     def setup_header(self):
         self.header = ctk.CTkFrame(self.root, height=70, 
