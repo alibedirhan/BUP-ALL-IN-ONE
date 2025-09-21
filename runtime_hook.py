@@ -9,33 +9,34 @@ import os
 def ensure_dependencies():
     """Setup sys.path for frozen executable"""
     if getattr(sys, 'frozen', False):
-        # Running in PyInstaller bundle
         bundle_dir = sys._MEIPASS
-        
-        # Add subdirectories to path
+
         subdirs = [
             'ISKONTO_HESABI',
-            'KARLILIK_ANALIZI', 
+            'KARLILIK_ANALIZI',
             'Musteri_Sayisi_Kontrolu',
             'YASLANDIRMA'
         ]
-        
+
         for subdir in subdirs:
             subdir_path = os.path.join(bundle_dir, subdir)
             if os.path.exists(subdir_path) and subdir_path not in sys.path:
                 sys.path.insert(0, subdir_path)
                 print(f"Added to path: {subdir}")
-    
+
     # Set UTF-8 encoding for Windows
     if sys.platform == 'win32':
         import locale
         import codecs
-        
-        # Force UTF-8 encoding
-        sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
-        sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
-        
-        # Set locale
+
+        try:
+            if sys.stdout and hasattr(sys.stdout, "buffer"):
+                sys.stdout = codecs.getwriter("utf-8")(sys.stdout.buffer, "strict")
+            if sys.stderr and hasattr(sys.stderr, "buffer"):
+                sys.stderr = codecs.getwriter("utf-8")(sys.stderr.buffer, "strict")
+        except Exception as e:
+            print(f"[HOOK] stdout/stderr encoding ayarlanamadı: {e}")
+
         try:
             locale.setlocale(locale.LC_ALL, 'Turkish_Turkey.1254')
         except:
@@ -52,8 +53,6 @@ def fix_matplotlib():
     except ImportError:
         pass
 
-# Run setup
 ensure_dependencies()
 fix_matplotlib()
-
 print("Runtime hook executed successfully")
