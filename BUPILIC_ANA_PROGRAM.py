@@ -75,45 +75,55 @@ class BupilicDashboard:
                 locale.setlocale(locale.LC_TIME, 'Turkish_Turkey.1254')
             except:
                 pass
-        
+
         self.root = ctk.CTk()
         self.root.title("BupiliÇ İşletme Yönetim Sistemi")
         self.root.geometry("1000x600")
         self.root.resizable(True, True)
-        
+
         # PyInstaller için resource path
         self.setup_resource_path()
-        
+
         # Klasör yapısını oluştur
         self.setup_directories()
-        
+
         # Loglama
         self.logger = self.setup_logging()
         self.logger.info("Uygulama başlatıldı")
-        
+
         # Kullanıcı verileri
         self.user_data = {
             "name": "Ali Yılmaz",
             "position": "Satış Yöneticisi",
             "password": "bupilic2024"
         }
-        
+
         # Ayarları yükle
         self.load_settings()
-        
+
         # Görünüm modu
         self.appearance_mode = self.user_data.get("theme", "light")
         ctk.set_appearance_mode(self.appearance_mode)
         ctk.set_default_color_theme("blue")
-        
+
         # Renk paleti
         self.setup_color_palette()
-        
+
         # Logo referansı
         self.logo_image = None
-        
+
+        # Debug bilgileri → Hata ayıklama için
+        try:
+            print("[DEBUG] frozen mod:", getattr(sys, 'frozen', False))
+            print("[DEBUG] sys.executable:", sys.executable)
+            print("[DEBUG] ctk version:", getattr(ctk, '__version__', 'unknown'))
+            print("[DEBUG] tkinter version:", self.root.tk.call('info', 'patchlevel'))
+        except Exception as e:
+            print("[DEBUG ERROR]", e)
+
         # Login ekranını göster
         self.show_login_screen()
+
     
     def setup_resource_path(self):
         """PyInstaller için resource path ayarları"""
