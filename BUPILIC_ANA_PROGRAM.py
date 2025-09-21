@@ -228,12 +228,12 @@ class BupilicDashboard:
         title_label = ctk.CTkLabel(login_frame, text="BUPİLİÇ", 
                                  font=ctk.CTkFont(size=int(32), weight="bold"),
                                  text_color=self.get_color("text"))
-        title_label.pack(pady=(50, 20))
+        title_label.pack(pady=(int(50), int(20)))
         
         subtitle_label = ctk.CTkLabel(login_frame, text="İşletme Yönetim Sistemi", 
                                     font=ctk.CTkFont(size=int(18)),
                                     text_color=self.get_color("text_secondary"))
-        subtitle_label.pack(pady=(0, 50))
+        subtitle_label.pack(pady=(int(0), int(50)))
         
         password_frame = ctk.CTkFrame(login_frame, fg_color="transparent")
         password_frame.pack(pady=int(20))
@@ -292,7 +292,7 @@ class BupilicDashboard:
         """Üst başlık"""
         self.header = ctk.CTkFrame(self.root, height=int(70), 
                                  fg_color=self.get_color("primary"), 
-                                 corner_radius=0)
+                                 corner_radius=int(0))
         self.header.grid(row=0, column=0, columnspan=2, sticky="ew")
         self.header.grid_propagate(False)
         
@@ -301,7 +301,7 @@ class BupilicDashboard:
         
         if self.logo_image:
             logo_label = ctk.CTkLabel(left_frame, image=self.logo_image, text="")
-            logo_label.pack(side="left", padx=(0, 15))
+            logo_label.pack(side="left", padx=(int(0), int(15)))
         
         title_label = ctk.CTkLabel(left_frame, text="BUPİLİÇ", 
                                    font=ctk.CTkFont(size=int(26), weight="bold"),
@@ -312,7 +312,7 @@ class BupilicDashboard:
         """Sol menü"""
         self.sidebar = ctk.CTkFrame(self.root, width=int(220), 
                                   fg_color=self.get_color("primary"), 
-                                  corner_radius=0)
+                                  corner_radius=int(0))
         self.sidebar.grid(row=1, column=0, sticky="ns")
         self.sidebar.grid_propagate(False)
         
@@ -369,13 +369,13 @@ class BupilicDashboard:
                                    text="BupiliÇ İşletme Yönetim Sistemine Hoş Geldiniz",
                                    font=ctk.CTkFont(size=int(18), weight="bold"),
                                    text_color=self.get_color("text"))
-        self.welcome_label.pack(pady=(20, 10))
+        self.welcome_label.pack(pady=(int(20), int(10)))
         
         self.desc_label = ctk.CTkLabel(self.main, 
                                 text="Aşağıdaki butonlardan istediğiniz işlemi başlatabilirsiniz",
                                 font=ctk.CTkFont(size=int(14)),
                                 text_color=self.get_color("text_secondary"))
-        self.desc_label.pack(pady=(0, 30))
+        self.desc_label.pack(pady=(int(0), int(30)))
     
     def setup_quick_access(self):
         """Hızlı erişim butonları - TÜM 4 PROGRAM"""
@@ -385,7 +385,7 @@ class BupilicDashboard:
         self.title_label = ctk.CTkLabel(quick_frame, text="Hızlı Erişim", 
                                  font=ctk.CTkFont(size=int(20), weight="bold"),
                                  text_color=self.get_color("text"))
-        self.title_label.pack(pady=(0, 30))
+        self.title_label.pack(pady=(int(0), int(30)))
         
         main_buttons_frame = ctk.CTkFrame(quick_frame, fg_color="transparent")
         main_buttons_frame.pack()
@@ -414,7 +414,7 @@ class BupilicDashboard:
                               fg_color=color,
                               hover_color=self.darken_color(color),
                               font=ctk.CTkFont(size=int(15), weight="bold"),
-                              corner_radius=12,
+                              corner_radius=int(12),
                               text_color="white")
             btn.pack()
             self.buttons.append(btn)
@@ -430,7 +430,7 @@ class BupilicDashboard:
                                     text=descriptions.get(text, ""),
                                     font=ctk.CTkFont(size=int(12)),
                                     text_color=self.get_color("text_secondary"))
-            desc_label.pack(pady=(5, 0))
+            desc_label.pack(pady=(int(5), int(0)))
             self.desc_labels.append(desc_label)
     
     def show_settings(self):
@@ -443,7 +443,7 @@ class BupilicDashboard:
         title_label = ctk.CTkLabel(settings_frame, text="Kullanıcı Ayarları", 
                                  font=ctk.CTkFont(size=int(24), weight="bold"),
                                  text_color=self.get_color("text"))
-        title_label.pack(pady=(0, 30))
+        title_label.pack(pady=(int(0), int(30)))
         
         back_btn = ctk.CTkButton(settings_frame, text="Geri", 
                                command=self.setup_main_content,
