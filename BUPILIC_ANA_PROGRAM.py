@@ -70,82 +70,51 @@ ensure_dependencies_async()
 
 # ===== TÜM ALT PROGRAMLARI ÇALIŞTIRMA =====
 def run_embedded_program(program_name):
-    """Gömülü programı çalıştır - KESİN ÇÖZÜM"""
+    """Gömülü programı çalıştır - SON ve KESİN ÇÖZÜM"""
     try:
         print(f"🚀 Starting {program_name}...")
         
-        # PyInstaller ile paketlenmişse
+        # PyInstander ile paketlenmişse
         if getattr(sys, 'frozen', False):
             base_path = sys._MEIPASS
-            print(f"Frozen mode detected. Base path: {base_path}")
+            print(f"Frozen mode. Base path: {base_path}")
             
-            # TÜM YOLLARI EKLE
-            paths_to_add = [
+            # Tüm olası yolları ekle
+            possible_paths = [
                 base_path,
                 os.path.join(base_path, program_name),
-                os.getcwd(),
+                os.getcwd(), 
                 os.path.join(os.getcwd(), program_name)
             ]
             
-            for path in paths_to_add:
+            for path in possible_paths:
                 if path not in sys.path and os.path.exists(path):
                     sys.path.insert(0, path)
                     print(f"Added to path: {path}")
         
-        # DEBUG: Path'leri göster
-        print(f"Current sys.path: {sys.path}")
-        
-        # PROGRAM ÖZEL ÇÖZÜMLER
-        try:
-            if program_name == "ISKONTO_HESABI":
-                print("Importing ISKONTO_HESABI...")
-                # Tüm olası import yollarını dene
-                try:
-                    from ISKONTO_HESABI.main import main
-                    main()
-                except ImportError:
-                    import ISKONTO_HESABI.main
-                    ISKONTO_HESABI.main.main()
-                return True
-                
-            elif program_name == "KARLILIK_ANALIZI":
-                print("Importing KARLILIK_ANALIZI...")
-                try:
-                    from KARLILIK_ANALIZI.gui import main
-                    main()
-                except ImportError:
-                    import KARLILIK_ANALIZI.gui
-                    KARLILIK_ANALIZI.gui.main()
-                return True
-                
-            elif program_name == "Musteri_Sayisi_Kontrolu":
-                print("Importing Musteri_Sayisi_Kontrolu...")
-                try:
-                    from Musteri_Sayisi_Kontrolu.main import main
-                    main()
-                except ImportError:
-                    import Musteri_Sayisi_Kontrolu.main
-                    Musteri_Sayisi_Kontrolu.main.main()
-                return True
-                
-            elif program_name == "YASLANDIRMA":
-                print("Importing YASLANDIRMA...")
-                try:
-                    from YASLANDIRMA.main import main
-                    main()
-                except ImportError:
-                    import YASLANDIRMA.main
-                    YASLANDIRMA.main.main()
-                return True
-                
-        except Exception as e:
-            print(f"❌ Error running {program_name}: {e}")
-            import traceback
-            traceback.print_exc()
-            return False
+        # PROGRAMLARI ÇALIŞTIR
+        if program_name == "ISKONTO_HESABI":
+            import ISKONTO_HESABI.main
+            ISKONTO_HESABI.main.main()
+            return True
+            
+        elif program_name == "KARLILIK_ANALIZI":
+            import KARLILIK_ANALIZI.gui
+            KARLILIK_ANALIZI.gui.main()
+            return True
+            
+        elif program_name == "Musteri_Sayisi_Kontrolu":
+            import Musteri_Sayisi_Kontrolu.main
+            Musteri_Sayisi_Kontrolu.main.main()
+            return True
+            
+        elif program_name == "YASLANDIRMA":
+            import YASLANDIRMA.main
+            YASLANDIRMA.main.main()
+            return True
             
     except Exception as e:
-        print(f"❌ General error starting {program_name}: {e}")
+        print(f"❌ Error running {program_name}: {e}")
         import traceback
         traceback.print_exc()
         return False
