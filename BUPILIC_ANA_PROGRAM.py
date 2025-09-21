@@ -70,54 +70,72 @@ ensure_dependencies_async()
 
 # ===== TÜM ALT PROGRAMLARI ÇALIŞTIRMA =====
 def run_embedded_program(program_name):
-    """Gömülü programı çalıştır - SON ÇÖZÜM"""
+    """Gömülü programı çalıştır - KESİN ÇÖZÜM"""
     try:
         print(f"🚀 Starting {program_name}...")
         
         # PyInstaller ile paketlenmişse
         if getattr(sys, 'frozen', False):
             base_path = sys._MEIPASS
-            print(f"Frozen mode. Base path: {base_path}")
+            print(f"Frozen mode detected. Base path: {base_path}")
             
-            # Mevcut çalışma dizinini de sys.path'e ekle
-            current_dir = os.getcwd()
-            if current_dir not in sys.path:
-                sys.path.insert(0, current_dir)
-                print(f"Added current dir to path: {current_dir}")
+            # TÜM YOLLARI EKLE
+            paths_to_add = [
+                base_path,
+                os.path.join(base_path, program_name),
+                os.getcwd(),
+                os.path.join(os.getcwd(), program_name)
+            ]
             
-            # Alt programın yolunu sys.path'e ekle
-            program_path = os.path.join(base_path, program_name)
-            if program_path not in sys.path and os.path.exists(program_path):
-                sys.path.insert(0, program_path)
-                print(f"Added program path: {program_path}")
+            for path in paths_to_add:
+                if path not in sys.path and os.path.exists(path):
+                    sys.path.insert(0, path)
+                    print(f"Added to path: {path}")
         
-        # DEBUG: Path'i göster
+        # DEBUG: Path'leri göster
         print(f"Current sys.path: {sys.path}")
         
         # PROGRAM ÖZEL ÇÖZÜMLER
         try:
             if program_name == "ISKONTO_HESABI":
                 print("Importing ISKONTO_HESABI...")
-                import ISKONTO_HESABI.main as iskonto_main
-                iskonto_main.main()
+                # Tüm olası import yollarını dene
+                try:
+                    from ISKONTO_HESABI.main import main
+                    main()
+                except ImportError:
+                    import ISKONTO_HESABI.main
+                    ISKONTO_HESABI.main.main()
                 return True
                 
             elif program_name == "KARLILIK_ANALIZI":
                 print("Importing KARLILIK_ANALIZI...")
-                import KARLILIK_ANALIZI.gui as karlilik_gui
-                karlilik_gui.main()
+                try:
+                    from KARLILIK_ANALIZI.gui import main
+                    main()
+                except ImportError:
+                    import KARLILIK_ANALIZI.gui
+                    KARLILIK_ANALIZI.gui.main()
                 return True
                 
             elif program_name == "Musteri_Sayisi_Kontrolu":
                 print("Importing Musteri_Sayisi_Kontrolu...")
-                import Musteri_Sayisi_Kontrolu.main as musteri_main
-                musteri_main.main()
+                try:
+                    from Musteri_Sayisi_Kontrolu.main import main
+                    main()
+                except ImportError:
+                    import Musteri_Sayisi_Kontrolu.main
+                    Musteri_Sayisi_Kontrolu.main.main()
                 return True
                 
             elif program_name == "YASLANDIRMA":
                 print("Importing YASLANDIRMA...")
-                import YASLANDIRMA.main as yaslandirma_main
-                yaslandirma_main.main()
+                try:
+                    from YASLANDIRMA.main import main
+                    main()
+                except ImportError:
+                    import YASLANDIRMA.main
+                    YASLANDIRMA.main.main()
                 return True
                 
         except Exception as e:
