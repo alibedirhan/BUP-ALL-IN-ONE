@@ -113,24 +113,20 @@ import sys
 import os
 
 def ensure_dependencies():
-    """Setup sys.path for frozen executable"""
     if getattr(sys, 'frozen', False):
         bundle_dir = sys._MEIPASS
-        
         subdirs = [
             'ISKONTO_HESABI',
             'KARLILIK_ANALIZI', 
             'Musteri_Sayisi_Kontrolu',
             'YASLANDIRMA'
         ]
-        
         for subdir in subdirs:
             subdir_path = os.path.join(bundle_dir, subdir)
             if os.path.exists(subdir_path) and subdir_path not in sys.path:
                 sys.path.insert(0, subdir_path)
 
 def fix_matplotlib():
-    """Fix matplotlib backend for frozen executable"""
     try:
         import matplotlib
         matplotlib.use('Agg')
@@ -154,23 +150,7 @@ fix_matplotlib()
             python build.py --version "$version" --no-test
           } else {
             # Fallback: Doğrudan PyInstaller
-            pyinstaller --noconfirm --clean --onefile --windowed `
-              --icon build/app_icon.ico `
-              --add-data "ISKONTO_HESABI;ISKONTO_HESABI" `
-              --add-data "KARLILIK_ANALIZI;KARLILIK_ANALIZI" `
-              --add-data "Musteri_Sayisi_Kontrolu;Musteri_Sayisi_Kontrolu" `
-              --add-data "YASLANDIRMA;YASLANDIRMA" `
-              --add-data "icon;icon" `
-              --runtime-hook runtime_hook.py `
-              --hidden-import "customtkinter" `
-              --hidden-import "PIL._tkinter_finder" `
-              --hidden-import "pandas" `
-              --hidden-import "matplotlib.backends.backend_tkagg" `
-              --hidden-import "ISKONTO_HESABI" `
-              --hidden-import "KARLILIK_ANALIZI" `
-              --hidden-import "Musteri_Sayisi_Kontrolu" `
-              --hidden-import "YASLANDIRMA" `
-              BUPILIC_ANA_PROGRAM.py
+            pyinstaller --noconfirm --clean --onefile --windowed --icon build/app_icon.ico --add-data "ISKONTO_HESABI;ISKONTO_HESABI" --add-data "KARLILIK_ANALIZI;KARLILIK_ANALIZI" --add-data "Musteri_Sayisi_Kontrolu;Musteri_Sayisi_Kontrolu" --add-data "YASLANDIRMA;YASLANDIRMA" --add-data "icon;icon" --runtime-hook runtime_hook.py --hidden-import "customtkinter" --hidden-import "PIL._tkinter_finder" --hidden-import "pandas" --hidden-import "matplotlib.backends.backend_tkagg" --hidden-import "ISKONTO_HESABI" --hidden-import "KARLILIK_ANALIZI" --hidden-import "Musteri_Sayisi_Kontrolu" --hidden-import "YASLANDIRMA" BUPILIC_ANA_PROGRAM.py
           }
 
       - name: Verify executable
@@ -181,32 +161,12 @@ fix_matplotlib()
             $size = (Get-Item $exePath).Length / 1MB
             Write-Host "✓ SUCCESS: Executable found at $exePath"
             Write-Host "📊 Size: $size MB"
-            
-            # Basic file check
             $fileInfo = Get-Item $exePath
             Write-Host "🕒 Created: $($fileInfo.CreationTime)"
           } else {
             Write-Error "❌ Executable not found!"
-            Write-Host "Available files in dist:"
             Get-ChildItem "dist" -Recurse | Format-Table Name, Length
             exit 1
-          }
-
-      - name: Compress with UPX (optional)
-        shell: pwsh
-        run: |
-          $exePath = "dist\${{ env.APP_NAME }}.exe"
-          if (Test-Path $exePath) {
-            # UPX'ı dene
-            try {
-              $originalSize = (Get-Item $exePath).Length
-              upx --best --lzma $exePath
-              $newSize = (Get-Item $exePath).Length
-              $saved = ($originalSize - $newSize) / 1MB
-              Write-Host "✓ UPX compression saved: $saved MB"
-            } catch {
-              Write-Warning "UPX not available, skipping compression"
-            }
           }
 
       - name: Create release package
@@ -220,8 +180,6 @@ fix_matplotlib()
           if (Test-Path $exePath) {
             Compress-Archive -Path $exePath -DestinationPath "dist\$zipName" -Force
             Write-Host "✓ Package created: dist\$zipName"
-            
-            # Zip boyutunu göster
             $zipSize = (Get-Item "dist\$zipName").Length / 1MB
             Write-Host "📦 Zip size: $zipSize MB"
           }
