@@ -84,7 +84,7 @@ a = Analysis(
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[str(project_root / 'hooks')] if (project_root / 'hooks').exists() else [],
-    runtime_hooks=['runtime_hook.py'] if (project_root / 'runtime_hook.py').exists() else [],
+    runtime_hooks=[],  # Runtime hook'u devre dışı bırak
     excludes=[
         'test',
         'tests',
