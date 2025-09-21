@@ -9,7 +9,7 @@ from pathlib import Path
 
 # ===== KESİN ÇÖZÜM: TÜM BAĞIMLILIKLAR =====
 def install_missing_dependencies():
-    """Sadece eksik bağımlılıkları yükle"""
+    """Sadece eksik bağımlılıkları yükle - KESİN ÇÖZÜM"""
     print("🔧 Checking for missing dependencies...")
     
     required_packages = [
@@ -18,7 +18,11 @@ def install_missing_dependencies():
         'xlrd', 'xlwt', 'python-dateutil', 'tkcalendar'
     ]
     
-    missing_packages = []
+    # PYINSTALLER İSE YÜKLEME YAPMA!
+    if getattr(sys, 'frozen', False):
+        print("🎉 Frozen mode - skipping dependency installation")
+        return True
+    
     
     for package in required_packages:
         try:
