@@ -101,32 +101,10 @@ jobs:
           # install runtime deps too (guarantee)
           pip install -r requirements.txt
 
-      - name: Convert PNG -> ICO (ensure icon exists)
+      - name: Convert PNG -> ICO
         shell: pwsh
-        run: |
-          python - <<'PY'
-          from PIL import Image
-          import os
-          png_path = "icon/bupilic_logo.png"
-          ico_path = "build/app_icon.ico"
-          os.makedirs("build", exist_ok=True)
-          try:
-              img = Image.open(png_path)
-              if img.mode != 'RGBA':
-                  img = img.convert('RGBA')
-              sizes = [(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)]
-              img.save(ico_path, format='ICO', sizes=sizes)
-              print("ICON_OK:", ico_path)
-          except Exception as e:
-              print("ICON_FAIL:", e)
-              # fallback placeholder
-              from PIL import ImageDraw
-              img = Image.new('RGBA', (64,64), (42,157,143,255))
-              draw = ImageDraw.Draw(img)
-              draw.rectangle((0,0,63,63), fill=(42,157,143,255))
-              img.save(ico_path, format='ICO')
-              print("ICON_PLACEHOLDER:", ico_path)
-          PY
+        run: python build/icon_converter.py
+
 
       - name: Build with PyInstaller (using spec)
         shell: pwsh
