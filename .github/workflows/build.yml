@@ -70,6 +70,8 @@ jobs:
         run: |
           if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/tags/* ]]; then
             echo "is_release=true" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${{ github.event.inputs.version }}" ]]; then
+            echo "is_release=true" >> $GITHUB_OUTPUT
           else
             echo "is_release=false" >> $GITHUB_OUTPUT
           fi
@@ -89,90 +91,286 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           architecture: x64
 
+      - name: Cache pip packages
+        uses: actions/cache@v3
+        with:
+          path: ~\AppData\Local\pip\Cache
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt', 'requirements-build.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Install build tools and deps
         shell: pwsh
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          pip install pyinstaller==5.11.2
-          # install only build-time deps (use requirements-build.txt if present)
+          pip install pyinstaller==6.3.0
+          
+          # Install build-time dependencies
           if (Test-Path "requirements-build.txt") {
             pip install -r requirements-build.txt
           }
-          # install runtime deps too (guarantee)
+          
+          # Install runtime dependencies
           pip install -r requirements.txt
 
-      - name: Convert PNG -> ICO
+      - name: Convert PNG to ICO
         shell: pwsh
-        run: python build/icon_converter.py
-
-
-      - name: Build with PyInstaller (using spec)
-        shell: pwsh
-        env:
-          APP_NAME: ${{ env.APP_NAME }}
         run: |
-          # Use the exact spec filename in your repo. Adjust if your spec name differs.
-          $spec = "bupilic.spec"
-          if (-Not (Test-Path $spec)) {
-            Write-Host "Spec file not found: $spec. Falling back to generating a simple command."
-            pyinstaller --noconfirm --onefile --windowed --name "${{ env.APP_NAME }}" --icon=build/app_icon.ico BUPILIC_ANA_PROGRAM.py
+          # Create build directory if not exists
+          if (!(Test-Path "build")) {
+            New-Item -ItemType Directory -Path "build"
+          }
+          
+          # Check if icon converter exists
+          if (Test-Path "build/icon_converter.py") {
+            python build/icon_converter.py
           } else {
-            pyinstaller $spec --noconfirm
+            # Simple fallback converter
+            @"
+from PIL import Image
+import os
+
+# Convert PNG to ICO
+png_path = 'icon/bupilic_logo.png'
+ico_path = 'build/app_icon.ico'
+
+if os.path.exists(png_path):
+    img = Image.open(png_path)
+    img.save(ico_path, format='ICO', sizes=[(16,16), (32,32), (48,48), (64,64), (128,128), (256,256)])
+    print(f'Created {ico_path}')
+else:
+    print(f'PNG not found: {png_path}')
+"@ | Out-File -FilePath "build/icon_converter_temp.py" -Encoding UTF8
+            python build/icon_converter_temp.py
           }
 
-      - name: Test built artifacts
+      - name: Build with PyInstaller
         shell: pwsh
         run: |
-          $exePath = Join-Path -Path "dist" -ChildPath "${{ env.APP_NAME }}\${{ env.APP_NAME }}.exe"
-          if (Test-Path $exePath) {
-            Write-Host "✅ Executable found:" $exePath
+          # Spec dosyasını kullanarak build et
+          $spec = "bupilic.spec"
+          
+          Write-Host "🔨 Building with PyInstaller..."
+          Write-Host "Using spec file: $spec"
+          
+          # Build komutu
+          pyinstaller $spec --noconfirm --clean
+          
+          # Build sonucunu kontrol et
+          Write-Host "`n📁 Contents of dist folder:"
+          if (Test-Path "dist") {
             Get-ChildItem "dist" -Recurse | Select-Object FullName, Length | Format-Table -AutoSize
+          }
+
+      - name: Test built executable
+        shell: pwsh
+        run: |
+          # Tek dosya exe kontrolü
+          $exePath = Join-Path -Path "dist" -ChildPath "${{ env.APP_NAME }}.exe"
+          
+          Write-Host "🔍 Looking for executable at: $exePath"
+          
+          if (Test-Path $exePath) {
+            Write-Host "✅ Executable found: $exePath"
+            $fileInfo = Get-Item $exePath
+            Write-Host "   Size: $($fileInfo.Length / 1MB) MB"
+            Write-Host "   Created: $($fileInfo.CreationTime)"
+            
+            # Dosya boyutu kontrolü (en az 5MB olmalı)
+            if ($fileInfo.Length -lt 5MB) {
+              Write-Host "⚠️ Warning: Executable seems too small (< 5MB)"
+            }
           } else {
             Write-Host "❌ Executable not found at expected location"
-            Get-ChildItem -Path . -Recurse | Select-Object FullName, Length | Format-Table -AutoSize
+            Write-Host "📁 Current directory contents:"
+            Get-ChildItem -Path . -Recurse -Include *.exe | Select-Object FullName, Length | Format-Table -AutoSize
             exit 1
+          }
+
+      - name: Create installer (optional)
+        shell: pwsh
+        run: |
+          # NSIS installer oluşturma (opsiyonel)
+          $installerScript = @"
+!define APP_NAME "BupiliC"
+!define APP_VERSION "${{ needs.pre-checks.outputs.version }}"
+!define APP_PUBLISHER "Your Company"
+!define APP_URL "https://github.com/alibedirhan/BUP-ALL-IN-ONE"
+
+Name "`${APP_NAME}"
+OutFile "dist\`${APP_NAME}-`${APP_VERSION}-setup.exe"
+InstallDir "`$PROGRAMFILES\`${APP_NAME}"
+RequestExecutionLevel admin
+
+Section
+  SetOutPath `$INSTDIR
+  File "dist\`${APP_NAME}.exe"
+  
+  CreateDirectory "`$SMPROGRAMS\`${APP_NAME}"
+  CreateShortcut "`$SMPROGRAMS\`${APP_NAME}\`${APP_NAME}.lnk" "`$INSTDIR\`${APP_NAME}.exe"
+  CreateShortcut "`$DESKTOP\`${APP_NAME}.lnk" "`$INSTDIR\`${APP_NAME}.exe"
+  
+  WriteUninstaller "`$INSTDIR\uninstall.exe"
+  
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\`${APP_NAME}" "DisplayName" "`${APP_NAME}"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\`${APP_NAME}" "UninstallString" "`$INSTDIR\uninstall.exe"
+SectionEnd
+
+Section "Uninstall"
+  Delete "`$INSTDIR\`${APP_NAME}.exe"
+  Delete "`$INSTDIR\uninstall.exe"
+  RMDir "`$INSTDIR"
+  
+  Delete "`$SMPROGRAMS\`${APP_NAME}\`${APP_NAME}.lnk"
+  RMDir "`$SMPROGRAMS\`${APP_NAME}"
+  Delete "`$DESKTOP\`${APP_NAME}.lnk"
+  
+  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\`${APP_NAME}"
+SectionEnd
+"@
+          
+          # NSIS varsa installer oluştur
+          if (Get-Command makensis -ErrorAction SilentlyContinue) {
+            $installerScript | Out-File -FilePath "installer.nsi" -Encoding UTF8
+            makensis installer.nsi
+            Write-Host "✅ Installer created"
+          } else {
+            Write-Host "ℹ️ NSIS not found, skipping installer creation"
           }
 
       - name: Package artifacts
         shell: pwsh
         run: |
           $version = "${{ needs.pre-checks.outputs.version }}"
-          $distDir = "dist\${{ env.APP_NAME }}"
           $zipName = "${{ env.APP_NAME }}-$version-windows-x64.zip"
-          if (Test-Path $distDir) {
-            Compress-Archive -Path "$distDir\*" -DestinationPath "dist\$zipName" -Force
-            Write-Host "Created" "dist\$zipName"
+          
+          # Ana exe dosyasını zipleyeceğiz
+          $exePath = "dist\${{ env.APP_NAME }}.exe"
+          
+          if (Test-Path $exePath) {
+            # Geçici klasör oluştur
+            $tempDir = "dist\package"
+            New-Item -ItemType Directory -Path $tempDir -Force
+            
+            # Exe'yi kopyala
+            Copy-Item $exePath -Destination "$tempDir\${{ env.APP_NAME }}.exe"
+            
+            # README oluştur
+            @"
+# BupiliÇ İşletme Yönetim Sistemi
+
+## Kurulum
+1. ${{ env.APP_NAME }}.exe dosyasını istediğiniz konuma kopyalayın
+2. Çift tıklayarak çalıştırın
+
+## Özellikler
+- İskonto Hesaplama
+- Karlılık Analizi
+- Müşteri Kayıp/Kaçak Analizi
+- Yaşlandırma Raporları
+
+## Sistem Gereksinimleri
+- Windows 7/8/10/11
+- 64-bit işletim sistemi
+- En az 2GB RAM
+- 100MB boş disk alanı
+
+Versiyon: $version
+"@ | Out-File -FilePath "$tempDir\README.txt" -Encoding UTF8
+            
+            # Zip oluştur
+            Compress-Archive -Path "$tempDir\*" -DestinationPath "dist\$zipName" -Force
+            Write-Host "✅ Created dist\$zipName"
+            
+            # Temizlik
+            Remove-Item $tempDir -Recurse -Force
           } else {
-            Write-Host "dist dir not found, trying to zip dist\*"
-            Compress-Archive -Path "dist\*" -DestinationPath "dist\$zipName" -Force
+            Write-Host "❌ Executable not found for packaging"
+            exit 1
           }
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.APP_NAME }}-${{ needs.pre-checks.outputs.version }}
+          name: ${{ env.APP_NAME }}-${{ needs.pre-checks.outputs.version }}-windows
           path: |
             dist/*.zip
             dist/*.exe
-            dist/*/*.exe
+            dist/*-setup.exe
           retention-days: 30
+          if-no-files-found: error
+
+      - name: Generate SHA256
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem "dist" -Include *.zip, *.exe -Recurse
+          $shaContent = ""
+          
+          foreach ($file in $files) {
+            $hash = (Get-FileHash $file.FullName -Algorithm SHA256).Hash
+            $shaContent += "$hash  $($file.Name)`n"
+          }
+          
+          $shaContent | Out-File -FilePath "dist\SHA256SUMS.txt" -Encoding UTF8
+          Write-Host "📝 SHA256 Checksums:"
+          Get-Content "dist\SHA256SUMS.txt"
 
   create-release:
-    name: Create Release
+    name: Create GitHub Release
     needs: [pre-checks, build-windows]
     runs-on: ubuntu-latest
     if: needs.pre-checks.outputs.is_release == 'true'
     steps:
       - uses: actions/checkout@v4
+      
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           path: ./artifacts
-      - name: Create release (softprops)
+      
+      - name: Display artifacts
+        run: |
+          echo "📦 Downloaded artifacts:"
+          find ./artifacts -type f -name "*.exe" -o -name "*.zip" -o -name "*.txt" | while read file; do
+            echo "  - $(basename $file) ($(du -h $file | cut -f1))"
+          done
+      
+      - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ needs.pre-checks.outputs.version }}
           name: "BupiliÇ ${{ needs.pre-checks.outputs.version }}"
-          files: artifacts/*
+          draft: false
+          prerelease: ${{ github.event.inputs.prerelease || false }}
+          generate_release_notes: true
+          body: |
+            ## 🎉 BupiliÇ İşletme Yönetim Sistemi
+            
+            ### 📦 İndirmeler
+            - **Windows (64-bit):** `BupiliC-${{ needs.pre-checks.outputs.version }}-windows-x64.zip`
+            
+            ### 🚀 Kurulum
+            1. ZIP dosyasını indirin
+            2. İstediğiniz klasöre çıkartın
+            3. `BupiliC.exe` dosyasını çalıştırın
+            
+            ### ✨ Özellikler
+            - İskonto Hesaplama Modülü
+            - Karlılık Analizi Modülü
+            - Müşteri Kayıp/Kaçak Kontrolü
+            - Yaşlandırma Raporları
+            
+            ### 📋 Sistem Gereksinimleri
+            - Windows 7 SP1 veya üzeri
+            - 64-bit işletim sistemi
+            - Minimum 2GB RAM
+            - 100MB boş disk alanı
+            
+            ### 🔐 SHA256 Checksums
+            Dosya bütünlüğünü doğrulamak için `SHA256SUMS.txt` dosyasını kontrol edin.
+          files: |
+            artifacts/**/*.zip
+            artifacts/**/*.exe
+            artifacts/**/SHA256SUMS.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
