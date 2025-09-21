@@ -1,53 +1,42 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import sys
+from pathlib import Path
+project_root = Path(__file__).parent.resolve()
+
 block_cipher = None
 
-# TÜM DOSYALARI EKLE - KESİN ÇÖZÜM
-datas = []
+# include folders as data (each tuple: source, dest)
+datas = [
+    (str(project_root / "icon" / "bupilic_logo.png"), "icon"),
+    # include whole subprogram folders - each will be placed under the bundle
+    (str(project_root / "ISKONTO_HESABI"), "ISKONTO_HESABI"),
+    (str(project_root / "KARLILIK_ANALIZI"), "KARLILIK_ANALIZI"),
+    (str(project_root / "Musteri_Sayisi_Kontrolu"), "Musteri_Sayisi_Kontrolu"),
+    (str(project_root / "YASLANDIRMA"), "YASLANDIRMA"),
+    # config / templates if any
+    (str(project_root / "config"), "config"),
+]
 
-# TÜM ALT PROGRAM KLASÖRLERİNİ EKLE
-modules = ['ISKONTO_HESABI', 'KARLILIK_ANALIZI', 'Musteri_Sayisi_Kontrolu', 'YASLANDIRMA']
-for module in modules:
-    datas.append((module, module))
-
-# ICON KLASÖRÜNÜ EKLE
-datas.append(('icon', 'icon'))
+# Hidden imports that pyinstaller may not detect automatically
+hiddenimports = [
+    "customtkinter",
+    "PIL",
+    # add other modules pyinstaller misses
+]
 
 a = Analysis(
-    ['BUPILIC_ANA_PROGRAM.py'],
-    pathex=[],  # BOŞ BIRAK
+    ['BUPILIC_ANA_PROGRAM.py'],  # entry-point
+    pathex=[str(project_root)],
     binaries=[],
     datas=datas,
-    hiddenimports=[
-        # TÜM MODÜLLERİ EKLE
-        'ISKONTO_HESABI.main', 'ISKONTO_HESABI.ui_components',
-        'ISKONTO_HESABI.pdf_processor', 'ISKONTO_HESABI.export_manager',
-        
-        'KARLILIK_ANALIZI.gui', 'KARLILIK_ANALIZI.karlilik',
-        'KARLILIK_ANALIZI.analiz_dashboard', 'KARLILIK_ANALIZI.dashboard_components',
-        'KARLILIK_ANALIZI.data_operations', 'KARLILIK_ANALIZI.themes',
-        'KARLILIK_ANALIZI.ui_components', 'KARLILIK_ANALIZI.veri_analizi',
-        'KARLILIK_ANALIZI.zaman_analizi',
-        
-        'Musteri_Sayisi_Kontrolu.main', 'Musteri_Sayisi_Kontrolu.ui',
-        'Musteri_Sayisi_Kontrolu.kurulum',
-        
-        'YASLANDIRMA.main', 'YASLANDIRMA.gui', 'YASLANDIRMA.excel_processor',
-        'YASLANDIRMA.utils', 'YASLANDIRMA.setup',
-        
-        # KÜTÜPHANELER
-        'pandas', 'numpy', 'matplotlib', 'customtkinter',
-        'pdfplumber', 'PIL', 'openpyxl', 'seaborn',
-        'tkcalendar', 'python-dateutil', 'psutil'
-    ],
+    hiddenimports=hiddenimports,
     hookspath=[],
-    hooksconfig={},
-    runtime_hooks=[],
+    runtime_hooks=['runtime_hook.py'] if (project_root / 'runtime_hook.py').exists() else [],
     excludes=[],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
-    noarchive=False,
 )
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
@@ -55,21 +44,28 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz,
     a.scripts,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
+    [],
+    exclude_binaries=True,
     name='BupiliC',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,
-    upx_exclude=[],
-    runtime_tmpdir=None,
-    console=True,  # DEBUG İÇİN TRUE
-    disable_windowed_traceback=False,
-    argv_emulation=False,
-    target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
-    icon=None,  # ICON'U KALDIR
+    upx=False,  # set to False to avoid AV false positives; set True if UPX installed and safe
+    console=False,
+    icon=str(project_root / "build" / "app_icon.ico") if (project_root / "build" / "app_icon.ico").exists() else None
 )
+
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    strip=False,
+    upx=False,
+    name='BupiliC'
+)
+
+# If you want single-file (onefile), use the following instead of EXE+COLLECT:
+# from PyInstaller.building import EXE, COLLECT, MERGE
+# exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='BupiliC', debug=False, strip=False, upx=False, console=False)
+# coll = COLLECT(exe, a.binaries, a.zipfiles, a.datas, strip=False, upx=False, name='BupiliC')

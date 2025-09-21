@@ -1,10 +1,10 @@
-name: Build & Release BupiliC
+name: 🚀 Build & Release BupiliÇ
 
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version'
+        description: 'Release version (e.g., v1.0.0)'
         required: false
         type: string
       prerelease:
@@ -12,158 +12,189 @@ on:
         required: false
         default: false
         type: boolean
-
   push:
     tags:
       - 'v*'
     branches:
       - main
+      - develop
 
 env:
-  PYTHONIOENCODING: utf-8
   APP_NAME: BupiliC
-  PYTHON_VERSION: '3.10.11'
+  PYTHON_VERSION: '3.11'
   BUILD_TYPE: release
 
 jobs:
   pre-checks:
-    name: Pre-build Validation
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
       is_release: ${{ steps.check.outputs.is_release }}
-    
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
+      - name: Setup Python (pre-check)
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Check files exist
-      run: |
-        if [ ! -f "BUPILIC_ANA_PROGRAM.py" ]; then exit 1; fi
-        if [ ! -f "requirements.txt" ]; then exit 1; fi
-        if [ ! -d "ISKONTO_HESABI" ]; then exit 1; fi
-        if [ ! -d "KARLILIK_ANALIZI" ]; then exit 1; fi
-        if [ ! -d "Musteri_Sayisi_Kontrolu" ]; then exit 1; fi
-        if [ ! -d "YASLANDIRMA" ]; then exit 1; fi
+      - name: Check repository structure
+        run: |
+          echo "🔍 Checking critical files..."
+          if [ ! -f "BUPILIC_ANA_PROGRAM.py" ]; then echo "❌ BUPILIC_ANA_PROGRAM.py not found"; exit 1; fi
+          if [ ! -f "requirements.txt" ]; then echo "❌ requirements.txt not found"; exit 1; fi
+          for d in ISKONTO_HESABI KARLILIK_ANALIZI Musteri_Sayisi_Kontrolu YASLANDIRMA; do
+            if [ ! -d "$d" ]; then echo "❌ $d directory not found"; exit 1; fi
+          done
+          echo "✅ All critical files found"
 
-    - name: Determine version
-      id: version
-      run: |
-        if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/tags/* ]]; then
-          VERSION=${GITHUB_REF#refs/tags/}
-        elif [[ -n "${{ github.event.inputs.version }}" ]]; then
-          VERSION="${{ github.event.inputs.version }}"
-        else:
-          VERSION="v1.0.0-$(date +'%Y%m%d')-${GITHUB_SHA:0:7}"
-        fi
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          elif [[ -n "${{ github.event.inputs.version }}" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+          elif [[ -f "VERSION" ]]; then
+            VERSION="v$(cat VERSION)"
+          else
+            VERSION="v1.0.0-$(date +'%Y%m%d')-${GITHUB_SHA:0:7}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
 
-    - name: Release check
-      id: check
-      run: |
-        if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/tags/* ]]; then
-          echo "is_release=true" >> $GITHUB_OUTPUT
-        else
-          echo "is_release=false" >> $GITHUB_OUTPUT
-        fi
+      - name: Release check
+        id: check
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "is_release=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_release=false" >> $GITHUB_OUTPUT
+          fi
 
   build-windows:
-    name: Build Windows
+    name: Build Windows EXE
     runs-on: windows-latest
     needs: pre-checks
-    timeout-minutes: 60
-    
+    timeout-minutes: 90
     steps:
-    - name: Checkout repository  
-      uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Setup Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
+      - name: Setup Python ${{ env.PYTHON_VERSION }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          architecture: x64
 
-    - name: Install build dependencies
-      run: |
-        pip install pyinstaller==6.3.0
-        pip install pillow
+      - name: Install build tools and deps
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install pyinstaller==5.11.2
+          # install only build-time deps (use requirements-build.txt if present)
+          if (Test-Path "requirements-build.txt") {
+            pip install -r requirements-build.txt
+          }
+          # install runtime deps too (guarantee)
+          pip install -r requirements.txt
 
-    - name: Install application dependencies
-      run: |
-        pip install -r requirements.txt
+      - name: Convert PNG -> ICO (ensure icon exists)
+        shell: pwsh
+        run: |
+          python - <<'PY'
+          from PIL import Image
+          import os
+          png_path = "icon/bupilic_logo.png"
+          ico_path = "build/app_icon.ico"
+          os.makedirs("build", exist_ok=True)
+          try:
+              img = Image.open(png_path)
+              if img.mode != 'RGBA':
+                  img = img.convert('RGBA')
+              sizes = [(16,16),(32,32),(48,48),(64,64),(128,128),(256,256)]
+              img.save(ico_path, format='ICO', sizes=sizes)
+              print("ICON_OK:", ico_path)
+          except Exception as e:
+              print("ICON_FAIL:", e)
+              # fallback placeholder
+              from PIL import ImageDraw
+              img = Image.new('RGBA', (64,64), (42,157,143,255))
+              draw = ImageDraw.Draw(img)
+              draw.rectangle((0,0,63,63), fill=(42,157,143,255))
+              img.save(ico_path, format='ICO')
+              print("ICON_PLACEHOLDER:", ico_path)
+          PY
 
-    - name: Build with PyInstaller
-      run: |
-        # Icon dosyasını kontrol et
-        if (-Not (Test-Path "icon/bupilic_logo.ico")) {
-          echo "Icon file not found, continuing without icon..."
-        }
-        
-        pyinstaller BupiliC.spec --noconfirm --clean
+      - name: Build with PyInstaller (using spec)
+        shell: pwsh
+        env:
+          APP_NAME: ${{ env.APP_NAME }}
+        run: |
+          # Use the exact spec filename in your repo. Adjust if your spec name differs.
+          $spec = "bupilic.spec"
+          if (-Not (Test-Path $spec)) {
+            Write-Host "Spec file not found: $spec. Falling back to generating a simple command."
+            pyinstaller --noconfirm --onefile --windowed --name "${{ env.APP_NAME }}" --icon=build/app_icon.ico BUPILIC_ANA_PROGRAM.py
+          } else {
+            pyinstaller $spec --noconfirm
+          }
 
-    - name: Test the executable
-      run: |
-        $exePath = "dist\${{ env.APP_NAME }}\${{ env.APP_NAME }}.exe"
-        if (Test-Path $exePath) {
-            echo "Executable found: $exePath"
-        }
+      - name: Test built artifacts
+        shell: pwsh
+        run: |
+          $exePath = Join-Path -Path "dist" -ChildPath "${{ env.APP_NAME }}\${{ env.APP_NAME }}.exe"
+          if (Test-Path $exePath) {
+            Write-Host "✅ Executable found:" $exePath
+            Get-ChildItem "dist" -Recurse | Select-Object FullName, Length | Format-Table -AutoSize
+          } else {
+            Write-Host "❌ Executable not found at expected location"
+            Get-ChildItem -Path . -Recurse | Select-Object FullName, Length | Format-Table -AutoSize
+            exit 1
+          }
 
-    - name: Package for distribution
-      run: |
-        $version = "${{ needs.pre-checks.outputs.version }}"
-        $distDir = "dist\${{ env.APP_NAME }}"
-        $outputName = "${{ env.APP_NAME }}-$version-windows-x64"
-        
-        if (Test-Path $distDir) {
-            Compress-Archive -Path "$distDir\*" -DestinationPath "dist\$outputName.zip" -Force
-            Copy-Item "$distDir\${{ env.APP_NAME }}.exe" "dist\$outputName.exe"
-        }
+      - name: Package artifacts
+        shell: pwsh
+        run: |
+          $version = "${{ needs.pre-checks.outputs.version }}"
+          $distDir = "dist\${{ env.APP_NAME }}"
+          $zipName = "${{ env.APP_NAME }}-$version-windows-x64.zip"
+          if (Test-Path $distDir) {
+            Compress-Archive -Path "$distDir\*" -DestinationPath "dist\$zipName" -Force
+            Write-Host "Created" "dist\$zipName"
+          } else {
+            Write-Host "dist dir not found, trying to zip dist\*"
+            Compress-Archive -Path "dist\*" -DestinationPath "dist\$zipName" -Force
+          }
 
-    - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: BupiliC-${{ needs.pre-checks.outputs.version }}
-        path: dist/*
-        retention-days: 30
-        
-    - name: Create default icon if missing
-      run: |
-        if (-Not (Test-Path "icon")) {
-          mkdir icon
-        }
-        if (-Not (Test-Path "icon/bupilic_logo.ico")) {
-          echo "Creating placeholder icon..."
-          # Basit bir placeholder icon oluştur (opsiyonel)
-          # Veya icon'u komple kaldır
-        }
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APP_NAME }}-${{ needs.pre-checks.outputs.version }}
+          path: |
+            dist/*.zip
+            dist/*.exe
+            dist/*/*.exe
+          retention-days: 30
 
   create-release:
     name: Create Release
-    runs-on: ubuntu-latest
     needs: [pre-checks, build-windows]
+    runs-on: ubuntu-latest
     if: needs.pre-checks.outputs.is_release == 'true'
-    
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: ./artifacts
-
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
-      with:
-        tag_name: ${{ needs.pre-checks.outputs.version }}
-        name: "BupiliC ${{ needs.pre-checks.outputs.version }}"
-        files: artifacts/*
-        prerelease: ${{ github.event.inputs.prerelease || false }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-        
+      - uses: actions/checkout@v4
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./artifacts
+      - name: Create release (softprops)
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.pre-checks.outputs.version }}
+          name: "BupiliÇ ${{ needs.pre-checks.outputs.version }}"
+          files: artifacts/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
