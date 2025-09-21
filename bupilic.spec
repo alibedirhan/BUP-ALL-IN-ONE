@@ -2,26 +2,43 @@
 
 block_cipher = None
 
-# EN BASİT ve ETKİLİ YOL - TÜM DOSYALARI EKLE
-datas = [
-    ('ISKONTO_HESABI', 'ISKONTO_HESABI'),
-    ('KARLILIK_ANALIZI', 'KARLILIK_ANALIZI'),
-    ('Musteri_Sayisi_Kontrolu', 'Musteri_Sayisi_Kontrolu'),
-    ('YASLANDIRMA', 'YASLANDIRMA'),
-    ('icon', 'icon'),
-]
+# TÜM DOSYALARI EKLE - KESİN ÇÖZÜM
+datas = []
+
+# TÜM ALT PROGRAM KLASÖRLERİNİ EKLE
+modules = ['ISKONTO_HESABI', 'KARLILIK_ANALIZI', 'Musteri_Sayisi_Kontrolu', 'YASLANDIRMA']
+for module in modules:
+    datas.append((module, module))
+
+# ICON KLASÖRÜNÜ EKLE
+datas.append(('icon', 'icon'))
 
 a = Analysis(
     ['BUPILIC_ANA_PROGRAM.py'],
-    pathex=[],
+    pathex=[],  # BOŞ BIRAK
     binaries=[],
     datas=datas,
     hiddenimports=[
-        # SADECE ANA MODÜLLER
-        'ISKONTO_HESABI.main',
-        'KARLILIK_ANALIZI.gui',
-        'Musteri_Sayisi_Kontrolu.main', 
-        'YASLANDIRMA.main',
+        # TÜM MODÜLLERİ EKLE
+        'ISKONTO_HESABI.main', 'ISKONTO_HESABI.ui_components',
+        'ISKONTO_HESABI.pdf_processor', 'ISKONTO_HESABI.export_manager',
+        
+        'KARLILIK_ANALIZI.gui', 'KARLILIK_ANALIZI.karlilik',
+        'KARLILIK_ANALIZI.analiz_dashboard', 'KARLILIK_ANALIZI.dashboard_components',
+        'KARLILIK_ANALIZI.data_operations', 'KARLILIK_ANALIZI.themes',
+        'KARLILIK_ANALIZI.ui_components', 'KARLILIK_ANALIZI.veri_analizi',
+        'KARLILIK_ANALIZI.zaman_analizi',
+        
+        'Musteri_Sayisi_Kontrolu.main', 'Musteri_Sayisi_Kontrolu.ui',
+        'Musteri_Sayisi_Kontrolu.kurulum',
+        
+        'YASLANDIRMA.main', 'YASLANDIRMA.gui', 'YASLANDIRMA.excel_processor',
+        'YASLANDIRMA.utils', 'YASLANDIRMA.setup',
+        
+        # KÜTÜPHANELER
+        'pandas', 'numpy', 'matplotlib', 'customtkinter',
+        'pdfplumber', 'PIL', 'openpyxl', 'seaborn',
+        'tkcalendar', 'python-dateutil', 'psutil'
     ],
     hookspath=[],
     hooksconfig={},
@@ -54,5 +71,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None,  # ICON'U TAMAMEN KALDIR - SONRA EKLERİZ
+    icon=None,  # ICON'U KALDIR
 )
