@@ -1,13 +1,8 @@
 # -*- mode: python ; coding: utf-8 -*-
-
-# -*- mode: python ; coding: utf-8 -*-
 import os
 from pathlib import Path
 
 project_root = Path(os.getcwd()).resolve()
-block_cipher = None
-
-
 block_cipher = None
 
 # include folders as data (each tuple: source, dest)
@@ -19,15 +14,14 @@ datas = [
     (str(project_root / "YASLANDIRMA"), "YASLANDIRMA"),
 ]
 
-# Hidden imports that pyinstaller may not detect automatically
+# Hidden imports
 hiddenimports = [
     "customtkinter",
     "PIL",
-    # add other modules pyinstaller misses
 ]
 
 a = Analysis(
-    ['BUPILIC_ANA_PROGRAM.py'],  # entry-point
+    ['BUPILIC_ANA_PROGRAM.py'],
     pathex=[str(project_root)],
     binaries=[],
     datas=datas,
@@ -56,12 +50,12 @@ exe = EXE(
     icon=str(project_root / "build" / "app_icon.ico") if (project_root / "build" / "app_icon.ico").exists() else None
 )
 
-# Tek dosya çıkarmak için, COLLECT değil, BUNDLE kullanmalısın:
-from PyInstaller.building.api import BUNDLE
-app = BUNDLE(exe, name='BupiliC')
-
-
-# If you want single-file (onefile), use the following instead of EXE+COLLECT:
-# from PyInstaller.building import EXE, COLLECT, MERGE
-# exe = EXE(pyz, a.scripts, [], exclude_binaries=True, name='BupiliC', debug=False, strip=False, upx=False, console=False)
-# coll = COLLECT(exe, a.binaries, a.zipfiles, a.datas, strip=False, upx=False, name='BupiliC')
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    strip=False,
+    upx=False,
+    name='BupiliC'
+)
