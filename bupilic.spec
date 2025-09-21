@@ -1,16 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
-# PyInstaller spec for single EXE including all 4 sub-apps
 import os
 import sys
 from pathlib import Path
 
 block_cipher = None
-
 project_root = Path(".").resolve()
-app_name = "BupiliC"
-main_script = "BUPILIC_ANA_PROGRAM.py"
 
-# Data files (kept alongside the exe at runtime inside the bundle)
 datas = [
     (str(project_root / "icon" / "bupilic_logo.png"), "icon"),
     (str(project_root / "ISKONTO_HESABI"), "ISKONTO_HESABI"),
@@ -19,7 +14,6 @@ datas = [
     (str(project_root / "YASLANDIRMA"), "YASLANDIRMA"),
 ]
 
-# Hidden imports to satisfy PyInstaller's static analysis due to dynamic imports
 hiddenimports = [
     "customtkinter",
     "tkinter",
@@ -43,7 +37,6 @@ hiddenimports = [
     "xlwt",
     "dateutil",
     "tkcalendar",
-    # sub-app entry points
     "ISKONTO_HESABI",
     "ISKONTO_HESABI.main",
     "KARLILIK_ANALIZI",
@@ -55,29 +48,24 @@ hiddenimports = [
     "YASLANDIRMA.main",
 ]
 
-# Use our runtime hook to fix paths & matplotlib backend in frozen mode
-runtime_hooks = [str(project_root / "runtime_hook.py")]
-
 a = Analysis(
-    ['BUPILIC_ANA_PROGRAM.py'],
+    ["BUPILIC_ANA_PROGRAM.py"],
     pathex=[str(project_root)],
     binaries=[],
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
-    runtime_hooks=['runtime_hook.py'],  # <--- BURASI EKLENDİ
-    excludes=['tests', 'test', 'unittest'],
+    runtime_hooks=["runtime_hook.py"],
+    excludes=["tests", "test", "unittest"],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
     noarchive=False,
 )
 
-
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
-# One-file EXE (no COLLECT step)
 exe = EXE(
     pyz,
     a.scripts,
@@ -85,7 +73,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name=app_name,
+    name="BupiliC",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
