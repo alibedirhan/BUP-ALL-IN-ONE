@@ -18,6 +18,13 @@ datas = [
 
 # Gerekli tüm modülleri dahil et
 hiddenimports = [
+    'email',
+    'email.mime',
+    'email.mime.text',
+    'email.mime.multipart',
+    'email.mime.base',
+    'pkg_resources',
+    'pkg_resources.py31compat',
     'customtkinter',
     'PIL',
     'PIL._tkinter_finder',
@@ -89,9 +96,6 @@ a = Analysis(
         'test',
         'tests',
         'unittest',
-        'email',
-        'http',
-        'xml',
         'pydoc',
     ],
     win_no_prefer_redirects=False,
