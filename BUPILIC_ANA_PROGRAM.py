@@ -70,47 +70,40 @@ ensure_dependencies_async()
 
 # ===== TÜM ALT PROGRAMLARI ÇALIŞTIRMA =====
 def run_embedded_program(program_name):
-    """Gömülü programı çalıştır - SON ve KESİN ÇÖZÜM"""
+    """Gömülü programı çalıştır - KESİN ÇÖZÜM"""
+    print(f"🚀 Starting {program_name}...")
+    
+    # PyInstaller modunda çalışıyorsak
+    if getattr(sys, 'frozen', False):
+        base_path = sys._MEIPASS
+        print(f"Frozen mode. Base path: {base_path}")
+        
+        # ALT PROGRAMIN YOLUNU EKLE
+        program_path = os.path.join(base_path, program_name)
+        if program_path not in sys.path:
+            sys.path.insert(0, program_path)
+            print(f"Added program path: {program_path}")
+    
     try:
-        print(f"🚀 Starting {program_name}...")
-        
-        # PyInstander ile paketlenmişse
-        if getattr(sys, 'frozen', False):
-            base_path = sys._MEIPASS
-            print(f"Frozen mode. Base path: {base_path}")
-            
-            # Tüm olası yolları ekle
-            possible_paths = [
-                base_path,
-                os.path.join(base_path, program_name),
-                os.getcwd(), 
-                os.path.join(os.getcwd(), program_name)
-            ]
-            
-            for path in possible_paths:
-                if path not in sys.path and os.path.exists(path):
-                    sys.path.insert(0, path)
-                    print(f"Added to path: {path}")
-        
-        # PROGRAMLARI ÇALIŞTIR
+        # DOĞRUDAN IMPORT ET VE ÇALIŞTIR
         if program_name == "ISKONTO_HESABI":
-            import ISKONTO_HESABI.main
-            ISKONTO_HESABI.main.main()
+            from ISKONTO_HESABI.main import main
+            main()
             return True
             
         elif program_name == "KARLILIK_ANALIZI":
-            import KARLILIK_ANALIZI.gui
-            KARLILIK_ANALIZI.gui.main()
+            from KARLILIK_ANALIZI.gui import main
+            main()
             return True
             
         elif program_name == "Musteri_Sayisi_Kontrolu":
-            import Musteri_Sayisi_Kontrolu.main
-            Musteri_Sayisi_Kontrolu.main.main()
+            from Musteri_Sayisi_Kontrolu.main import main
+            main()
             return True
             
         elif program_name == "YASLANDIRMA":
-            import YASLANDIRMA.main
-            YASLANDIRMA.main.main()
+            from YASLANDIRMA.main import main
+            main()
             return True
             
     except Exception as e:
