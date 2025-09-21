@@ -35,35 +35,38 @@ import shutil
 def run_embedded_program(program_name):
     """Alt programı çalıştır"""
     print(f"[START] Starting {program_name}...")
-    
+    print(f"[DEBUG] sys.path = {sys.path}")
+
     try:
         if program_name == "ISKONTO_HESABI":
+            print("[DEBUG] importing ISKONTO_HESABI.main")
             from ISKONTO_HESABI.main import main
             main()
             return True
-            
+
         elif program_name == "KARLILIK_ANALIZI":
             from KARLILIK_ANALIZI.gui import main
             main()
             return True
-            
+
         elif program_name == "Musteri_Sayisi_Kontrolu":
             from Musteri_Sayisi_Kontrolu.main import main
             main()
             return True
-            
+
         elif program_name == "YASLANDIRMA":
             from YASLANDIRMA.main import main
             main()
             return True
-            
+
     except Exception as e:
         print(f"[ERROR] Error running {program_name}: {e}")
         import traceback
         traceback.print_exc()
         return False
-    
+
     return False
+
 
 class BupilicDashboard:
     def __init__(self):
