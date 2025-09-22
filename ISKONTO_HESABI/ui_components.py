@@ -1060,3 +1060,15 @@ Başlamak için PDF sekmesine gidin...
         """Hata mesajı"""
         messagebox.showerror("Hata", message)
         self.status_label.config(text="❌ İşlem başarısız")
+
+# --- dosyanın en altına ekle ---
+
+def create_main_window():
+    """
+    Geriye uyumluluk: Eski kod 'create_main_window' ararsa yine çalışsın.
+    """
+    import tkinter as tk
+    root = tk.Tk()
+    root.title("Bupiliç İskontolu Fiyat Hesaplayıcı v3.0")
+    ModernPriceCalculatorUI(root)
+    root.mainloop()
