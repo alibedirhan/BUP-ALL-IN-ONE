@@ -1121,10 +1121,8 @@ def main():
 
 
 def main():
-    root = tk.Tk()
-    app = ExcelComparisonApp(root)
-    root.mainloop()
-
+    from Musteri_Sayisi_Kontrolu.ui import musteri_sayisi_app
+    musteri_sayisi_app()
 
 def run_program():
     main()
