@@ -994,9 +994,8 @@ class BupilicKarlilikGUI:
 
 
 def main():
-    app = BupilicKarlilikGUI()  # doğru sınıf adı bu
+    app = KarlilikAnaliziApp()
     app.run()
-
 
 if __name__ == "__main__":
     main()
