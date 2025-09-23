@@ -1,4 +1,4 @@
-# bupilic.spec
+# ========== 1. DOSYA: bupilic.spec - DÜZELTILMIŞ ==========
 # -*- mode: python ; coding: utf-8 -*-
 import os
 import sys
@@ -44,6 +44,8 @@ hiddenimports = [
     'tkcalendar',
     'tkinter',
     'tkinter.ttk',
+    'fpdf',
+    'babel.numbers',
     # Alt programların modüllerini ekle
     'ISKONTO_HESABI',
     'ISKONTO_HESABI.main',
@@ -92,12 +94,11 @@ a = Analysis(
     datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[str(project_root / 'hooks')] if (project_root / 'hooks').exists() else [],
-    runtime_hooks=[],  # Runtime hook'u devre dışı bırak
+    runtime_hooks=['runtime_hook.py'],
     excludes=[
         'test',
         'tests',
         'unittest',
-        'pydoc',
     ],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
@@ -126,7 +127,7 @@ exe = EXE(
     upx=False,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=True,  # <- EXE’yi terminalle birlikte açar
+    console=True,  # <- EXE'yi terminalle birlikte açar
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,

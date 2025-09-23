@@ -85,8 +85,8 @@ class Program:
         self.root.mainloop()
 
 def main():
-    from YASLANDIRMA.gui.main_gui import YaslandirmaApp
-    app = YaslandirmaApp()
+    from YASLANDIRMA.gui.main_gui import ExcelProcessorGUI
+    app = ExcelProcessorGUI()
     app.run()
 
 def run_program():

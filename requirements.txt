@@ -1,3 +1,4 @@
+"""
 # BupiliÇ Requirements
 # Python 3.11+ gerekli
 
@@ -32,5 +33,7 @@ psutil==5.9.6
 # Utilities
 pytz==2023.3
 
-
+# Additional
 fpdf==1.7.2
+Babel==2.14.0
+"""
