@@ -1005,8 +1005,13 @@ class BupilicKarlilikGUI:
 
 
 def main():
-    window = tk.Toplevel()
-    app = BupilicKarlilikGUI(master=window)
+    import tkinter as tk
+    if tk._default_root is None:
+        root = tk.Tk()  # tek başına test için
+    else:
+        root = tk.Toplevel()  # ana program içinden çağrı için
+
+    app = BupilicKarlilikGUI(master=root)
     app.run()
 
 
