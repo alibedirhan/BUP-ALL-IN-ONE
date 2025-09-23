@@ -7,6 +7,15 @@ import threading
 import time
 from pathlib import Path
 
+# --- Locale güvenliği: Tk için NUMERIC=C (kritik) ---
+import locale as _locale
+try:
+    _locale.setlocale(_locale.LC_NUMERIC, 'C')
+except Exception:
+    pass
+# --- /Locale güvenliği ---
+
+
 # --- GLOBAL TK DISTANCE HOTFIX (KÖKTEN ÇÖZÜM) ---
 # Tk'ye giden 'screen distance' değerlerini (padx/pady/width/height vb.)
 # otomatik olarak int'e dönüştürür; "200.0" -> "200", 200.0 -> 200
