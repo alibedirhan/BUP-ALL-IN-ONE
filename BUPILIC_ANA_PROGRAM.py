@@ -8,8 +8,8 @@ import time
 from pathlib import Path
 
 # --- GLOBAL TK DISTANCE HOTFIX (KÖKTEN ÇÖZÜM) ---
-# Amaç: Tk'ye giden 'screen distance' değerlerini (padx/pady/width/height vb.)
-#       otomatik olarak int'e dönüştürmek; "200.0" -> "200", 200.0 -> 200
+# Tk'ye giden 'screen distance' değerlerini (padx/pady/width/height vb.)
+# otomatik olarak int'e dönüştürür; "200.0" -> "200", 200.0 -> 200
 import re
 import tkinter as _tk
 
@@ -50,7 +50,6 @@ def _patched_options(self, cnf, kw=None):
     """pack/grid/configure gibi çağrılarda mesafe değerlerini sanitize et."""
     if kw:
         for k in list(kw.keys()):
-            # Distance bilinen anahtarlar veya string-float görünenler normalize edilir
             if (k in _DISTANCE_KEYS) or isinstance(kw[k], (float, list, tuple)) \
                or (isinstance(kw[k], str) and re.fullmatch(r"\d+\.0", kw[k])):
                 kw[k] = _sanitize_distance_value(kw[k])
