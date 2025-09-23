@@ -137,10 +137,12 @@ def create_main_window():
             root.destroy()
 
         root.protocol("WM_DELETE_WINDOW", on_closing)
-        root.mainloop()
+
+        return root, app  # ❗ Burası eksikti
 
     except Exception as e:
         raise RuntimeError(f"Ana pencere oluşturulamadı: {e}")
+
 
 
 def main():
