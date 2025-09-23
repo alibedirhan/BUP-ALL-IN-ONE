@@ -123,28 +123,25 @@ def validate_system_requirements():
         raise RuntimeError(f"Sistem gereksinimleri kontrolü başarısız: {e}")
 
 def create_main_window():
-    if tk._default_root:
-        root = tk.Toplevel(tk._default_root)
-    else:
-        root = tk.Tk()
+    try:
+        if tk._default_root:
+            root = tk.Toplevel(tk._default_root)
+        else:
+            root = tk.Tk()
 
-    app = ModernPriceCalculatorUI(master=root)
+        app = ModernPriceCalculatorUI(master=root)
 
-    def on_closing():
-        logging.info("Uygulama kullanıcı tarafından kapatılıyor...")
-        root.quit()
-        root.destroy()
+        def on_closing():
+            logging.info("Uygulama kullanıcı tarafından kapatılıyor...")
+            root.quit()
+            root.destroy()
 
-    root.protocol("WM_DELETE_WINDOW", on_closing)
-    root.mainloop()
-        
-        # UI bileşenini başlat
-        app = ModernPriceCalculatorUI(root)
-        
-        return root, app
-        
+        root.protocol("WM_DELETE_WINDOW", on_closing)
+        root.mainloop()
+
     except Exception as e:
         raise RuntimeError(f"Ana pencere oluşturulamadı: {e}")
+
 
 def main():
     """
