@@ -8,12 +8,10 @@ import time
 import re
 import tkinter as _tk
 import locale as _locale
-import hashlib
 from pathlib import Path
 from datetime import datetime
 import json
 import logging
-from logging.handlers import RotatingFileHandler
 import tempfile
 import shutil
 
@@ -101,7 +99,7 @@ from PIL import Image, ImageTk
 import locale
 
 def run_embedded_program(program_name):
-    """Alt programı güvenli şekilde çalıştır"""
+    """Alt programı çalıştır"""
     print(f"[START] Starting {program_name}...")
     print(f"[DEBUG] sys.path = {sys.path}")
     print(f"[DEBUG] base_path = {base_path}")
@@ -130,18 +128,8 @@ def run_embedded_program(program_name):
             main()
             return True
 
-        else:
-            print(f"[ERROR] Unknown program: {program_name}")
-            return False
-
-    except ImportError as e:
-        print(f"[ERROR] Module import error for {program_name}: {e}")
-        return False
-    except AttributeError as e:
-        print(f"[ERROR] Function not found in {program_name}: {e}")
-        return False
     except Exception as e:
-        print(f"[ERROR] Unexpected error running {program_name}: {e}")
+        print(f"[ERROR] Error running {program_name}: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -149,36 +137,35 @@ def run_embedded_program(program_name):
 
 class BupilicDashboard:
     def __init__(self):
-        # Thread güvenliği için lock
-        self.program_lock = threading.Lock()
-        self.running_programs = set()
-        
-        # Güvenli şifre hash'i (cal93'ün SHA256'sı)
-        self.password_hash = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92"
-        
-        # Setup resource path first
-        self.setup_resource_path()
-        
-        # Setup logging before anything else
-        self.logger = self.setup_logging()
-        self.logger.info("Uygulama başlatılıyor...")
-        
         # Türkçe locale ayarları
-        self.setup_turkish_locale()
+        try:
+            locale.setlocale(locale.LC_TIME, 'tr_TR.UTF-8')
+        except:
+            try:
+                locale.setlocale(locale.LC_TIME, 'Turkish_Turkey.1254')
+            except:
+                pass
 
         self.root = ctk.CTk()
         self.root.title("BupiliÇ İşletme Yönetim Sistemi")
         self.root.geometry("1000x600")
         self.root.resizable(True, True)
 
+        # PyInstaller için resource path
+        self.setup_resource_path()
+
         # Klasör yapısını oluştur
         self.setup_directories()
+
+        # Loglama
+        self.logger = self.setup_logging()
+        self.logger.info("Uygulama başlatıldı")
 
         # Kullanıcı verileri
         self.user_data = {
             "name": "Ali Yılmaz",
             "position": "Satış Yöneticisi",
-            "password_hash": self.password_hash
+            "password": "bupilic2024"
         }
 
         # Ayarları yükle
@@ -199,171 +186,60 @@ class BupilicDashboard:
         self.show_login_screen()
 
     def setup_resource_path(self):
-        """PyInstaller için resource path ayarları - İyileştirilmiş"""
+        """PyInstaller için resource path ayarları"""
         try:
             self.base_path = sys._MEIPASS
             self.is_frozen = True
-        except AttributeError:
-            # PyInstaller değil, normal Python
-            self.base_path = os.path.abspath(".")
-            self.is_frozen = False
-        except Exception as e:
-            # Beklenmeyen hata
-            print(f"Warning: Resource path setup failed: {e}")
+        except:
             self.base_path = os.path.abspath(".")
             self.is_frozen = False
 
     def get_resource_path(self, relative_path):
-        """Resource path'i güvenli şekilde döndür"""
-        # Path traversal koruması
-        if ".." in relative_path or relative_path.startswith("/") or relative_path.startswith("\\"):
-            self.logger.warning(f"Potentially unsafe path rejected: {relative_path}")
-            return None
-        
-        # Frozen modda dene
+        """Resource path'i döndür"""
         if self.is_frozen:
             path = os.path.join(self.base_path, relative_path)
-            if os.path.exists(path) and os.access(path, os.R_OK):
+            if os.path.exists(path):
                 return path
-        
-        # Fallback
-        fallback_path = os.path.join(os.path.abspath("."), relative_path)
-        
-        # Fallback da kontrol et
-        if os.path.exists(fallback_path) and os.access(fallback_path, os.R_OK):
-            return fallback_path
-        
-        # Hiçbiri çalışmazsa
-        self.logger.warning(f"Resource not found: {relative_path}")
-        return None
+        return os.path.join(os.path.abspath("."), relative_path)
 
     def setup_directories(self):
-        """Gerekli klasörleri güvenli şekilde oluştur"""
+        """Gerekli klasörleri oluştur"""
         directories = ['data/input', 'data/output', 'config', 'logs', 'temp']
         for directory in directories:
-            try:
-                dir_path = self.get_resource_path(directory)
-                if dir_path:
-                    os.makedirs(dir_path, exist_ok=True)
-                else:
-                    # Fallback: current directory'de oluştur
-                    os.makedirs(directory, exist_ok=True)
-                    self.logger.info(f"Directory created in current path: {directory}")
-            except OSError as e:
-                self.logger.error(f"Failed to create directory {directory}: {e}")
-            except Exception as e:
-                self.logger.error(f"Unexpected error creating directory {directory}: {e}")
+            os.makedirs(self.get_resource_path(directory), exist_ok=True)
 
     def setup_logging(self):
-        """Gelişmiş loglama sistemi"""
-        try:
-            log_dir = os.path.join(self.base_path, "logs") if hasattr(self, 'base_path') else "logs"
-            os.makedirs(log_dir, exist_ok=True)
-            
-            # Rotating file handler
-            log_file = os.path.join(log_dir, "bupilic.log")
-            file_handler = RotatingFileHandler(
-                log_file, 
-                maxBytes=5*1024*1024,  # 5MB
-                backupCount=3,
-                encoding='utf-8'
-            )
-            
-            # Console handler
-            console_handler = logging.StreamHandler()
-            
-            # Formatter
-            formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-            )
-            file_handler.setFormatter(formatter)
-            console_handler.setFormatter(formatter)
-            
-            # Logger setup
-            logger = logging.getLogger(__name__)
-            logger.setLevel(logging.INFO)
-            
-            # Clear existing handlers
-            logger.handlers.clear()
-            
-            logger.addHandler(file_handler)
-            logger.addHandler(console_handler)
-            
-            return logger
-            
-        except Exception as e:
-            # Fallback: basic logging
-            logging.basicConfig(
-                level=logging.INFO,
-                format='%(asctime)s - %(levelname)s - %(message)s'
-            )
-            logger = logging.getLogger(__name__)
-            logger.warning(f"Advanced logging setup failed, using basic: {e}")
-            return logger
+        """Loglama sistemi"""
+        log_dir = self.get_resource_path("logs")
+        os.makedirs(log_dir, exist_ok=True)
 
-    def setup_turkish_locale(self):
-        """Türkçe locale ayarlarını platform bağımsız kur"""
-        locale_candidates = [
-            'tr_TR.UTF-8',           # Linux
-            'Turkish_Turkey.1254',   # Windows
-            'tr_TR',                 # Genel
-            'C.UTF-8',              # Fallback
-            'C'                     # Son çare
-        ]
-        
-        for loc in locale_candidates:
-            try:
-                locale.setlocale(locale.LC_TIME, loc)
-                self.logger.info(f"Locale ayarlandı: {loc}")
-                return True
-            except locale.Error:
-                continue
-            except Exception as e:
-                self.logger.debug(f"Locale {loc} setting failed: {e}")
-                continue
-        
-        self.logger.warning("Hiçbir Türkçe locale ayarlanamadı, varsayılan kullanılacak")
-        return False
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s',
+            handlers=[logging.StreamHandler()]
+        )
+        return logging.getLogger(__name__)
 
     def load_settings(self):
-        """Ayarları güvenli şekilde yükle"""
+        """Ayarları yükle"""
         try:
             settings_path = self.get_resource_path("config/user_settings.json")
-            if settings_path and os.path.exists(settings_path):
+            if os.path.exists(settings_path):
                 with open(settings_path, "r", encoding="utf-8") as f:
                     saved_data = json.load(f)
-                    # Sadece güvenli alanları güncelle
-                    safe_keys = ["name", "position", "theme", "language"]
-                    for key in safe_keys:
-                        if key in saved_data:
-                            self.user_data[key] = saved_data[key]
-                self.logger.info("User settings loaded successfully")
-        except json.JSONDecodeError as e:
-            self.logger.error(f"Invalid JSON in settings file: {e}")
-        except IOError as e:
-            self.logger.warning(f"Could not read settings file: {e}")
-        except Exception as e:
-            self.logger.error(f"Unexpected error loading settings: {e}")
+                    self.user_data.update(saved_data)
+        except:
+            pass
 
     def save_settings(self):
-        """Ayarları güvenli şekilde kaydet"""
+        """Ayarları kaydet"""
         try:
-            config_dir = "config"
-            os.makedirs(config_dir, exist_ok=True)
-            settings_path = os.path.join(config_dir, "user_settings.json")
-            
-            # Şifreyi kaydetme
-            save_data = {k: v for k, v in self.user_data.items() if k != "password_hash"}
-            
+            settings_path = self.get_resource_path("config/user_settings.json")
+            os.makedirs(os.path.dirname(settings_path), exist_ok=True)
             with open(settings_path, "w", encoding="utf-8") as f:
-                json.dump(save_data, f, ensure_ascii=False, indent=4)
-                
-            self.logger.info("User settings saved successfully")
-            
-        except IOError as e:
-            self.logger.error(f"Could not save settings: {e}")
-        except Exception as e:
-            self.logger.error(f"Unexpected error saving settings: {e}")
+                json.dump(self.user_data, f, ensure_ascii=False, indent=4)
+        except:
+            pass
 
     def setup_color_palette(self):
         """Renk paleti"""
@@ -394,39 +270,23 @@ class BupilicDashboard:
 
     def get_color(self, color_key):
         """Renk döndür"""
-        try:
-            return self.colors[self.appearance_mode][color_key]
-        except KeyError:
-            self.logger.warning(f"Color key not found: {color_key}, using fallback")
-            return "#000000"  # Fallback color
+        return self.colors[self.appearance_mode][color_key]
 
     def load_logo(self):
-        """Logo güvenli şekilde yükle"""
+        """Logo yükle"""
         try:
             logo_path = self.get_resource_path("icon/bupilic_logo.png")
-            if logo_path and os.path.exists(logo_path):
+            if os.path.exists(logo_path):
                 pil_image = Image.open(logo_path)
                 ctk_image = ctk.CTkImage(
                     light_image=pil_image,
                     dark_image=pil_image,
                     size=(48, 48)
                 )
-                self.logger.info("Logo loaded successfully")
                 return ctk_image
-        except IOError as e:
-            self.logger.warning(f"Could not load logo file: {e}")
-        except Exception as e:
-            self.logger.error(f"Unexpected error loading logo: {e}")
-        
+        except:
+            pass
         return None
-
-    def hash_password(self, password):
-        """Şifreyi hash'le"""
-        return hashlib.sha256(password.encode()).hexdigest()
-
-    def verify_password(self, password):
-        """Şifreyi doğrula"""
-        return self.hash_password(password) == self.user_data["password_hash"]
 
     def show_login_screen(self):
         """Login ekranı"""
@@ -489,23 +349,13 @@ class BupilicDashboard:
         self.login_error_label.pack()
 
     def check_login(self):
-        """Login kontrolü - güvenli"""
+        """Login kontrolü"""
         password = self.password_entry.get()
-        
-        # DEBUG: Hash'leri yazdır
-        entered_hash = self.hash_password(password)
-        self.logger.info(f"Girilen şifre: {password}")
-        self.logger.info(f"Girilen şifrenin hash'i: {entered_hash}")
-        self.logger.info(f"Beklenen hash: {self.user_data['password_hash']}")
-        
-        if self.verify_password(password):
+        if password == self.user_data["password"]:
             self.logger.info("Giriş başarılı")
             self.setup_ui()
         else:
-            self.logger.warning("Başarısız giriş denemesi")
             self.login_error_label.configure(text="Hatalı şifre!")
-            # Güvenlik için entry'yi temizle
-            self.password_entry.delete(0, 'end')
 
     def setup_ui(self):
         """Ana UI"""
@@ -739,103 +589,56 @@ class BupilicDashboard:
         self.setup_welcome_section()
         self.setup_quick_access()
 
-    def run_program_safely(self, program_name):
-        """Programı thread-safe şekilde çalıştır"""
-        with self.program_lock:
-            if program_name in self.running_programs:
-                self.show_message(f"{program_name} zaten çalışıyor!")
-                return False
-            
-            self.running_programs.add(program_name)
-            self.logger.info(f"Starting program: {program_name}")
-        
-        try:
-            success = run_embedded_program(program_name)
-            return success
-        except Exception as e:
-            self.logger.error(f"Error running {program_name}: {e}")
-            return False
-        finally:
-            with self.program_lock:
-                self.running_programs.discard(program_name)
-
     def iskonto_ac(self):
         """İskonto programını aç"""
         print("[INFO] İskonto programı başlatılıyor...")
-        success = self.run_program_safely("ISKONTO_HESABI")
+        success = run_embedded_program("ISKONTO_HESABI")
         if not success:
             self.show_message("İskonto programı başlatılamadı!")
 
     def karlilik_ac(self):
         """Karlılık programını aç"""
         print("[INFO] Karlılık analizi başlatılıyor...")
-        success = self.run_program_safely("KARLILIK_ANALIZI")
+        success = run_embedded_program("KARLILIK_ANALIZI")
         if not success:
             self.show_message("Karlılık analizi başlatılamadı!")
 
     def musteri_kayip_ac(self):
         """Müşteri kayıp programını aç"""
         print("[INFO] Müşteri kayıp/kaçak programı başlatılıyor...")
-        success = self.run_program_safely("Musteri_Sayisi_Kontrolu")
+        success = run_embedded_program("Musteri_Sayisi_Kontrolu")
         if not success:
             self.show_message("Müşteri programı başlatılamadı!")
 
     def yaslandirma_ac(self):
         """Yaşlandırma programını aç"""
         print("[INFO] Yaşlandırma programı başlatılıyor...")
-        success = self.run_program_safely("YASLANDIRMA")
+        success = run_embedded_program("YASLANDIRMA")
         if not success:
             self.show_message("Yaşlandırma programı başlatılamadı!")
 
     def show_message(self, message):
         """Mesaj göster"""
         print(f"[MSG] {message}")
-        try:
-            # Popup mesaj göster
-            popup = ctk.CTkToplevel(self.root)
-            popup.title("Bilgi")
-            popup.geometry("300x150")
-            popup.resizable(False, False)
-            
-            # Center popup
-            popup.transient(self.root)
-            popup.grab_set()
+        # Popup mesaj göster
+        popup = ctk.CTkToplevel(self.root)
+        popup.title("Bilgi")
+        popup.geometry("300x150")
 
-            ctk.CTkLabel(
-                popup, text=message,
-                font=ctk.CTkFont(size=14),
-                wraplength=250
-            ).pack(pady=30, padx=20)
+        ctk.CTkLabel(
+            popup, text=message,
+            font=ctk.CTkFont(size=14)
+        ).pack(pady=30)
 
-            ctk.CTkButton(
-                popup, text="Tamam",
-                command=popup.destroy,
-                width=100
-            ).pack(pady=(0, 20))
-            
-        except Exception as e:
-            self.logger.error(f"Error showing message popup: {e}")
-            # Fallback: console message
-            print(f"MESSAGE: {message}")
+        ctk.CTkButton(
+            popup, text="Tamam",
+            command=popup.destroy
+        ).pack()
 
     def run(self):
         """Uygulamayı çalıştır"""
-        try:
-            self.logger.info("Ana uygulama başlatılıyor")
-            self.root.mainloop()
-        except KeyboardInterrupt:
-            self.logger.info("Uygulama kullanıcı tarafından sonlandırıldı")
-        except Exception as e:
-            self.logger.error(f"Uygulama çalışma hatası: {e}")
-            raise
-        finally:
-            self.logger.info("Uygulama kapatılıyor")
+        self.root.mainloop()
 
 if __name__ == "__main__":
-    try:
-        app = BupilicDashboard()
-        app.run()
-    except Exception as e:
-        print(f"FATAL ERROR: {e}")
-        import traceback
-        traceback.print_exc()
+    app = BupilicDashboard()
+    app.run()
