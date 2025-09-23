@@ -61,7 +61,7 @@ from karlilik import KarlilikAnalizi
 
 
 class BupilicKarlilikGUI:
-    def __init__(self):
+    def __init__(self, master=None):
         # Ana pencere oluştur
         if master is not None:
             self.root = master
