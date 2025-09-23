@@ -63,7 +63,18 @@ from karlilik import KarlilikAnalizi
 class BupilicKarlilikGUI:
     def __init__(self):
         # Ana pencere oluştur
-        self.root = tk.Tk()
+        if master is not None:
+            self.root = master
+        else:
+            # Ana programdan (CTk) geliyorsa _default_root zaten vardır
+            if tk._default_root is not None:
+                self.root = tk.Toplevel(tk._default_root)
+            else:
+                # Tek başına çalıştırılırsa (python gui.py) root yarat
+                self.root = tk.Tk()
+
+        self.root.title("Karlılık Analizi")
+        
         self.root.title("Bupiliç Karlılık Analizi - CAL")
         self.root.geometry("1200x800")
         self.root.configure(bg='#f8f9fa')
@@ -112,8 +123,6 @@ class BupilicKarlilikGUI:
         
         # Graceful shutdown setup
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
-
-        self.root = master if master else tk.Tk()
     
     def thread_safe_update_progress(self, value, status):
         """Thread-safe progress güncelleme"""
