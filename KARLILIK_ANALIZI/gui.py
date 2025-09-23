@@ -112,6 +112,8 @@ class BupilicKarlilikGUI:
         
         # Graceful shutdown setup
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+
+        self.root = master if master else tk.Tk()
     
     def thread_safe_update_progress(self, value, status):
         """Thread-safe progress güncelleme"""
@@ -996,7 +998,7 @@ class BupilicKarlilikGUI:
 def main():
     window = tk.Toplevel()
     app = BupilicKarlilikGUI(master=window)
-    window.mainloop()
+    app.run()
 
 
 if __name__ == "__main__":
