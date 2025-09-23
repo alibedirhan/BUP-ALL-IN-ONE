@@ -1072,11 +1072,13 @@ Başlamak için PDF sekmesine gidin...
 # --- dosyanın en altına ekle ---
 
 def create_main_window():
-    """
-    Geriye uyumluluk: Eski kod 'create_main_window' ararsa yine çalışsın.
-    """
     import tkinter as tk
-    root = tk.Tk()
+    if tk._default_root:
+        root = tk.Toplevel(tk._default_root)
+    else:
+        root = tk.Tk()
+
     root.title("Bupiliç İskontolu Fiyat Hesaplayıcı v3.0")
-    ModernPriceCalculatorUI(root)
+    ModernPriceCalculatorUI(master=root)
     root.mainloop()
+
