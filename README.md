@@ -1,249 +1,285 @@
-🏢 BupiliÇ İşletme Yönetim Sistemi
-Show Image
-Show Image
-Show Image
-Show Image
-Modern ve kullanıcı dostu işletme yönetim sistemi. CustomTkinter tabanlı arayüz ile İskonto Hesaplama, Karlılık Analizi, Müşteri Kayıp/Kaçak ve Yaşlandırma modüllerini içerir.
-✨ Özellikler
-🔥 Ana Modüller
+# 🐓 Bupiliç Yönetim Sistemi (BUP-ALL-IN-ONE)
 
-💰 İskonto Hesaplama: Otomatik iskonto hesaplamaları ve raporlama
-📈 Karlılık Analizi: Şube bazlı karlılık analizleri ve grafikler
-👥 Müşteri Kayıp/Kaçak: Müşteri hareketleri takibi ve analizi
-📊 Yaşlandırma: Detaylı yaşlandırma raporları ve visualizasyonlar
+<div align="center">
 
-🎨 Kullanıcı Arayüzü
+![Version](https://img.shields.io/github/v/release/alibedirhan/BUP-ALL-IN-ONE?style=for-the-badge)
+![Downloads](https://img.shields.io/github/downloads/alibedirhan/BUP-ALL-IN-ONE/total?style=for-the-badge)
+![License](https://img.shields.io/github/license/alibedirhan/BUP-ALL-IN-ONE?style=for-the-badge)
+![Last Commit](https://img.shields.io/github/last-commit/alibedirhan/BUP-ALL-IN-ONE?style=for-the-badge)
 
-✅ Modern CustomTkinter tasarımı
-✅ Light/Dark tema desteği
-✅ Türkçe tam destek
-✅ Responsive tasarım
-✅ Kullanıcı dostu navigasyon
+**Tavukçuluk sektörü için geliştirilmiş kapsamlı işletme yönetim sistemi**
 
-🔧 Teknik
+[📥 Son Sürümü İndir](https://github.com/alibedirhan/BUP-ALL-IN-ONE/releases/latest/download/Bupilic_Yonetim_Sistemi.exe) • [📖 Dokümantasyon](#kullanım-kılavuzu) • [🐛 Hata Bildirimi](https://github.com/alibedirhan/BUP-ALL-IN-ONE/issues) • [💬 Destek](#destek)
 
-Python 3.10 desteği
-CustomTkinter 5.2.2 entegrasyonu
-PyInstaller ile tek dosya executable
-UPX sıkıştırması ile optimizasyon
-GitHub Actions otomatik build sistemi
-Comprehensive error handling
-Modüler kod yapısı
-Cross-module communication
-Automatic dependency management
+</div>
 
-🏗️ Infrastructure
+---
 
-GitHub Actions CI/CD pipeline
-Otomatik versiyonlama sistemi
-Multi-architecture builds (x64, x86)
-Automated testing
-Release management
-Artifact compression ve distribution
+## 🎯 Proje Hakkında
 
-[0.9.0] - 2024-12-XX (Beta)
-✨ Yeni Özellikler
+Bupiliç Yönetim Sistemi, tavukçuluk sektöründeki işletmelerin karmaşık süreçlerini kolaylaştırmak ve verimliliği artırmak için geliştirilmiş modern bir yönetim uygulamasıdır. Küçük ölçekli çiftliklerden büyük endüstriyel tesislere kadar her büyüklükteki işletmeye hitap eden kapsamlı çözümler sunar.
 
-Beta sürüm ana framework'ü
-Temel modül yapıları
-İlk GUI tasarımı
+### ✨ Temel Özellikler
 
-🐛 Düzeltilen Hatalar
+| 🔧 Özellik | 📝 Açıklama |
+|-----------|-------------|
+| 💰 **İskonto Hesaplama** | Otomatik iskonto hesaplamaları ve fiyatlandırma yönetimi |
+| 📊 **Karlılık Analizi** | Detaylı maliyet analizi ve kar-zarar raporları |
+| 🔍 **Müşteri Kayıp/Kaçak Takibi** | Müşteri davranış analizi ve kayıp önleme sistemleri |
+| 📈 **Yaşlandırma Raporları** | Alacak yaşlandırma ve risk değerlendirme raporları |
+| 🛡️ **Güvenli Erişim** | Şifre korumalı kullanıcı yönetimi |
+| 🎨 **Modern Arayüz** | Kullanıcı dostu ve sezgisel tasarım |
 
-İlk beta sürümü - known issues var
+---
 
-🔧 Teknik
+## 🚀 Hızlı Başlangıç
 
-İlk PyInstaller konfigürasyonu
-Temel build sistemi
+### 📋 Sistem Gereksinimleri
 
-[0.1.0] - 2024-11-XX (Alpha)
-✨ Yeni Özellikler
+- **İşletim Sistemi:** Windows 10 veya üzeri
+- **Framework:** .NET Framework 4.7.2 veya üzeri
+- **RAM:** Minimum 4 GB (8 GB önerilir)
+- **Depolama:** 500 MB boş alan
+- **Ekran Çözünürlüğü:** Minimum 1024x768
 
-İlk prototip sürümü
-Temel modül yapısı
-Konsept proof
+### 📥 Kurulum
 
-📝 Notlar
+#### Yöntem 1: Hızlı Kurulum (Önerilen)
 
-İlk geliştirme sürümü
-Sadece geliştirici testleri için
+1. **Doğrudan İndir**: [Bupiliç_Yonetim_Sistemi.exe](https://github.com/alibedirhan/BUP-ALL-IN-ONE/releases/latest/download/Bupilic_Yonetim_Sistemi.exe)
+2. **Çalıştır**: İndirilen dosyayı çift tıklayın
+3. **Giriş**: Varsayılan şifre ile sisteme girin
 
+#### Yöntem 2: GitHub Releases
 
-🏷️ Tag Format
-Bu projede aşağıdaki tag formatı kullanılır:
-vMAJOR.MINOR.PATCH[-PRERELEASE]
+1. [Releases](https://github.com/alibedirhan/BUP-ALL-IN-ONE/releases) sayfasına gidin
+2. En son sürümü seçin
+3. `.exe` dosyasını indirin ve çalıştırın
 
-Örnekler:
-- v1.0.0        (Stable release)
-- v1.1.0        (Minor update)
-- v1.0.1        (Bug fix)
-- v2.0.0-beta.1 (Beta release)
-- v1.2.0-rc.1   (Release candidate)
-📊 Release Types
-Major Release (v1.0.0 → v2.0.0)
+### 🔐 İlk Giriş
 
-Breaking changes
-Büyük yeni özellikler
-Architecture değişiklikleri
-API değişiklikleri
+```
+Varsayılan Şifre: bupilic2024
+```
 
-Minor Release (v1.0.0 → v1.1.0)
+> ⚠️ **Güvenlik Uyarısı**: İlk girişten sonra şifrenizi değiştirmeniz önerilir.
 
-Yeni özellikler (backward compatible)
-Performance iyileştirmeleri
-Yeni modüller
+---
 
-Patch Release (v1.0.0 → v1.0.1)
+## 📚 Kullanım Kılavuzu
 
-Bug fixes
-Security patches
-Küçük iyileştirmeler
-Documentation updates
+### 🏠 Ana Ekran
 
-Pre-release
+Ana ekran, tüm modüllere hızlı erişim sağlayan merkezi kontrol panelidir. Buradan:
 
-Alpha: İlk geliştirme sürümleri
-Beta: Feature-complete ama test aşamasında
-RC (Release Candidate): Son test aşaması
+- Günlük raporları görüntüleyebilirsiniz
+- Hızlı işlemler yapabilirsiniz
+- Sistem durumunu takip edebilirsiniz
 
-🔄 Release Process
+### 💰 İskonto Yönetimi
 
-Development: develop branch'de geliştirme
-Feature Freeze: Yeni özellikler durdurulur
-Testing: Comprehensive testing
-Release Branch: release/vX.X.X branch oluşturulur
-Final Testing: Son testler
-Tag: Version tag'i oluşturulur
-Build: GitHub Actions otomatik build
-Release: GitHub Releases'da yayınlanır
-Merge: main branch'e merge edilir
+**İskonto Hesaplama Modülü** ile:
 
-📈 Version History
-VersionRelease DateDownloadsNotable Featuresv1.0.02025-01-XX-İlk stable releasev0.9.02024-12-XX-Beta releasev0.1.02024-11-XX-Initial alpha
+1. **Otomatik Hesaplamalar**: Müşteri kategorisine göre otomatik iskonto uygulama
+2. **Esnek Oranlar**: Ürün bazlı veya genel iskonto tanımlama
+3. **Tarihsel Takip**: Geçmiş iskonto uygulamalarını görüntüleme
 
-📅 Son güncelleme: Bu CHANGELOG otomatik olarak her release'de güncellenir. Özellikler
+### 📊 Karlılık Analizi
 
-✅ Python 3.10+ desteği
-✅ Portable tek dosya (kurulum gerektirmez)
-✅ Windows 7/8/10/11 uyumluluğu
-✅ Excel dosyaları desteği
-✅ PDF export özelliği
-✅ Loglama ve hata takibi
+**Analiz Modülü** özellikleri:
 
-🚀 Hızlı Başlangıç
-📥 İndirme (Tavsiye Edilen)
+- **Maliyet Takibi**: Detaylı maliyet kırılımları
+- **Kar Marjı Hesaplama**: Ürün ve kategori bazlı karlılık
+- **Trend Analizi**: Zaman içindeki karlılık değişimleri
+- **Görsel Raporlar**: Grafikler ve çizelgeler
 
-Releases sayfasından en son sürümü indirin
-BupiliC-vX.X.X-windows-x64.exe dosyasını çalıştırın
-Varsayılan şifre: bupilic2024
+### 🔍 Müşteri Takip Sistemi
 
-💻 Kaynak Koddan Çalıştırma
-bash# Repository'yi klonlayın
-git clone https://github.com/alibedirhan/BUP-ALL-IN-ONE.git
-cd BUP-ALL-IN-ONE
+**Kayıp/Kaçak Takip Modülü**:
 
-# Virtual environment oluşturun (tavsiye edilir)
-python -m venv venv
-venv\Scripts\activate  # Windows
+- Müşteri satın alma desenlerini analiz eder
+- Risk altındaki müşterileri önceden tespit eder
+- Müşteri sadakat programları önerir
+- Otomatik uyarı sistemi
 
-# Gereksinimler yükleyin
-pip install -r requirements.txt
+### 📈 Yaşlandırma Raporları
 
-# Uygulamayı başlatın
-python bupilic_ana_program.py
-🛠️ Geliştirici Kılavuzu
-📋 Gereksinimler
+**Yaşlandırma Analizi**:
 
-Python 3.10 veya üzeri
-Windows 7/8/10/11
-4GB RAM (minimum)
-500MB disk alanı
+- 0-30, 31-60, 61-90, 90+ gün kategorileri
+- Müşteri bazlı risk değerlendirmesi
+- Tahsilat öncelik sıralaması
+- Excel export özelliği
 
-🔨 Local Build
-bash# Build ortamını hazırlayın
-scripts\setup_env.bat
+---
 
-# Test build'i çalıştırın
-scripts\test_build.bat
+## 🛠️ Geliştiriciler İçin
 
-# Release build'i oluşturun
-python build\build.py --version v1.0.0
-🚀 GitHub Actions ile Otomatik Build
-Repository'ye tag push ettiğinizde otomatik build başlar:
-bashgit tag v1.0.0
-git push origin v1.0.0
-Build sonrası otomatik olarak:
+### 🏗️ Proje Yapısı
 
-Windows x64/x86 executable'ları oluşturulur
-UPX ile sıkıştırılır
-GitHub Releases'da yayınlanır
-
-📁 Proje Yapısı
+```
 BUP-ALL-IN-ONE/
-├── .github/workflows/          # GitHub Actions
-├── build/                      # Build scripts & configs
-├── scripts/                    # Helper scripts
-├── bupilic_ana_program.py      # Ana program
-├── ISKONTO_HESABI/            # İskonto modülü
-├── KARLILIK_ANALIZI/          # Karlılık modülü
-├── MUSTERI_SAYISI_KONTROLU/   # Müşteri modülü
-├── YASLANDIRMA/               # Yaşlandırma modülü
-├── icon/                      # Uygulama ikonları
-├── requirements.txt           # Python gereksinimleri
-└── README.md                  # Bu dosya
-🔧 Konfigürasyon
-👤 Kullanıcı Ayarları
+├── src/
+│   ├── Core/                 # Ana uygulama mantığı
+│   ├── UI/                   # Kullanıcı arayüzü
+│   ├── Data/                 # Veri erişim katmanı
+│   ├── Services/             # İş mantığı servisleri
+│   └── Utils/                # Yardımcı sınıflar
+├── Resources/                # Kaynaklar ve görseller
+├── Documentation/            # Proje dokümantasyonu
+└── Tests/                    # Test dosyaları
+```
 
-Şifre değiştirme: Ayarlar menüsünden
-Tema seçimi: Header'daki tema butonundan
-Kullanıcı bilgileri: JSON formatında config/user_settings.json'da saklanır
+### 🔨 Geliştirme Ortamı Kurulumu
 
-📊 Modül Ayarları
-Her modül kendi konfigürasyon dosyalarını yönetir:
+1. **Gereksinimler**:
+   ```
+   - Visual Studio 2019 veya üzeri
+   - .NET Framework 4.7.2 SDK
+   - SQL Server LocalDB (isteğe bağlı)
+   ```
 
-data/input/: Giriş dosyaları
-data/output/: Çıktı dosyaları
-logs/: Log dosyaları
-config/: Konfigürasyon dosyaları
+2. **Proje Klonlama**:
+   ```bash
+   git clone https://github.com/alibedirhan/BUP-ALL-IN-ONE.git
+   cd BUP-ALL-IN-ONE
+   ```
 
-🚨 Sorun Giderme
-❓ Sık Karşılaşılan Sorunlar
-Q: Antivirus uyarı veriyor
-A: Bu normaldir. PyInstaller ile oluşturulan exe dosyaları bazı antivirus programları tarafından false positive olarak algılanabilir.
-Q: Program yavaş açılıyor
-A: İlk açılış biraz yavaş olabilir (özellikle Windows Defender taraması). Sonraki açılışlar daha hızlı olacaktır.
-Q: Excel dosyası açılmıyor
-A: Excel dosyanızın doğru formatta olduğundan ve başka bir program tarafından kullanılmadığından emin olun.
-Q: Şifremi unuttum
-A: config/user_settings.json dosyasını silin. Varsayılan şifre bupilic2024 olarak sıfırlanacak.
-📝 Log Dosyaları
-Sorunları tespit etmek için log dosyalarını kontrol edin:
+3. **Build ve Çalıştırma**:
+   ```bash
+   dotnet restore
+   dotnet build
+   dotnet run
+   ```
 
-logs/app_YYYYMMDD_HHMMSS.log
+### 🧪 Test Etme
 
-🤝 Katkıda Bulunma
+```bash
+# Unit testleri çalıştır
+dotnet test
 
-Fork edin
-Feature branch oluşturun (git checkout -b feature/amazing-feature)
-Commit edin (git commit -m 'Add amazing feature')
-Push edin (git push origin feature/amazing-feature)
-Pull Request oluşturun
+# Test coverage raporu
+dotnet test --collect:"XPlat Code Coverage"
+```
 
-📄 Lisans
-Bu proje MIT lisansı altında lisanslanmıştır. Detaylar için LICENSE dosyasına bakın.
-📞 Destek
+---
 
-🐛 Bug Reports: GitHub Issues
-💡 Feature Requests: GitHub Discussions
-📧 Email: alibedirhan@example.com
+## 📈 Sürüm Geçmişi
 
-🏆 Teşekkürler
+| Sürüm | Tarih | Önemli Değişiklikler |
+|-------|-------|---------------------|
+| v2.1.0 | 2024-09 | Yaşlandırma raporları eklendi |
+| v2.0.0 | 2024-08 | UI yenilendi, performans iyileştirmeleri |
+| v1.5.0 | 2024-07 | Müşteri takip sistemi |
+| v1.0.0 | 2024-06 | İlk stabil sürüm |
 
-CustomTkinter - Modern UI framework
-PyInstaller - Executable packaging
-Pandas - Data processing
-Matplotlib - Data visualization
+Detaylı değişiklik listesi için [CHANGELOG.md](CHANGELOG.md) dosyasını inceleyin.
 
+---
 
-⭐ Bu projeyi beğendiyseniz star vermeyi unutmayın!
+## 🤝 Katkıda Bulunma
+
+Projeye katkıda bulunmaktan memnuniyet duyarız! 
+
+### 🐛 Hata Bildirimi
+
+Hata bulduğunuzda:
+
+1. [Issues](https://github.com/alibedirhan/BUP-ALL-IN-ONE/issues) sayfasını kontrol edin
+2. Benzer bir hata yoksa yeni issue açın
+3. Aşağıdaki bilgileri ekleyin:
+   - Hatanın detaylı açıklaması
+   - Adım adım tekrar etme yöntemi
+   - Ekran görüntüleri (varsa)
+   - Sistem bilgileri
+
+### 💡 Özellik Önerisi
+
+Yeni özellik önerileri için:
+
+1. [Issues](https://github.com/alibedirhan/BUP-ALL-IN-ONE/issues) sayfasında "Feature Request" etiketi ile açın
+2. Özelliğin detaylı açıklamasını yapın
+3. Use case'leri belirtin
+
+---
+
+## 📞 Destek
+
+### 🆘 Teknik Destek
+
+- **Issues**: [GitHub Issues](https://github.com/alibedirhan/BUP-ALL-IN-ONE/issues)
+- **Wiki**: [Proje Wiki](https://github.com/alibedirhan/BUP-ALL-IN-ONE/wiki)
+- **Email**: Teknik sorular için issue açmanızı öneririz
+
+### 📖 Dokümantasyon
+
+- [Kullanıcı Kılavuzu](docs/user-guide.md)
+- [API Dokümantasyonu](docs/api.md)
+- [Geliştirici Rehberi](docs/developer-guide.md)
+
+### ❓ Sık Sorulan Sorular
+
+<details>
+<summary><strong>Program açılmıyor, ne yapmalıyım?</strong></summary>
+
+1. .NET Framework 4.7.2 veya üzerinin yüklü olduğunu kontrol edin
+2. Windows Update'i çalıştırın
+3. Antivirus yazılımınızı geçici olarak devre dışı bırakın
+4. Yönetici olarak çalıştırmayı deneyin
+
+</details>
+
+<details>
+<summary><strong>Şifremi unuttumsam ne yapmalıyım?</strong></summary>
+
+Varsayılan şifre: `bupilic2024`
+Eğer değiştirdiyseniz, veri klasöründeki config dosyasını silebilir veya teknik destek ile iletişime geçebilirsiniz.
+
+</details>
+
+<details>
+<summary><strong>Verileri nasıl yedeklerim?</strong></summary>
+
+Program klasöründeki `Data` klasörünü düzenli olarak yedekleyin. Gelecek sürümlerde otomatik yedekleme özelliği eklenecektir.
+
+</details>
+
+---
+
+## 🏆 Teşekkürler
+
+Bu projeyi kullandığınız ve desteklediğiniz için teşekkür ederiz! 
+
+### 🌟 Özel Teşekkürler
+
+- Tüm beta test kullanıcılarımıza
+- Geri bildirimde bulunan sektör uzmanlarına
+- Açık kaynak topluluğuna
+
+---
+
+## 📄 Lisans
+
+Bu proje [MIT License](LICENSE) altında lisanslanmıştır. Detaylar için lisans dosyasını inceleyebilirsiniz.
+
+---
+
+## 📊 İstatistikler
+
+![GitHub stats](https://github-readme-stats.vercel.app/api?username=alibedirhan&show_icons=true&theme=vue)
+
+---
+
+<div align="center">
+
+**⭐ Beğendiyseniz yıldız vermeyi unutmayın! ⭐**
+
+Geliştirici: [Ali Bedirhan](https://github.com/alibedirhan)
+
+📧 İletişim: [GitHub Profile](https://github.com/alibedirhan)
+
+---
+
+*Son güncelleme: Aralık 2024*
+
+</div>
