@@ -168,7 +168,7 @@ class BupilicDashboard:
         self.running_programs = set()
         
         # Güvenli şifre hash'i (cal93'ün SHA256'sı)
-        self.password_hash = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92"
+        self.password_hash = "a7851f596ff0bae04727a780292217aeba95517b86b0a134a009c7b4fbdcd91b"
         
         # Setup resource path first
         self.setup_resource_path()
