@@ -16,8 +16,15 @@ class PriceCalculatorUI:
         return ModernPriceCalculatorUI(root)
 
 class ModernPriceCalculatorUI:
-    def __init__(self, root):
-        self.root = root
+    def __init__(self, master=None):
+        if master is not None:
+            self.root = master
+        else:
+            if tk._default_root:
+                self.root = tk.Toplevel(tk._default_root)
+            else:
+                self.root = tk.Tk()
+
         self.export_manager = ExportManager()
         
         # Çoklu PDF desteği için değişiklikler
@@ -48,6 +55,7 @@ class ModernPriceCalculatorUI:
         
         self.setup_styles()
         self.setup_ui()
+
         
     def setup_styles(self):
         """Modern stil ayarları"""
