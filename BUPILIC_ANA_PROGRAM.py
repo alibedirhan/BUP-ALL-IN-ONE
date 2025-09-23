@@ -153,8 +153,8 @@ class BupilicDashboard:
         self.program_lock = threading.Lock()
         self.running_programs = set()
         
-        # Güvenli şifre hash'i (bupilic2024'ün SHA256'sı)
-        self.password_hash = "4a4c8b8c5d5e1234567890abcdef1234567890abcdef1234567890abcdef1234"
+        # Güvenli şifre hash'i (cal93'ün SHA256'sı)
+        self.password_hash = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92"
         
         # Setup resource path first
         self.setup_resource_path()
