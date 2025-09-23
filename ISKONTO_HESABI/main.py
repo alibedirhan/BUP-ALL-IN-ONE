@@ -123,26 +123,20 @@ def validate_system_requirements():
         raise RuntimeError(f"Sistem gereksinimleri kontrolü başarısız: {e}")
 
 def create_main_window():
-    """
-    Ana pencereyi güvenli şekilde oluştur
-    """
-    try:
-        # Ana Tkinter window'u oluştur
+    if tk._default_root:
+        root = tk.Toplevel(tk._default_root)
+    else:
         root = tk.Tk()
-        root.title("İskonto Hesaplama - BupiliÇ v3.0")
-        
-        # Pencere kapatma olayını yakala
-        def on_closing():
-            try:
-                logger = logging.getLogger(__name__)
-                logger.info("Uygulama kullanıcı tarafından kapatılıyor...")
-                root.quit()
-                root.destroy()
-            except Exception as e:
-                print(f"Kapatma hatası: {e}")
-                root.destroy()
-        
-        root.protocol("WM_DELETE_WINDOW", on_closing)
+
+    app = ModernPriceCalculatorUI(master=root)
+
+    def on_closing():
+        logging.info("Uygulama kullanıcı tarafından kapatılıyor...")
+        root.quit()
+        root.destroy()
+
+    root.protocol("WM_DELETE_WINDOW", on_closing)
+    root.mainloop()
         
         # UI bileşenini başlat
         app = ModernPriceCalculatorUI(root)
