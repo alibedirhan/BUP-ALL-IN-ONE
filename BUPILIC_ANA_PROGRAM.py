@@ -5,22 +5,26 @@ import subprocess
 import importlib
 import threading
 import time
+import re
+import tkinter as _tk
+import locale as _locale
 from pathlib import Path
+from datetime import datetime
+import json
+import logging
+import tempfile
+import shutil
 
 # --- Locale güvenliği: Tk için NUMERIC=C (kritik) ---
-import locale as _locale
 try:
     _locale.setlocale(_locale.LC_NUMERIC, 'C')
 except Exception:
     pass
 # --- /Locale güvenliği ---
 
-
 # --- GLOBAL TK DISTANCE HOTFIX (KÖKTEN ÇÖZÜM) ---
 # Tk'ye giden 'screen distance' değerlerini (padx/pady/width/height vb.)
 # otomatik olarak int'e dönüştürür; "200.0" -> "200", 200.0 -> 200
-import re
-import tkinter as _tk
 
 # Orijinal metotları sakla
 _orig_options = _tk.Misc._options
@@ -92,15 +96,7 @@ else:
 # GUI imports
 import customtkinter as ctk
 from PIL import Image, ImageTk
-import threading
-import time
-from datetime import datetime
-import json
-import logging
 import locale
-from pathlib import Path
-import tempfile
-import shutil
 
 def run_embedded_program(program_name):
     """Alt programı çalıştır"""
