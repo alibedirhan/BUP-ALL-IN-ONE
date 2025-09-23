@@ -949,7 +949,7 @@ class BupilicKarlilikGUI:
             self.logger.debug(f"Dashboard removal error (expected): {e}")
     
     def on_closing(self):
-        """Uygulama kapanış işlemi"""
+        """Uygulama kapanış işlemi - DÜZELTILMIŞ"""
         try:
             self.logger.info("Application closing...")
             self._closing = True
@@ -987,9 +987,7 @@ class BupilicKarlilikGUI:
                 
         except Exception as e:
             self.logger.error(f"Closing error: {e}")
-        finally:
-            import sys
-            sys.exit(0)
+        # ❌ BURASI KALDIRILDI: sys.exit(0) satırı silindi
     
     def run(self):
         """Ana uygulama döngüsünü başlat"""
