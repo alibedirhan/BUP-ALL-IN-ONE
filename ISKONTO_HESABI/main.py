@@ -170,7 +170,7 @@ def main():
         
         # 4. Uygulamayı çalıştır
         logger.info("Uygulama kullanıcı arayüzü başlatılıyor...")
-        root.mainloop()
+        #root.mainloop()
         
         # 5. Temizlik işlemleri
         logger.info("Uygulama normal şekilde sonlandırıldı")
