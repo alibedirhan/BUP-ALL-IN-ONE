@@ -491,6 +491,13 @@ class BupilicDashboard:
     def check_login(self):
         """Login kontrolü - güvenli"""
         password = self.password_entry.get()
+        
+        # DEBUG: Hash'leri yazdır
+        entered_hash = self.hash_password(password)
+        self.logger.info(f"Girilen şifre: {password}")
+        self.logger.info(f"Girilen şifrenin hash'i: {entered_hash}")
+        self.logger.info(f"Beklenen hash: {self.user_data['password_hash']}")
+        
         if self.verify_password(password):
             self.logger.info("Giriş başarılı")
             self.setup_ui()
