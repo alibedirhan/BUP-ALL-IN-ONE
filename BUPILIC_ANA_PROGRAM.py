@@ -7,6 +7,40 @@ import threading
 import time
 from pathlib import Path
 
+# --- GLOBAL TK DISTANCE HOTFIX ---
+import re
+import tkinter as _tk
+
+_orig_options = _tk.Misc._options
+
+def _sanitize_distance_value(v):
+    if isinstance(v, float):
+        return int(round(v))
+    if isinstance(v, (list, tuple)):
+        return type(v)(_sanitize_distance_value(x) for x in v)
+    if isinstance(v, str) and re.fullmatch(r"\\d+\\.0", v):
+        return v.split(".")[0]
+    return v
+
+_DISTANCE_KEYS = {
+    "padx", "pady", "ipadx", "ipady", "bd", "borderwidth",
+    "highlightthickness", "width", "height", "wraplength",
+    "insertwidth", "insertborderwidth"
+}
+
+def _patched_options(self, cnf, kw=None):
+    if kw:
+        for k in list(kw.keys()):
+            if k in _DISTANCE_KEYS:
+                kw[k] = _sanitize_distance_value(kw[k])
+            else:
+                kw[k] = _sanitize_distance_value(kw[k])
+    return _orig_options(self, cnf, kw)
+
+_tk.Misc._options = _patched_options
+# --- /HOTFIX ---
+
+
 # PyInstaller için path ayarları
 if getattr(sys, 'frozen', False):
     # Frozen modda çalışıyoruz
