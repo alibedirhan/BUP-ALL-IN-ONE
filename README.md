@@ -59,7 +59,7 @@ Bupiliç Yönetim Sistemi, tavukçuluk sektöründeki işletmelerin karmaşık s
 ### 🔐 İlk Giriş
 
 ```
-Varsayılan Şifre: bupilic2024
+Varsayılan Şifre: cal93
 ```
 
 > ⚠️ **Güvenlik Uyarısı**: İlk girişten sonra şifrenizi değiştirmeniz önerilir.
