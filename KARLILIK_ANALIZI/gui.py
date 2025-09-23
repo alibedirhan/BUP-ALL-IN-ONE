@@ -994,8 +994,10 @@ class BupilicKarlilikGUI:
 
 
 def main():
-    app = BupilicKarlilikGUI()  # doğru sınıf adı bu
-    app.run()
+    window = tk.Toplevel()
+    app = BupilicKarlilikGUI(master=window)
+    window.mainloop()
+
 
 if __name__ == "__main__":
     main()
