@@ -13,10 +13,11 @@ import os
 class PriceCalculatorUI:
     """Eski uyumluluk için - yeni ModernPriceCalculatorUI'a yönlendirir"""
     def __init__(self, root):
-        return ModernPriceCalculatorUI(root)
+        return ModernPriceCalculatorUI(master=root)
 
 class ModernPriceCalculatorUI:
     def __init__(self, master=None):
+        # Ana pencere referansı (gömülü mod uyumlu)
         if master is not None:
             self.root = master
         else:
@@ -25,18 +26,21 @@ class ModernPriceCalculatorUI:
             else:
                 self.root = tk.Tk()
 
+        self.root.configure(bg='#f8f9fa')
+        self.root.title("Bupiliç İskontolu Fiyat Hesaplayıcı")
+
         self.export_manager = ExportManager()
-        
-        # Çoklu PDF desteği için değişiklikler
-        self.pdf_processors = []  # Her PDF için ayrı processor
-        self.pdf_files = []  # Yüklenen PDF dosyalarının bilgileri
-        self.current_data_all = {}  # Tüm PDF'lerin işlenmiş verileri
-        self.max_pdf_count = 3  # Maksimum PDF sayısı
-        
+
+        # Çoklu PDF desteği için alanlar
+        self.pdf_processors = []     # Her PDF için ayrı processor
+        self.pdf_files = []          # Yüklenen PDF dosyalarının bilgileri
+        self.current_data_all = {}   # Tüm PDF'lerin işlenmiş verileri
+        self.max_pdf_count = 3
+
         self.current_data = {}
         self.current_pdf_type = "normal"
         self.pdf_loaded = False
-        
+
         # Renkler
         self.colors = {
             'primary': '#6c5ce7',
@@ -52,91 +56,65 @@ class ModernPriceCalculatorUI:
             'border': '#e9ecef',
             'hover': '#f1f0ff'
         }
-        
+
         self.setup_styles()
         self.setup_ui()
 
-        
+    # --- Stil / UI Kurulumu (değişmedi) ---
     def setup_styles(self):
-        """Modern stil ayarları"""
         self.root.configure(bg=self.colors['bg'])
-        
-        # TTK stil ayarları
         style = ttk.Style()
         style.theme_use('clam')
-        
-        # Genel stiller
-        style.configure('Title.TLabel', 
-                       font=('Segoe UI', 24, 'bold'),
-                       background=self.colors['bg'],
-                       foreground=self.colors['text'])
-        
+        style.configure('Title.TLabel',
+                        font=('Segoe UI', 24, 'bold'),
+                        background=self.colors['bg'],
+                        foreground=self.colors['text'])
         style.configure('Subtitle.TLabel',
-                       font=('Segoe UI', 11),
-                       background=self.colors['bg'],
-                       foreground=self.colors['text_light'])
-        
+                        font=('Segoe UI', 11),
+                        background=self.colors['bg'],
+                        foreground=self.colors['text_light'])
         style.configure('Card.TFrame',
-                       background=self.colors['card_bg'],
-                       borderwidth=1,
-                       relief='solid')
-        
+                        background=self.colors['card_bg'],
+                        borderwidth=1,
+                        relief='solid')
         style.configure('Primary.TButton',
-                       font=('Segoe UI', 10, 'bold'),
-                       borderwidth=0,
-                       focusthickness=0,
-                       focuscolor='none')
-        
+                        font=('Segoe UI', 10, 'bold'),
+                        borderwidth=0,
+                        focusthickness=0,
+                        focuscolor='none')
         style.map('Primary.TButton',
-                 background=[('active', self.colors['primary_dark']),
-                           ('!active', self.colors['primary'])],
-                 foreground=[('active', 'white'),
-                           ('!active', 'white')])
-        
+                  background=[('active', self.colors['primary_dark']),
+                              ('!active', self.colors['primary'])],
+                  foreground=[('active', 'white'),
+                              ('!active', 'white')])
+
     def setup_ui(self):
-        """Ana arayüzü oluştur"""
-        # Ana container
         main_container = tk.Frame(self.root, bg=self.colors['bg'])
         main_container.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
-        
-        # Başlık
         self.create_header(main_container)
-        
-        # İçerik alanı
         content_frame = tk.Frame(main_container, bg=self.colors['bg'])
         content_frame.pack(fill=tk.BOTH, expand=True, pady=(20, 0))
-        
-        # Tab sistemi
         self.create_tabs(content_frame)
-        
-        # Alt kontrol paneli
         self.create_control_panel(main_container)
-        
-        # İlerleme çubuğu
         self.create_progress_bar(main_container)
-        
+
     def create_header(self, parent):
-        """Başlık alanı"""
         header_frame = tk.Frame(parent, bg=self.colors['bg'], height=80)
         header_frame.pack(fill=tk.X)
         header_frame.pack_propagate(False)
-        
-        # Başlık metni
         title_container = tk.Frame(header_frame, bg=self.colors['bg'])
         title_container.pack(expand=True)
-        
-        title = tk.Label(title_container, 
-                        text="🚀 Bupiliç İskontolu Fiyat Hesaplayıcı",
-                        font=('Segoe UI', 28, 'bold'),
-                        bg=self.colors['bg'],
-                        fg=self.colors['primary'])
+        title = tk.Label(title_container,
+                         text="🚀 Bupiliç İskontolu Fiyat Hesaplayıcı",
+                         font=('Segoe UI', 28, 'bold'),
+                         bg=self.colors['bg'],
+                         fg=self.colors['primary'])
         title.pack()
-        
         subtitle = tk.Label(title_container,
-                           text="PDF fiyat listelerinizi kolayca işleyin ve iskonto uygulayın (Maksimum 3 PDF)",
-                           font=('Segoe UI', 12),
-                           bg=self.colors['bg'],
-                           fg=self.colors['text_light'])
+                            text="PDF fiyat listelerinizi kolayca işleyin ve iskonto uygulayın (Maksimum 3 PDF)",
+                            font=('Segoe UI', 12),
+                            bg=self.colors['bg'],
+                            fg=self.colors['text_light'])
         subtitle.pack(pady=(5, 0))
         
     def create_tabs(self, parent):
