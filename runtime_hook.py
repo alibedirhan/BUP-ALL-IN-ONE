@@ -2,46 +2,57 @@
 import sys
 import os
 import locale
+import codecs
 
-def ensure_locales():
-    """
-    Locale strategy:
-    - Always force LC_NUMERIC='C' to keep Tk/tk scaling and numeric parsing stable.
-    - Prefer Turkish time locale if available, with safe fallbacks.
-    """
-    # Time/Date locale (best-effort)
-    for cand in ('Turkish_Turkey.1254', 'tr_TR.UTF-8', 'tr_TR', ''):
+def ensure_dependencies():
+    # 1) LOCALE: Tk'nin 'screen distance' parse'ı bozulmasın diye NUMERIC=C
+    try:
+        # Saat/tarih Türkçe olabilir ama NUMERIC mutlaka C olmalı
         try:
-            if cand:
-                locale.setlocale(locale.LC_TIME, cand)
-            break
+            locale.setlocale(locale.LC_TIME, 'Turkish_Turkey.1254')
         except Exception:
-            continue
-    # Numeric must be 'C' (decimal point='.'), otherwise Tk may break on Windows.
-    try:
+            try:
+                locale.setlocale(locale.LC_TIME, 'tr_TR.UTF-8')
+            except Exception:
+                pass
+        # KÖK ÇÖZÜM: ondalık ayırıcıyı nokta yapan C
         locale.setlocale(locale.LC_NUMERIC, 'C')
-    except Exception as e:
-        print(f"[HOOK WARNING] LC_NUMERIC set failed: {e}")
+    except Exception:
+        pass
 
-def ensure_stdio_utf8():
-    """Make sure stdout/stderr are UTF-8 to avoid encoding crashes in console mode."""
-    try:
-        if hasattr(sys.stdout, "reconfigure"):
-            sys.stdout.reconfigure(encoding='utf-8', errors='replace')
-        if hasattr(sys.stderr, "reconfigure"):
-            sys.stderr.reconfigure(encoding='utf-8', errors='replace')
-    except Exception as e:
-        print(f"[HOOK WARNING] stdout/stderr encoding setup failed: {e}")
+    # 2) PyInstaller bundle path
+    if getattr(sys, 'frozen', False):
+        bundle_dir = sys._MEIPASS
+        subdirs = [
+            'ISKONTO_HESABI',
+            'KARLILIK_ANALIZI',
+            'Musteri_Sayisi_Kontrolu',
+            'YASLANDIRMA'
+        ]
+        for subdir in subdirs:
+            subdir_path = os.path.join(bundle_dir, subdir)
+            if os.path.exists(subdir_path) and subdir_path not in sys.path:
+                sys.path.insert(0, subdir_path)
+                print(f"[HOOK] Added to sys.path: {subdir}")
+
+    # 3) Windows stdout/stderr UTF-8 sarmalayıcı (güvenli)
+    if sys.platform == 'win32':
+        try:
+            if sys.stdout and hasattr(sys.stdout, "buffer"):
+                sys.stdout = codecs.getwriter("utf-8")(sys.stdout.buffer, "strict")
+            if sys.stderr and hasattr(sys.stderr, "buffer"):
+                sys.stderr = codecs.getwriter("utf-8")(sys.stderr.buffer, "strict")
+        except Exception as e:
+            print(f"[HOOK WARNING] stdout/stderr encoding setup failed: {e}")
 
 def fix_matplotlib():
-    # In bundled GUI apps, use non-interactive backend to avoid backend init issues.
+    # Frozen modda GUI backend açmaya çalışma
     try:
         import matplotlib
         matplotlib.use('Agg')
     except Exception:
         pass
 
-ensure_locales()
-ensure_stdio_utf8()
+ensure_dependencies()
 fix_matplotlib()
-print("[HOOK] Runtime hook executed successfully")    
+print("[HOOK] Runtime hook executed successfully")
