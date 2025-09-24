@@ -17,6 +17,41 @@ from logging.handlers import RotatingFileHandler
 import tempfile
 import shutil
 
+# --- early dispatcher: run submodule directly if requested ---
+def _maybe_dispatch_submodule():
+    import sys, traceback
+    if "--run-module" in sys.argv:
+        try:
+            i = sys.argv.index("--run-module")
+            name = sys.argv[i+1]
+        except Exception:
+            print("Usage: --run-module <MODULE_NAME>")
+            sys.exit(2)
+
+        try:
+            # Hangi modül nasıl import ediliyor ise ALTTAKİ eşleşmeyi kullan
+            if name == "ISKONTO_HESABI":
+                from ISKONTO_HESABI.main import main as entry
+            elif name == "KARLILIK_ANALIZI":
+                from KARLILIK_ANALIZI.gui import main as entry
+            elif name == "Musteri_Sayisi_Kontrolu":
+                from Musteri_Sayisi_Kontrolu.main import main as entry
+            elif name == "YASLANDIRMA":
+                from YASLANDIRMA.main import main as entry
+            else:
+                print(f"[ERROR] Unknown submodule: {name}")
+                sys.exit(3)
+
+            entry()  # alt programı çalıştır
+        except Exception:
+            traceback.print_exc()
+            sys.exit(1)
+        sys.exit(0)  # alt program bittiyse süreçten çık
+
+_maybe_dispatch_submodule()
+# --- /early dispatcher ---
+
+
 # --- Locale güvenliği: Tk için NUMERIC=C (kritik) ---
 try:
     _locale.setlocale(_locale.LC_NUMERIC, 'C')
