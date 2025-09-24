@@ -114,51 +114,45 @@ import customtkinter as ctk
 from PIL import Image, ImageTk
 import locale
 
-def run_embedded_program(program_name):
-    """Alt programı güvenli şekilde çalıştır"""
-    print(f"[START] Starting {program_name}...")
-    print(f"[DEBUG] sys.path = {sys.path}")
-    print(f"[DEBUG] base_path = {base_path}")
+def run_embedded_program(program_name: str) -> bool:
+    """Alt programı güvenli şekilde başlat.
+    - Geliştirme modunda (freeze değilken): eski import+main() davranışı.
+    - EXE/frozen modda: ayrı süreçte başlat (nested Tk çökmez).
+    """
+    import sys, subprocess, traceback
 
     try:
-        if program_name == "ISKONTO_HESABI":
-            print("[DEBUG] importing ISKONTO_HESABI.main")
-            from ISKONTO_HESABI.main import main
-            print("[DEBUG] calling main()")
-            main()
+        if getattr(sys, "frozen", False):
+            # ---- FROZEN: ayrı süreçte başlat ----
+            cmd = [sys.executable, "-m", "module_bootstrap", program_name]
+            # Windows'ta konsolu gizlemek istersen (testleri bitirince) aşağıyı aç:
+            # import os
+            # creationflags = 0x08000000  # CREATE_NO_WINDOW
+            # subprocess.Popen(cmd, creationflags=creationflags)
+            subprocess.Popen(cmd)
             return True
-
-        elif program_name == "KARLILIK_ANALIZI":
-            print("[DEBUG] importing KARLILIK_ANALIZI.gui")
-            from KARLILIK_ANALIZI.gui import main
-            main()
-            return True
-
-        elif program_name == "Musteri_Sayisi_Kontrolu":
-            from Musteri_Sayisi_Kontrolu.main import main
-            main()
-            return True
-
-        elif program_name == "YASLANDIRMA":
-            from YASLANDIRMA.main import main
-            main()
-            return True
-
         else:
-            print(f"[ERROR] Unknown program: {program_name}")
-            return False
-
-    except ImportError as e:
-        print(f"[ERROR] Module import error for {program_name}: {e}")
-        return False
-    except AttributeError as e:
-        print(f"[ERROR] Function not found in {program_name}: {e}")
-        return False
+            # ---- DEV: eski davranış (import + main()) ----
+            if program_name == "ISKONTO_HESABI":
+                from ISKONTO_HESABI.main import main
+                main(); return True
+            elif program_name == "KARLILIK_ANALIZI":
+                from KARLILIK_ANALIZI.gui import main
+                main(); return True
+            elif program_name == "Musteri_Sayisi_Kontrolu":
+                from Musteri_Sayisi_Kontrolu.main import main
+                main(); return True
+            elif program_name == "YASLANDIRMA":
+                from YASLANDIRMA.main import main
+                main(); return True
+            else:
+                print(f"[ERROR] Unknown program: {program_name}")
+                return False
     except Exception as e:
         print(f"[ERROR] Unexpected error running {program_name}: {e}")
-        import traceback
         traceback.print_exc()
         return False
+
 
 
 class BupilicDashboard:
