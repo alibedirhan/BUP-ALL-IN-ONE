@@ -29,7 +29,6 @@ def _maybe_dispatch_submodule():
             sys.exit(2)
 
         try:
-            # Hangi modül nasıl import ediliyor ise ALTTAKİ eşleşmeyi kullan
             if name == "ISKONTO_HESABI":
                 from ISKONTO_HESABI.main import main as entry
             elif name == "KARLILIK_ANALIZI":
@@ -42,11 +41,11 @@ def _maybe_dispatch_submodule():
                 print(f"[ERROR] Unknown submodule: {name}")
                 sys.exit(3)
 
-            entry()  # alt programı çalıştır
+            entry()          # alt programı çalıştır
         except Exception:
             traceback.print_exc()
             sys.exit(1)
-        sys.exit(0)  # alt program bittiyse süreçten çık
+        sys.exit(0)          # alt program bitince süreçten çık
 
 _maybe_dispatch_submodule()
 # --- /early dispatcher ---
@@ -150,44 +149,31 @@ from PIL import Image, ImageTk
 import locale
 
 def run_embedded_program(program_name: str) -> bool:
-    """Alt programı güvenli şekilde başlat.
-    - Geliştirme modunda (freeze değilken): eski import+main() davranışı.
-    - EXE/frozen modda: ayrı süreçte başlat (nested Tk çökmez).
     """
-    import sys, subprocess, traceback
+    Alt programı her zaman AYRI bir süreçte başlatır.
+    Ana EXE'ye '--run-module <adı>' verilir; üstteki dispatcher alt modülü çalıştırır.
+    """
+    import subprocess, sys, os
 
-    try:
-        if getattr(sys, "frozen", False):
-            # ---- FROZEN: ayrı süreçte başlat ----
-            cmd = [sys.executable, "-m", "module_bootstrap", program_name]
-            # Windows'ta konsolu gizlemek istersen (testleri bitirince) aşağıyı aç:
-            # import os
-            # creationflags = 0x08000000  # CREATE_NO_WINDOW
-            # subprocess.Popen(cmd, creationflags=creationflags)
-            subprocess.Popen(cmd)
-            return True
-        else:
-            # ---- DEV: eski davranış (import + main()) ----
-            if program_name == "ISKONTO_HESABI":
-                from ISKONTO_HESABI.main import main
-                main(); return True
-            elif program_name == "KARLILIK_ANALIZI":
-                from KARLILIK_ANALIZI.gui import main
-                main(); return True
-            elif program_name == "Musteri_Sayisi_Kontrolu":
-                from Musteri_Sayisi_Kontrolu.main import main
-                main(); return True
-            elif program_name == "YASLANDIRMA":
-                from YASLANDIRMA.main import main
-                main(); return True
-            else:
-                print(f"[ERROR] Unknown program: {program_name}")
-                return False
-    except Exception as e:
-        print(f"[ERROR] Unexpected error running {program_name}: {e}")
-        traceback.print_exc()
+    # Güvenli: yalnızca beklenen modül adlarına izin verelim
+    allowed = {"ISKONTO_HESABI", "KARLILIK_ANALIZI", "Musteri_Sayisi_Kontrolu", "YASLANDIRMA"}
+    if program_name not in allowed:
+        print(f"[ERROR] Unknown program: {program_name}")
         return False
 
+    try:
+        cmd = [sys.executable, "--run-module", program_name]
+
+        # Windows'ta test bitince konsolu gizlemek istersen bayrağı açabilirsin:
+        creationflags = 0
+        # if os.name == "nt":
+        #     creationflags = 0x08000000  # CREATE_NO_WINDOW
+
+        subprocess.Popen(cmd, creationflags=creationflags)
+        return True
+    except Exception as e:
+        print(f"[ERROR] {program_name} launch failed: {e}")
+        return False
 
 
 class BupilicDashboard:
