@@ -1,65 +1,48 @@
-# -*- mode: python ; coding: utf-8 -*-
-import os
-from pathlib import Path
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+# --- early dispatcher: run submodule directly if requested ---
+def _maybe_dispatch_submodule():
+    import sys, traceback
+    from pathlib import Path
 
-project_root = Path(os.getcwd()).resolve()
-block_cipher = None
-
-datas = [
-    ('icon/bupilic_logo.png', 'icon'),
-]
-
-# Library assets
-datas += collect_data_files('customtkinter')
-datas += collect_data_files('PIL')
-
-hiddenimports = [
-    'tkinter', 'tkinter.filedialog', 'tkinter.messagebox', 'tkinter.ttk', 'tkinter.commondialog',
-    'PIL.ImageTk',
-    'module_bootstrap',
-]
-
-# Include all Python subpackages for your sub-apps (compiled into the EXE)
-for pkg in ['ISKONTO_HESABI', 'KARLILIK_ANALIZI', 'Musteri_Sayisi_Kontrolu', 'YASLANDIRMA']:
-    try:
-        hiddenimports += collect_submodules(pkg)
-        # If these are proper packages (contain __init__.py), this also grabs non-.py assets
+    if "--run-module" in sys.argv:
+        # 1) Argümandan modül adını al
         try:
-            datas += collect_data_files(pkg)
+            i = sys.argv.index("--run-module")
+            name = sys.argv[i+1]
+        except Exception:
+            print("Usage: --run-module <MODULE_NAME>")
+            sys.exit(2)
+
+        # 2) sys.path'e ilgili paket klasörünü en başa ekle
+        #    Böylece alt modül içindeki 'ui_components', 'pdf_processor' gibi "bare import"lar da çalışır.
+        try:
+            if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+                pkg_dir = Path(sys._MEIPASS) / name
+            else:
+                pkg_dir = Path(__file__).resolve().parent / name
+            if pkg_dir.exists():
+                sys.path.insert(0, str(pkg_dir))
         except Exception:
             pass
-    except Exception:
-        pass
 
-a = Analysis(
-    ['BUPILIC_ANA_PROGRAM.py'],
-    pathex=[str(project_root)],
-    binaries=[],
-    datas=datas,
-    hiddenimports=hiddenimports,
-    hookspath=['hooks'] if (project_root / 'hooks').exists() else [],
-    runtime_hooks=['runtime_hook.py'],
-    noarchive=False,
-)
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
-exe = EXE(
-    pyz,
-    a.scripts,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    name='BupiliC',
-    debug=False,
-    bootloader_ignore_signals=False,
-    strip=False,
-    upx=False,
-    upx_exclude=[],
-    runtime_tmpdir=None,
-    console=True,  # keep console true for first tests
-    disable_windowed_traceback=False,
-    target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
-    icon=str(project_root / 'build' / 'app_icon.ico') if (project_root / 'build' / 'app_icon.ico').exists() else None,
-)
+        # 3) İlgili entrypoint'i çağır
+        try:
+            if name == "ISKONTO_HESABI":
+                from ISKONTO_HESABI.main import main as entry
+            elif name == "KARLILIK_ANALIZI":
+                from KARLILIK_ANALIZI.gui import main as entry
+            elif name == "Musteri_Sayisi_Kontrolu":
+                from Musteri_Sayisi_Kontrolu.main import main as entry
+            elif name == "YASLANDIRMA":
+                from YASLANDIRMA.main import main as entry
+            else:
+                print(f"[ERROR] Unknown submodule: {name}")
+                sys.exit(3)
+
+            entry()          # alt programı çalıştır
+        except Exception:
+            traceback.print_exc()
+            sys.exit(1)
+        sys.exit(0)          # alt program bitince süreçten çık
+
+_maybe_dispatch_submodule()
+# --- /early dispatcher ---
