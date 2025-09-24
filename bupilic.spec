@@ -1,48 +1,57 @@
-# --- early dispatcher: run submodule directly if requested ---
-def _maybe_dispatch_submodule():
-    import sys, traceback
-    from pathlib import Path
+# -*- mode: python ; coding: utf-8 -*-
+import os
+from pathlib import Path
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
-    if "--run-module" in sys.argv:
-        # 1) Argümandan modül adını al
-        try:
-            i = sys.argv.index("--run-module")
-            name = sys.argv[i+1]
-        except Exception:
-            print("Usage: --run-module <MODULE_NAME>")
-            sys.exit(2)
+project_root = Path(os.getcwd()).resolve()
+block_cipher = None
 
-        # 2) sys.path'e ilgili paket klasörünü en başa ekle
-        #    Böylece alt modül içindeki 'ui_components', 'pdf_processor' gibi "bare import"lar da çalışır.
-        try:
-            if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
-                pkg_dir = Path(sys._MEIPASS) / name
-            else:
-                pkg_dir = Path(__file__).resolve().parent / name
-            if pkg_dir.exists():
-                sys.path.insert(0, str(pkg_dir))
-        except Exception:
-            pass
+datas = [
+    ('icon/bupilic_logo.png', 'icon'),
+]
+# Kütüphane assetleri
+datas += collect_data_files('customtkinter')
+datas += collect_data_files('PIL')
 
-        # 3) İlgili entrypoint'i çağır
-        try:
-            if name == "ISKONTO_HESABI":
-                from ISKONTO_HESABI.main import main as entry
-            elif name == "KARLILIK_ANALIZI":
-                from KARLILIK_ANALIZI.gui import main as entry
-            elif name == "Musteri_Sayisi_Kontrolu":
-                from Musteri_Sayisi_Kontrolu.main import main as entry
-            elif name == "YASLANDIRMA":
-                from YASLANDIRMA.main import main as entry
-            else:
-                print(f"[ERROR] Unknown submodule: {name}")
-                sys.exit(3)
+hiddenimports = [
+    'tkinter', 'tkinter.filedialog', 'tkinter.messagebox', 'tkinter.ttk', 'tkinter.commondialog',
+    'PIL.ImageTk',
+]
 
-            entry()          # alt programı çalıştır
-        except Exception:
-            traceback.print_exc()
-            sys.exit(1)
-        sys.exit(0)          # alt program bitince süreçten çık
+# .py modülleri göm (importlar için)
+for pkg in ['ISKONTO_HESABI', 'KARLILIK_ANALIZI', 'Musteri_Sayisi_Kontrolu', 'YASLANDIRMA']:
+    try:
+        hiddenimports += collect_submodules(pkg)
+    except Exception:
+        pass
 
-_maybe_dispatch_submodule()
-# --- /early dispatcher ---
+# MEIPASS altına klasör ağacı koy (bazı modüller klasörü kopyalıyor)
+def add_tree(src_dir: Path, dest_prefix: str):
+    if not src_dir.exists():
+        return
+    for root, _, files in os.walk(src_dir):
+        for fname in files:
+            full = Path(root) / fname
+            rel = full.relative_to(src_dir)
+            datas.append((str(full), str(Path(dest_prefix) / rel)))
+
+for sub in ['ISKONTO_HESABI', 'KARLILIK_ANALIZI', 'Musteri_Sayisi_Kontrolu', 'YASLANDIRMA']:
+    add_tree(project_root / sub, sub)
+
+a = Analysis(
+    ['BUPILIC_ANA_PROGRAM.py'],
+    pathex=[str(project_root)],
+    binaries=[],
+    datas=datas,
+    hiddenimports=hiddenimports,
+    hookspath=['hooks'] if (project_root / 'hooks').exists() else [],
+    runtime_hooks=['runtime_hook.py'],
+    noarchive=False,
+)
+pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+exe = EXE(
+    pyz, a.scripts, a.binaries, a.zipfiles, a.datas,
+    name='BupiliC',
+    console=True,  # ilk testlerde açık kalsın
+    icon=str(project_root/'build'/'app_icon.ico') if (project_root/'build'/'app_icon.ico').exists() else None,
+)
