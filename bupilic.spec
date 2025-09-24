@@ -1,57 +1,137 @@
+# ========== 1. DOSYA: bupilic.spec - DÜZELTILMIŞ ==========
 # -*- mode: python ; coding: utf-8 -*-
 import os
+import sys
 from pathlib import Path
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 project_root = Path(os.getcwd()).resolve()
 block_cipher = None
 
+# Tüm alt programları ve icon'u dahil et
 datas = [
-    ('icon/bupilic_logo.png', 'icon'),
+    (str(project_root / "icon" / "bupilic_logo.png"), "icon"),
+    (str(project_root / "ISKONTO_HESABI"), "ISKONTO_HESABI"),
+    (str(project_root / "KARLILIK_ANALIZI"), "KARLILIK_ANALIZI"),
+    (str(project_root / "Musteri_Sayisi_Kontrolu"), "Musteri_Sayisi_Kontrolu"),
+    (str(project_root / "YASLANDIRMA"), "YASLANDIRMA"),
 ]
-# Kütüphane assetleri
-datas += collect_data_files('customtkinter')
-datas += collect_data_files('PIL')
 
+# Gerekli tüm modülleri dahil et
 hiddenimports = [
-    'tkinter', 'tkinter.filedialog', 'tkinter.messagebox', 'tkinter.ttk', 'tkinter.commondialog',
-    'PIL.ImageTk',
+    'email',
+    'email.mime',
+    'email.mime.text',
+    'email.mime.multipart',
+    'email.mime.base',
+    'pkg_resources',
+    'pkg_resources.py31compat',
+    'customtkinter',
+    'PIL',
+    'PIL._tkinter_finder',
+    'pandas',
+    'numpy',
+    'matplotlib',
+    'pydoc',
+    'matplotlib.backends.backend_tkagg',
+    'pdfplumber',
+    'openpyxl',
+    'psutil',
+    'seaborn',
+    'xlsxwriter',
+    'xlrd',
+    'xlwt',
+    'dateutil',
+    'tkcalendar',
+    'tkinter',
+    'tkinter.ttk',
+    'fpdf',
+    'babel.numbers',
+    # Alt programların modüllerini ekle
+    'ISKONTO_HESABI',
+    'ISKONTO_HESABI.main',
+    'ISKONTO_HESABI.export_manager',
+    'ISKONTO_HESABI.pdf_processor',
+    'ISKONTO_HESABI.ui_components',
+    'KARLILIK_ANALIZI',
+    'KARLILIK_ANALIZI.gui',
+    'KARLILIK_ANALIZI.karlilik',
+    'KARLILIK_ANALIZI.analiz_dashboard',
+    'KARLILIK_ANALIZI.dashboard_components',
+    'KARLILIK_ANALIZI.data_operations',
+    'KARLILIK_ANALIZI.themes',
+    'KARLILIK_ANALIZI.ui_components',
+    'KARLILIK_ANALIZI.veri_analizi',
+    'KARLILIK_ANALIZI.zaman_analizi',
+    'Musteri_Sayisi_Kontrolu',
+    'Musteri_Sayisi_Kontrolu.main',
+    'Musteri_Sayisi_Kontrolu.kurulum',
+    'Musteri_Sayisi_Kontrolu.ui',
+    'YASLANDIRMA',
+    'YASLANDIRMA.main',
+    'YASLANDIRMA.gui',
+    'YASLANDIRMA.gui.main_gui',
+    'YASLANDIRMA.excel_processor',
+    'YASLANDIRMA.utils',
+    'YASLANDIRMA.modules',
+    'YASLANDIRMA.modules.analysis',
+    'YASLANDIRMA.modules.analysis_gui',
+    'YASLANDIRMA.modules.assignment',
+    'YASLANDIRMA.modules.data_manager',
+    'YASLANDIRMA.modules.reports',
+    'YASLANDIRMA.modules.visualization',
 ]
-
-# .py modülleri göm (importlar için)
-for pkg in ['ISKONTO_HESABI', 'KARLILIK_ANALIZI', 'Musteri_Sayisi_Kontrolu', 'YASLANDIRMA']:
-    try:
-        hiddenimports += collect_submodules(pkg)
-    except Exception:
-        pass
-
-# MEIPASS altına klasör ağacı koy (bazı modüller klasörü kopyalıyor)
-def add_tree(src_dir: Path, dest_prefix: str):
-    if not src_dir.exists():
-        return
-    for root, _, files in os.walk(src_dir):
-        for fname in files:
-            full = Path(root) / fname
-            rel = full.relative_to(src_dir)
-            datas.append((str(full), str(Path(dest_prefix) / rel)))
-
-for sub in ['ISKONTO_HESABI', 'KARLILIK_ANALIZI', 'Musteri_Sayisi_Kontrolu', 'YASLANDIRMA']:
-    add_tree(project_root / sub, sub)
 
 a = Analysis(
     ['BUPILIC_ANA_PROGRAM.py'],
-    pathex=[str(project_root)],
+    pathex=[
+        str(project_root),
+        str(project_root / 'ISKONTO_HESABI'),
+        str(project_root / 'KARLILIK_ANALIZI'),
+        str(project_root / 'Musteri_Sayisi_Kontrolu'),
+        str(project_root / 'YASLANDIRMA'),
+    ],
     binaries=[],
     datas=datas,
     hiddenimports=hiddenimports,
-    hookspath=['hooks'] if (project_root / 'hooks').exists() else [],
+    hookspath=[str(project_root / 'hooks')] if (project_root / 'hooks').exists() else [],
     runtime_hooks=['runtime_hook.py'],
+    excludes=[
+        'test',
+        'tests',
+        'unittest',
+    ],
+    win_no_prefer_redirects=False,
+    win_private_assemblies=False,
+    cipher=block_cipher,
     noarchive=False,
 )
-pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
+
+pyz = PYZ(
+    a.pure,
+    a.zipped_data,
+    cipher=block_cipher,
+)
+
+# TEK DOSYA (ONEFILE) BUILD
 exe = EXE(
-    pyz, a.scripts, a.binaries, a.zipfiles, a.datas,
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    [],
     name='BupiliC',
-    console=True,  # ilk testlerde açık kalsın
-    icon=str(project_root/'build'/'app_icon.ico') if (project_root/'build'/'app_icon.ico').exists() else None,
+    debug=False,
+    bootloader_ignore_signals=False,
+    strip=False,
+    upx=False,
+    upx_exclude=[],
+    runtime_tmpdir=None,
+    console=True,  # <- EXE'yi terminalle birlikte açar
+    disable_windowed_traceback=False,
+    argv_emulation=False,
+    target_arch=None,
+    codesign_identity=None,
+    entitlements_file=None,
+    icon=str(project_root / "build" / "app_icon.ico") if (project_root / "build" / "app_icon.ico").exists() else None,
 )
