@@ -17,59 +17,6 @@ from logging.handlers import RotatingFileHandler
 import tempfile
 import shutil
 
-# --- early dispatcher: run submodule directly if requested ---
-# --- early dispatcher: run submodule directly if requested ---
-def _maybe_dispatch_submodule():
-    import sys, traceback
-    from pathlib import Path
-
-    if "--run-module" in sys.argv:
-        # 1) Argümandan modül adını al
-        try:
-            i = sys.argv.index("--run-module")
-            name = sys.argv[i+1]
-        except Exception:
-            print("Usage: --run-module <MODULE_NAME>")
-            sys.exit(2)
-
-        # 2) sys.path'e ilgili paket klasörünü en başa ekle
-        #    Böylece alt modül içindeki 'ui_components', 'pdf_processor' gibi "bare import"lar da çalışır.
-        try:
-            if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
-                pkg_dir = Path(sys._MEIPASS) / name
-            else:
-                pkg_dir = Path(__file__).resolve().parent / name
-            if pkg_dir.exists():
-                sys.path.insert(0, str(pkg_dir))
-        except Exception:
-            pass
-
-        # 3) İlgili entrypoint'i çağır
-        try:
-            if name == "ISKONTO_HESABI":
-                from ISKONTO_HESABI.main import main as entry
-            elif name == "KARLILIK_ANALIZI":
-                from KARLILIK_ANALIZI.gui import main as entry
-            elif name == "Musteri_Sayisi_Kontrolu":
-                from Musteri_Sayisi_Kontrolu.main import main as entry
-            elif name == "YASLANDIRMA":
-                from YASLANDIRMA.main import main as entry
-            else:
-                print(f"[ERROR] Unknown submodule: {name}")
-                sys.exit(3)
-
-            entry()          # alt programı çalıştır
-        except Exception:
-            traceback.print_exc()
-            sys.exit(1)
-        sys.exit(0)          # alt program bitince süreçten çık
-
-_maybe_dispatch_submodule()
-# --- /early dispatcher ---
-
-# --- /early dispatcher ---
-
-
 # --- Locale güvenliği: Tk için NUMERIC=C (kritik) ---
 try:
     _locale.setlocale(_locale.LC_NUMERIC, 'C')
@@ -167,31 +114,50 @@ import customtkinter as ctk
 from PIL import Image, ImageTk
 import locale
 
-def run_embedded_program(program_name: str) -> bool:
-    """
-    Alt programı her zaman AYRI bir süreçte başlatır.
-    Ana EXE'ye '--run-module <adı>' verilir; üstteki dispatcher alt modülü çalıştırır.
-    """
-    import subprocess, sys, os
-
-    # Güvenli: yalnızca beklenen modül adlarına izin verelim
-    allowed = {"ISKONTO_HESABI", "KARLILIK_ANALIZI", "Musteri_Sayisi_Kontrolu", "YASLANDIRMA"}
-    if program_name not in allowed:
-        print(f"[ERROR] Unknown program: {program_name}")
-        return False
+def run_embedded_program(program_name):
+    """Alt programı güvenli şekilde çalıştır"""
+    print(f"[START] Starting {program_name}...")
+    print(f"[DEBUG] sys.path = {sys.path}")
+    print(f"[DEBUG] base_path = {base_path}")
 
     try:
-        cmd = [sys.executable, "--run-module", program_name]
+        if program_name == "ISKONTO_HESABI":
+            print("[DEBUG] importing ISKONTO_HESABI.main")
+            from ISKONTO_HESABI.main import main
+            print("[DEBUG] calling main()")
+            main()
+            return True
 
-        # Windows'ta test bitince konsolu gizlemek istersen bayrağı açabilirsin:
-        creationflags = 0
-        # if os.name == "nt":
-        #     creationflags = 0x08000000  # CREATE_NO_WINDOW
+        elif program_name == "KARLILIK_ANALIZI":
+            print("[DEBUG] importing KARLILIK_ANALIZI.gui")
+            from KARLILIK_ANALIZI.gui import main
+            main()
+            return True
 
-        subprocess.Popen(cmd, creationflags=creationflags)
-        return True
+        elif program_name == "Musteri_Sayisi_Kontrolu":
+            from Musteri_Sayisi_Kontrolu.main import main
+            main()
+            return True
+
+        elif program_name == "YASLANDIRMA":
+            from YASLANDIRMA.main import main
+            main()
+            return True
+
+        else:
+            print(f"[ERROR] Unknown program: {program_name}")
+            return False
+
+    except ImportError as e:
+        print(f"[ERROR] Module import error for {program_name}: {e}")
+        return False
+    except AttributeError as e:
+        print(f"[ERROR] Function not found in {program_name}: {e}")
+        return False
     except Exception as e:
-        print(f"[ERROR] {program_name} launch failed: {e}")
+        print(f"[ERROR] Unexpected error running {program_name}: {e}")
+        import traceback
+        traceback.print_exc()
         return False
 
 
