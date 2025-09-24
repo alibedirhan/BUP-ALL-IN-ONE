@@ -37,7 +37,7 @@ jobs:
         run: |
           dir dist
           echo '---'
-          dir dist\BupiliC* /s
+          Get-ChildItem -Path dist -Filter "BupiliC*" -Recurse
 
       - name: Verify EXE
         shell: pwsh
