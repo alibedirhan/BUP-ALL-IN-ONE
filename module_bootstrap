@@ -1,0 +1,56 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Module bootstrapper for launching bundled subapps safely in a *separate process*.
+Usage (from main EXE):
+    subprocess.Popen([sys.executable, "-m", "module_bootstrap", "YASLANDIRMA"])
+This avoids nested Tk() / mainloop crashes in Windows.
+"""
+import os
+import sys
+import importlib
+from pathlib import Path
+
+def _inject_frozen_paths():
+    """Ensure submodule imports work in PyInstaller onefile mode."""
+    try:
+        # When frozen, PyInstaller sets sys._MEIPASS as temp extraction dir.
+        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            meipass = Path(sys._MEIPASS)
+            # Common subpackages live at the bundle root when added via Tree(...).
+            # Be defensive and append if not present.
+            for subpkg in ["ISKONTO_HESABI", "KARLILIK_ANALIZI", "Musteri_Sayisi_Kontrolu", "YASLANDIRMA"]:
+                p = meipass / subpkg
+                if p.exists() and str(p) not in sys.path:
+                    sys.path.append(str(p))
+    except Exception as e:
+        print(f"[BOOTSTRAP] sys.path inject failed: {e}")
+
+def run(module_name: str):
+    _inject_frozen_paths()
+    # Import and run <MODULE>.main:main()
+    try:
+        mod = importlib.import_module(f"{module_name}.main")
+    except ModuleNotFoundError:
+        # Fallback: some modules keep GUI entrypoint at <MODULE>.gui.main_gui:ExcelProcessorGUI
+        try:
+            mod = importlib.import_module(f"{module_name}.gui.main_gui")
+        except Exception as e:
+            print(f"[BOOTSTRAP] Could not import entrypoint for {module_name}: {e}")
+            raise
+    # Try main() first; else look for ExcelProcessorGUI pattern
+    if hasattr(mod, "main") and callable(getattr(mod, "main")):
+        return mod.main()
+    # Fallback: instantiate ExcelProcessorGUI if present
+    cls = getattr(mod, "ExcelProcessorGUI", None)
+    if cls is not None:
+        app = cls()
+        if hasattr(app, "run"):
+            return app.run()
+    raise RuntimeError(f"No runnable entrypoint found for module: {module_name}")
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python -m module_bootstrap <MODULE_NAME>")
+        sys.exit(2)
+    run(sys.argv[1])
