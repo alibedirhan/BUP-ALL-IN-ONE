@@ -149,34 +149,65 @@ class PDFProcessor:
             return product_name
         return ""
     
-    def _extract_prices_from_row(self, row: List, start_index: int) -> Tuple[Optional[float], Optional[float]]:
-        """Satırdan fiyatları çıkar - İyileştirilmiş algoritma"""
-        prices = []
+    
+def _extract_prices_from_row(self, row: List, start_index: int) -> Tuple[Optional[float], Optional[float]]:
+        """Satırdan fiyatları çıkar - Gelişmiş ve KDV'ye duyarlı seçim
         
+        Heuristik:
+        - Hücrelerden makul aralıktaki (5-2000) tüm fiyatları topla.
+        - Ardışık veya yakın değer çiftleri içinden (i<j) ratio = j/i hesapla.
+        - 1.00 < ratio < 1.25 aralığındaki çiftleri 'geçerli KDV' kabul et.
+        - Hedef oran 1.01'e en yakın çifti seç (gıda için düşük KDV yaygın). Uygun yoksa ratio>1.0 olan ve 1.5 altındaki en yakın çifti seç.
+        - Hâlâ bulunamazsa, son iki fiyatın min/max'ını kullan.
+        """
+        prices: List[float] = []
         for j in range(start_index, len(row)):
             if row[j]:
                 cell_value = str(row[j]).strip()
-                
-                # Fark sütununu atla (% içeren değerler)
+                # Fark/KDV yüzde sütunları değil
                 if '%' in cell_value or 'fark' in cell_value.lower():
                     continue
-                
                 price = self._extract_price_from_text(cell_value)
-                if price and 5 <= price <= 2000:  # Genişletilmiş fiyat aralığı
+                if price and 5 <= price <= 2000:
                     prices.append(price)
         
         if len(prices) < 2:
             return None, None
         
-        # PDF'de KDV hariç sonra KDV dahil gelir - son iki geçerli fiyatı al
-        price_without_vat = prices[-2] if len(prices) >= 2 else prices[0]
-        price_with_vat = prices[-1]
+        # Tüm olası çiftleri değerlendir
+        best_pair = None
+        best_score = 1e9
+        target = 1.01  # gıda için varsayılan düşük KDV'ye yakın hedef
         
-        # KDV dahil fiyatın daha yüksek olması gerekir
-        if price_without_vat > price_with_vat:
-            price_without_vat, price_with_vat = price_with_vat, price_without_vat
+        n = len(prices)
+        for i in range(n-1):
+            for j in range(i+1, n):
+                a, b = prices[i], prices[j]
+                lo, hi = (a, b) if a <= b else (b, a)
+                if lo <= 0: 
+                    continue
+                ratio = hi / lo
+                # Öncelik: 1.00 < ratio < 1.25
+                if 1.0 < ratio < 1.25:
+                    score = abs(ratio - target)
+                elif 1.0 < ratio < 1.5:
+                    score = abs(ratio - 1.1) + 1.0  # daha düşük öncelik
+                else:
+                    continue
+                if score < best_score:
+                    best_score = score
+                    best_pair = (lo, hi)
         
-        return price_without_vat, price_with_vat
+        if best_pair:
+            return best_pair[0], best_pair[1]
+        
+        # Fallback: son iki değeri kullan, sıralayarak
+        a = prices[-2] if len(prices) >= 2 else prices[0]
+        b = prices[-1]
+        if a > b:
+            a, b = b, a
+        return a, b
+
     
     def _determine_category_by_position(self, product_code: str, row_info: str, page_num: int) -> Optional[str]:
         """PDF'deki konuma ve ürün koduna göre kategori belirler"""
