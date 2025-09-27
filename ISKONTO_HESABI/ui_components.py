@@ -1046,5 +1046,3 @@ Başlamak için PDF sekmesine gidin...
         """Hata mesajı"""
         messagebox.showerror("Hata", message)
         self.status_label.config(text="❌ İşlem başarısız")
-
-
