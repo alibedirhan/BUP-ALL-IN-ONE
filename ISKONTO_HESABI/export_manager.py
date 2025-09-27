@@ -194,7 +194,7 @@ class ExportManager:
                     self._add_pdf_header(pdf, f"{safe_category} - %{discount_rate:.1f} Iskonto")
                     
                     # Tablo başlıkları
-                    pdf.set_font("Arial", 'B', 9)
+                    pdf.set_font("Helvetica", 'B', 9)
                     pdf.cell(10, 8, "No", 1, 0, 'C')
                     pdf.cell(80, 8, "Urun Adi", 1, 0, 'C')
                     pdf.cell(25, 8, "Orj.KDV Haric", 1, 0, 'C')
@@ -202,7 +202,7 @@ class ExportManager:
                     pdf.cell(25, 8, "Isk.KDV Haric", 1, 0, 'C')
                     pdf.cell(25, 8, "Isk.KDV Dahil", 1, 1, 'C')
                     
-                    pdf.set_font("Arial", '', 8)
+                    pdf.set_font("Helvetica", '', 8)
                     
                     for idx, product in enumerate(products, 1):
                         # Yeni sayfa kontrolü
@@ -211,14 +211,14 @@ class ExportManager:
                             self._add_pdf_header(pdf, f"{safe_category} - %{discount_rate:.1f} Iskonto (devam)")
                             
                             # Başlıkları tekrarla
-                            pdf.set_font("Arial", 'B', 9)
+                            pdf.set_font("Helvetica", 'B', 9)
                             pdf.cell(10, 8, "No", 1, 0, 'C')
                             pdf.cell(80, 8, "Urun Adi", 1, 0, 'C')
                             pdf.cell(25, 8, "Orj.KDV Haric", 1, 0, 'C')
                             pdf.cell(25, 8, "Orj.KDV Dahil", 1, 0, 'C')
                             pdf.cell(25, 8, "Isk.KDV Haric", 1, 0, 'C')
                             pdf.cell(25, 8, "Isk.KDV Dahil", 1, 1, 'C')
-                            pdf.set_font("Arial", '', 8)
+                            pdf.set_font("Helvetica", '', 8)
                         
                         # Ürün adını uygun uzunluğa getir
                         name = self.safe_turkish_text(product['name'])
@@ -233,7 +233,11 @@ class ExportManager:
                         pdf.cell(25, 7, f"{product['price_with_vat']:.2f}", 1, 1, 'R')
                 
                 # PDF'i kaydet
+                try:
                 pdf.output(file_path)
+            except Exception as e:
+                logging.error(f"PDF kaydetme hatası: {e}")
+                raise
                 saved_files.append(output_filename)
                 logging.info(f"PDF kaydedildi: {file_path}")
             
@@ -464,5 +468,5 @@ class SafePDF(FPDF):
     def footer(self):
         """Sayfa alt bilgisi"""
         self.set_y(-15)
-        self.set_font('Arial', 'I', 8)
+        self.set_font('Helvetica', 'I', 8)
         self.cell(0, 10, f'Sayfa {self.page_no()}', 0, 0, 'C')
